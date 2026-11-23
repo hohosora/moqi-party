@@ -41,11 +41,75 @@
     rounds:8, seconds:30, busy:false, error:'', toast:'',
     unsubs:[], voteUnsub:null, watchedRound:null, firebase:null, autoRevealing:false,
     page:'home', bankMode:localStorage.getItem('mqs_bank_mode')||'mixed', managerTab:'custom',
-    customEditId:null, customDraft:null, geminiDirection:'trends', geminiCount:10, aiText:'',
-    aiPreview:[], aiPreviewSkipped:0, managerNotice:'', managerError:''
+    customEditId:null, customDraft:null, geminiDirection:'trends', geminiCount:8, aiText:'',
+    aiPreview:[], aiPreviewSkipped:0, managerNotice:'', managerError:'',
+    heroImage:'', photoBusy:false
   };
+  // 右上角主視覺：照片只在主持人裝置留有原圖的壓縮版本。
+  // 線上開房時把小圖快照儲存在該房間文件，玩家加入後才會看到。
+  const HERO_KEY='mqs_event_hero_v1';
+  const HERO_MAX_CHARS=40000; // 資料 URI 最多約 30KB，避免 Firestore 文件過大
+  function safeHero(src){
+    return typeof src==='string' && src.length<=HERO_MAX_CHARS
+      && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(src);
+  }
+  function readSavedHero(){
+    try{const saved=localStorage.getItem('mqs_event_hero_v1');return safeHero(saved)?saved:'';}catch{return '';}
+  }
+  function heroVisual(src,klass=''){
+    const photo=safeHero(src);
+    return `<div class="hero-face shine ${photo?'photo-face':''} ${klass}">${photo?`<img class="hero-photo" src="${esc(src)}" alt="主持人選擇的活動主視覺照片">`:'🤪'}</div>`;
+  }
+  function heroControls(inRoom=false){
+    const current=inRoom?state.room?.heroImage:state.heroImage;
+    return `<div class="hero-controls card soft section-gap"><div><b>📸 ${inRoom?'更換本房間主視覺':'主持人自訂主視覺'}</b><p class="fineprint">${inRoom?'更新後會同步到所有已加入房間的玩家。':'選一張照片取代右上角的 🤪。建立多人房間時會將壓縮後照片同步給玩家。'}</p></div><div class="hero-control-actions"><label class="btn dark small-btn hero-upload-label">${state.photoBusy?'⏳ 正在處理照片…':'📷 選擇照片'}<input type="file" id="heroPhotoUpload" accept="image/jpeg,image/png,image/webp" ${state.photoBusy?'disabled':''}></label><button class="btn tertiary small-btn" data-action="reset-hero" ${state.photoBusy||!safeHero(current)?'disabled':''}>↩ 還原 🤪</button></div><p class="fineprint">支援 JPG、PNG、WebP；上傳時自動置中裁切、縮圖與壓縮。圖片僅作活動主視覺，請先取得照片當事人同意。</p></div>`;
+  }
+  async function compressHero(file){
+    if(!['image/jpeg','image/png','image/webp'].includes(file?.type))throw new Error('請選擇 JPG、PNG 或 WebP 格式的照片。');
+    if(file.size>8*1024*1024)throw new Error('原始照片不可超過 8 MB，請先縮小再試。');
+    const url=URL.createObjectURL(file);
+    let img;
+    try{img=await new Promise((resolve,reject)=>{
+      const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(new Error('照片無法讀取，請換一張 JPG、PNG 或 WebP。'));image.src=url;
+    });}finally{URL.revokeObjectURL(url);}
+    if(!img.naturalWidth||!img.naturalHeight)throw new Error('這張照片的尺寸無法辨識。');
+    const shortest=Math.min(img.naturalWidth,img.naturalHeight);
+    const sx=(img.naturalWidth-shortest)/2,sy=(img.naturalHeight-shortest)/2;
+    for(const side of [200,168,144,120]){
+      const canvas=document.createElement('canvas');canvas.width=side;canvas.height=side;
+      const ctx=canvas.getContext('2d');if(!ctx)throw new Error('瀏覽器無法處理照片，請換一個瀏覽器。');
+      ctx.fillStyle='#ffffff';ctx.fillRect(0,0,side,side);
+      ctx.drawImage(img,sx,sy,shortest,shortest,0,0,side,side);
+      for(const quality of [.80,.67,.53,.42]){
+        const data=canvas.toDataURL('image/jpeg',quality);
+        if(safeHero(data))return data;
+      }
+    }
+    throw new Error('照片壓縮後仍然過大，請換一張內容較簡單的照片。');
+  }
+  function saveHeroLocally(data){
+    state.heroImage=data;
+    try{if(data)localStorage.setItem(HERO_KEY,data);else localStorage.removeItem(HERO_KEY);}
+    catch{state.toast='瀏覽器儲存空間不足；照片仍可用於本次開房，但重開網頁可能不會保留。';}
+  }
+  async function setHero(data){
+    if(state.mode && state.room && !isHost())throw new Error('只有房間主持人可以更換主視覺。');
+    if(data && !safeHero(data))throw new Error('照片格式不正確，請重新選擇照片。');
+    // 先更新房間，只有雲端寫入成功才更新本機偏好。
+    if(state.mode && state.room)await updateRoom({heroImage:data});
+    saveHeroLocally(data);
+    render();
+  }
+  async function onHeroFile(file){
+    if(!file || state.photoBusy)return;
+    state.photoBusy=true;render();
+    try{const data=await compressHero(file);await setHero(data);state.error='';state.toast='主視覺照片已更新！';}
+    catch(err){state.error=friendlyError(err);}
+    finally{state.photoBusy=false;render();}
+  }
   const CONFIGURED = Boolean(window.GAME_FIREBASE_CONFIG?.apiKey && window.GAME_FIREBASE_CONFIG?.projectId);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
+  state.heroImage=readSavedHero();
   // 讓玩家看到的錯誤訊息一律為台灣繁體中文；技術細節僅留在開發者主控台。
   function friendlyError(err){
     const code=String(err?.code || '');
@@ -112,7 +176,7 @@
   function buildRoomQuestions(){
     const pool=selectedQuestions();
     if(pool.length<state.rounds){
-      throw new Error(`目前「${bankModeName()}」只有 ${pool.length} 題，少於設定的 ${state.rounds} 回合。請新增題目、減少回合數或改用混合題庫。`);
+      throw new Error(`目前「${bankModeName()}」只有 ${pool.length} 題，少於本次設定的 ${state.rounds} 題。請新增題目、減少遊戲題數或改用混合題庫。`);
     }
     if(state.bankMode!=='mixed')return shuffle(pool).slice(0,state.rounds).map(x=>questionClean(x));
     // 混合模式均衡選題，避免大量經典題把少量新題完全蓋掉。
@@ -131,6 +195,15 @@
     return shuffle(result);
   }
   function bankModeName(){return ({classic:'經典歷史題庫',custom:'主持人自訂題庫',ai:'Gemini 生成題庫',mixed:'三種題庫混合'})[state.bankMode]||'三種題庫混合';}
+  function geminiCountOptions(){
+    const needed=state.rounds;
+    const extra=Math.min(20,needed+4);
+    return [
+      {count:needed,label:`依遊戲題數：${needed} 題（推薦）`},
+      {count:extra,label:`多備 4 題：${extra} 題`},
+      {count:20,label:'準備 20 題備用'}
+    ].filter((option,index,options)=>options.findIndex(x=>x.count===option.count)===index);
+  }
   function geminiPrompt(){
     const n=state.geminiCount,d=DIRECTIONS[state.geminiDirection];
     return `你是台灣派對遊戲「默契失控局」的專業綜藝出題企劃。請為 10–20 位朋友準備 ${n} 題真正好笑、放鬆、能引發聊天的四選一破冰題目。\n\n出題方向：${d.name}，重點包含：${d.desc}。\n${state.geminiDirection==='trends'?'請先利用你可用的搜尋能力查找近期台灣流行話題與迷因，再改寫為不需要事先知道新聞背景也能回答的日常情境；如果無法查到近期資料，請明確避免假稱正在流行，改用一般生活幽默。':''}\n\n規則：\n1. 全部使用台灣繁體中文與自然口語，不要簡體字。\n2. 每題是一個輕鬆、有畫面感、沒有正確答案的假設情境，不考時事知識。\n3. 每題提供恰好四個不重複、都有人可能想選的爆笑答案；不要把某一選項做成唯一正確解答。\n4. 加上「開獎後能自願分享或聊天」的短引導，不強迫表演、不要求暴露隱私。\n5. 避免嘲笑個人外貌、身分、疾病、信仰或災難，避免政治對立與令人尷尬的私密話題。\n6. 題目 q 最多 120 字；每個選項最多 100 字；talk 最多 160 字。\n7. 避免重複創意、避免空泛選項，每題要有不同笑點。\n\n非常重要：只輸出可直接解析的 JSON 陣列，絕對不要加說明文字、不要使用 Markdown 代碼框。格式完全遵循：\n[\n  {"q":"如果你的鬧鐘突然變成人會說什麼？","a":["請你放過我","再睡五分鐘我就辭職","我已經響到懷疑人生","今天起你叫我老闆"],"talk":"聊聊你最爆笑的起床經驗。"}\n]\n\n請直接輸出 ${n} 題，不要輸出範例題的重複版本。`;
@@ -167,7 +240,7 @@
       const draft=state.customDraft||original||{};
       body=`<div class="card"><h2 class="mini-heading">${original?'修改自訂題目':'自己編一題，讓朋友笑出來'}</h2><div class="field"><span>題目</span><textarea id="customQ" rows="2" maxlength="120" placeholder="如果小組要成立一個超怪部門，你會是什麼主管？">${esc(draft.q||'')}</textarea></div><div class="bank-answer-grid">${[0,1,2,3].map(i=>`<label class="field"><span>答案 ${'ABCD'[i]}</span><input id="customA${i}" maxlength="100" value="${esc(draft.a?.[i]||'')}" placeholder="輸入一個荒謬但好選的答案"></label>`).join('')}</div><label class="field space-top"><span>開獎後聊天引導</span><textarea id="customTalk" rows="2" maxlength="160" placeholder="例如：請大家自願分享，為什麼會選這一項？">${esc(draft.talk||'')}</textarea></label><div class="btn-row space-top"><button class="btn secondary" data-action="save-custom">${original?'💾 儲存修改':'➕ 加入自訂題庫'}</button>${original?'<button class="btn tertiary" data-action="cancel-edit">取消編輯</button>':''}</div></div><section class="card section-gap"><h2 class="mini-heading">我的自訂題目（${bank.custom.length} 題）</h2>${bankRows(bank.custom,'custom')}</section>`;
     }else if(tab==='ai'){
-      body=`<div class="card"><h2 class="mini-heading">三步驟，請 Gemini 幫你出題</h2><p class="fineprint">不需 API、不需額外帳號串接。主持人使用自己的 Gemini 網頁，把生成的結果複製回這裡即可。</p><div class="field"><span>① 選擇出題方向</span><div class="direction-options">${Object.entries(DIRECTIONS).map(([k,v])=>`<label class="direction-item ${state.geminiDirection===k?'picked':''}"><input type="radio" name="geminiDirection" value="${k}" ${state.geminiDirection===k?'checked':''}><span><strong>${v.name}</strong><small>${v.desc}</small></span></label>`).join('')}</div></div><label class="field space-top"><span>要產生幾題？</span><select name="geminiCount"><option value="5" ${state.geminiCount===5?'selected':''}>5 題</option><option value="10" ${state.geminiCount===10?'selected':''}>10 題（推薦）</option><option value="20" ${state.geminiCount===20?'selected':''}>20 題</option></select></label><div class="btn-row space-top"><button class="btn secondary" data-action="copy-prompt">📋 ② 複製出題指令</button><a class="btn dark" href="https://gemini.google.com/app" target="_blank" rel="noopener noreferrer">↗ 開啟 Gemini 網頁</a></div><p class="fineprint">到 Gemini 貼上指令、送出，再複製生成的整段 JSON。這裡不會自動讀取你的 Gemini 對話。</p><details class="prompt-details"><summary>查看這次要給 Gemini 的指令</summary><pre>${esc(geminiPrompt())}</pre></details><div class="divider"></div><label class="field"><span>③ 把 Gemini 產生的 JSON 貼在下方</span><textarea id="aiJson" name="aiJson" rows="8" placeholder='貼入 Gemini 回傳的 JSON，例如：[{"q":"...","a":["...","...","...","..."],"talk":"..."}]'>${esc(state.aiText)}</textarea></label><button class="btn full space-top" data-action="preview-ai">🔎 檢查題目與預覽</button>${state.aiPreview.length?`<div class="preview-panel"><div class="chip mint">✓ ${state.aiPreview.length} 題通過格式檢查${state.aiPreviewSkipped?'，另跳過 '+state.aiPreviewSkipped+' 題重複內容':''}</div>${state.aiPreview.map((q,i)=>`<div class="preview-item"><b>${i+1}. ${esc(q.q)}</b><small>${q.a.map((x,j)=>'ABCD'[j]+' '+esc(x)).join('　·　')}</small><small>🎤 ${esc(q.talk)}</small></div>`).join('')}<button class="btn secondary full space-top" data-action="confirm-ai">✅ 確認加入 Gemini 題庫</button></div>`:''}</div><section class="card section-gap"><h2 class="mini-heading">已收藏的 Gemini 題目（${bank.ai.length} 題）</h2>${bankRows(bank.ai,'ai')}</section>`;
+      body=`<div class="card"><h2 class="mini-heading">三步驟，請 Gemini 幫你出題</h2><p class="fineprint">不需 API、不需額外帳號串接。主持人使用自己的 Gemini 網頁，把生成的結果複製回這裡即可。</p><div class="field"><span>① 選擇出題方向</span><div class="direction-options">${Object.entries(DIRECTIONS).map(([k,v])=>`<label class="direction-item ${state.geminiDirection===k?'picked':''}"><input type="radio" name="geminiDirection" value="${k}" ${state.geminiDirection===k?'checked':''}><span><strong>${v.name}</strong><small>${v.desc}</small></span></label>`).join('')}</div></div><label class="field space-top"><span>生成題數（依首頁設定）</span><div class="gemini-count-hint">🎯 首頁設定：<strong>${state.rounds} 題</strong>。已自動對應 Gemini 的生成數量，也可以多備一些題目讓每場隨機抽選。</div><select name="geminiCount">${geminiCountOptions().map(option=>`<option value="${option.count}" ${state.geminiCount===option.count?'selected':''}>${option.label}</option>`).join('')}</select></label><div class="btn-row space-top"><button class="btn secondary" data-action="copy-prompt">📋 ② 複製出題指令</button><a class="btn dark" href="https://gemini.google.com/app" target="_blank" rel="noopener noreferrer">↗ 開啟 Gemini 網頁</a></div><p class="fineprint">到 Gemini 貼上指令、送出，再複製生成的整段 JSON。這裡不會自動讀取你的 Gemini 對話。</p><details class="prompt-details"><summary>查看這次要給 Gemini 的指令</summary><pre>${esc(geminiPrompt())}</pre></details><div class="divider"></div><label class="field"><span>③ 把 Gemini 產生的 JSON 貼在下方</span><textarea id="aiJson" name="aiJson" rows="8" placeholder='貼入 Gemini 回傳的 JSON，例如：[{"q":"...","a":["...","...","...","..."],"talk":"..."}]'>${esc(state.aiText)}</textarea></label><button class="btn full space-top" data-action="preview-ai">🔎 檢查題目與預覽</button>${state.aiPreview.length?`<div class="preview-panel"><div class="chip mint">✓ ${state.aiPreview.length} 題通過格式檢查${state.aiPreviewSkipped?'，另跳過 '+state.aiPreviewSkipped+' 題重複內容':''}</div>${state.aiPreview.map((q,i)=>`<div class="preview-item"><b>${i+1}. ${esc(q.q)}</b><small>${q.a.map((x,j)=>'ABCD'[j]+' '+esc(x)).join('　·　')}</small><small>🎤 ${esc(q.talk)}</small></div>`).join('')}<button class="btn secondary full space-top" data-action="confirm-ai">✅ 確認加入 Gemini 題庫</button></div>`:''}</div><section class="card section-gap"><h2 class="mini-heading">已收藏的 Gemini 題目（${bank.ai.length} 題）</h2>${bankRows(bank.ai,'ai')}</section>`;
     }else{
       body=`<div class="card"><h2 class="mini-heading">經典 28 題，永久保留</h2><p class="fineprint">這是原始版本的幽默題庫，不會被 Gemini 匯入或主持人編輯覆蓋。已開局的題目也不會中途變動。</p>${bankRows(QUESTIONS,'classic')}</div>`;
     }
@@ -236,13 +309,14 @@
   function myRank(){const sorted=scoresSorted();return sorted.findIndex(p=>p.uid===state.uid)+1;}
   function myScore(){return state.room?.scores?.[state.uid]||0;}
   function hasDouble(){return !state.room?.usedDoubles?.[state.uid];}
-  function surface(content, right=''){return `<main class="container"><div class="topbar"><div class="brand"><div class="brand-mark"><span>✦</span></div>默契失控局</div>${right || `<span class="status-tag">🎉 派對破冰遊戲</span>`}</div>${state.error?`<div class="notice" role="alert">${esc(state.error)}</div>`:''}${state.toast?`<div class="chip mint" style="margin-bottom:12px">✓ ${esc(state.toast)}</div>`:''}${content}<div class="footer">適合 10–20 人 ✦ 有笑點的社交，不是尷尬的面試<br>先笑出來，再慢慢認識彼此 ✨</div></main>`;}
+  function surface(content, right=''){return `<main class="container"><div class="topbar"><div class="brand"><div class="brand-mark"><span>✦</span></div>默契失控局</div>${right || `<span class="status-tag">🎉 派對破冰遊戲</span>`}</div>${state.room && safeHero(state.room.heroImage)?`<div class="room-look ${state.room.phase==='lobby'?'lobby-look':''}"><img class="room-look-image" src="${esc(state.room.heroImage)}" alt="本場活動主視覺"><span>🎉 本場活動主視覺</span></div>`:''}${state.error?`<div class="notice" role="alert">${esc(state.error)}</div>`:''}${state.toast?`<div class="chip mint" style="margin-bottom:12px">✓ ${esc(state.toast)}</div>`:''}${content}<div class="footer">適合 10–20 人 ✦ 有笑點的社交，不是尷尬的面試<br>先笑出來，再慢慢認識彼此 ✨</div></main>`;}
   function renderHome(){
     return surface(`
-      <section class="grid-hero"><div><div class="eyebrow">最鬧默契大挑戰</div><h1 class="hero-title">默契<span>失控局！</span></h1><p class="subhead">你以為大家跟你一樣？<br><b>選荒謬答案、猜全場多數、搶排行榜！</b><br>比的不是知識，是你有多懂這群人。</p></div><div class="hero-graphic"><div class="splat"></div><div class="hero-face shine">🤪</div><i class="star a">✳</i><i class="star b">✦</i></div></section>
+      <section class="grid-hero"><div><div class="eyebrow">最鬧默契大挑戰</div><h1 class="hero-title">默契<span>失控局！</span></h1><p class="subhead">你以為大家跟你一樣？<br><b>選荒謬答案、猜全場多數、搶排行榜！</b><br>比的不是知識，是你有多懂這群人。</p></div><div class="hero-graphic ${safeHero(state.heroImage)?'has-photo':''}"><div class="splat"></div>${heroVisual(state.heroImage)}<i class="star a">✳</i><i class="star b">✦</i></div></section>
+      ${heroControls(false)}
       <section class="card section-gap"><h2 class="mini-heading">🎮 立即開一局</h2><label class="field"><span>你的遊戲暱稱</span><input id="nick" name="nickname" maxlength="14" autocomplete="nickname" placeholder="例如：火鍋教主" value="${esc(state.nickname)}"></label>
-        <div class="form-grid space-top"><label class="field"><span>遊戲回合</span><select id="rounds" name="rounds"><option value="6" ${state.rounds===6?'selected':''}>6 回合｜快速暖場</option><option value="8" ${state.rounds===8?'selected':''}>8 回合｜推薦</option><option value="10" ${state.rounds===10?'selected':''}>10 回合｜歡樂加倍</option><option value="12" ${state.rounds===12?'selected':''}>12 回合｜完整挑戰</option></select></label><label class="field"><span>每回合作答時間</span><select id="seconds" name="seconds"><option value="15" ${state.seconds===15?'selected':''}>15 秒｜快速挑戰</option><option value="30" ${state.seconds===30?'selected':''}>30 秒（推薦）</option><option value="45" ${state.seconds===45?'selected':''}>45 秒｜輕鬆作答</option></select></label></div>
-        <div class="bank-picker space-top"><div class="split"><h2 class="mini-heading tight">🗃️ 這次要使用哪一套題庫？</h2><button class="btn dark small-btn" data-action="manage">⚙️ 管理題庫</button></div><label class="field space-top"><span>出題來源</span><select id="bankMode" name="bankMode"><option value="mixed" ${state.bankMode==='mixed'?'selected':''}>🎲 三種混合｜各種笑點一起來</option><option value="classic" ${state.bankMode==='classic'?'selected':''}>📚 經典歷史｜原始 28 題</option><option value="custom" ${state.bankMode==='custom'?'selected':''}>✏️ 主持人自訂｜${bank.custom.length} 題</option><option value="ai" ${state.bankMode==='ai'?'selected':''}>✨ Gemini 生成｜${bank.ai.length} 題</option></select></label><p class="fineprint">目前「${bankModeName()}」共 ${selectedQuestions().length} 題可抽選；新題目要先到「管理題庫」加入。開局後題目會固定，不會被其他人修改。</p></div>
+        <div class="form-grid space-top"><label class="field"><span>遊戲題數</span><select id="rounds" name="rounds"><option value="6" ${state.rounds===6?'selected':''}>6 題｜快速暖場</option><option value="8" ${state.rounds===8?'selected':''}>8 題｜推薦</option><option value="10" ${state.rounds===10?'selected':''}>10 題｜歡樂加倍</option><option value="12" ${state.rounds===12?'selected':''}>12 題｜完整挑戰</option></select></label><label class="field"><span>每題作答時間</span><select id="seconds" name="seconds"><option value="15" ${state.seconds===15?'selected':''}>15 秒｜快速挑戰</option><option value="30" ${state.seconds===30?'selected':''}>30 秒（推薦）</option><option value="45" ${state.seconds===45?'selected':''}>45 秒｜輕鬆作答</option></select></label></div>
+        <p class="fineprint gemini-home-hint">✨ Gemini 出題數量會跟著「遊戲題數」自動設定；如需更多備用題，可進入題庫管理調整。</p><div class="bank-picker space-top"><div class="split"><h2 class="mini-heading tight">🗃️ 這次要使用哪一套題庫？</h2><button class="btn dark small-btn" data-action="manage">⚙️ 管理題庫</button></div><label class="field space-top"><span>出題來源</span><select id="bankMode" name="bankMode"><option value="mixed" ${state.bankMode==='mixed'?'selected':''}>🎲 三種混合｜各種笑點一起來</option><option value="classic" ${state.bankMode==='classic'?'selected':''}>📚 經典歷史｜原始 28 題</option><option value="custom" ${state.bankMode==='custom'?'selected':''}>✏️ 主持人自訂｜${bank.custom.length} 題</option><option value="ai" ${state.bankMode==='ai'?'selected':''}>✨ Gemini 生成｜${bank.ai.length} 題</option></select></label><p class="fineprint">目前「${bankModeName()}」共 ${selectedQuestions().length} 題可抽選；新題目要先到「管理題庫」加入。開局後題目會固定，不會被其他人修改。</p></div>
         <div class="btn-row space-top"><button class="btn full" data-action="host">🚀 建立多人房間</button><button class="btn tertiary full" data-action="demo">🎭 先玩示範局</button></div>
         <div class="divider"></div><h2 class="mini-heading">📲 已有房間？輸入代碼加入</h2><div class="form-grid"><label class="field"><span>6 碼房間代碼</span><input id="codeInput" name="codeInput" maxlength="6" inputmode="text" autocapitalize="characters" placeholder="例如：AB3P8K" value="${esc(state.codeInput)}"></label><div style="align-self:end"><button class="btn secondary full" data-action="join">加入朋友的局 →</button></div></div>
         ${!CONFIGURED?`<p class="fineprint">⚙️ 目前未設定 Firebase：<b>示範局可以直接玩</b>；跨手機即時連線請先依操作說明設定 Firebase 專案，再放上 GitHub Pages。</p>`:`<p class="fineprint">🟢 多人連線已啟用！主持人建立房間後，分享房間代碼或網址即可加入。</p>`}
@@ -254,10 +328,10 @@
   function playerPills(){return state.players.map(p=>`<div class="avatar-pill"><span class="avatar-circle">${esc(p.emoji||emojiFor(p.uid))}</span>${esc(p.name)}${p.uid===state.room?.hostUid?'<span class="host-badge">房主</span>':''}${p.uid===state.uid?'<span class="host-badge">你</span>':''}</div>`).join('');}
   function renderLobby(){
     const n=state.players.length, host=isHost();
-    return surface(`${title(state.mode==='demo'?'歡迎來到示範局！':'人都到齊了嗎？',state.mode==='demo'?'12 位虛擬玩家已到場。先試試荒謬投票和排行榜，正式活動再開多人房間。':'分享房間網址，讓大家用手機填入暱稱一起加入。')}<div class="card section-gap">${state.mode==='demo'?`<div class="info-box">🎭 <strong>這是單人示範模式</strong>，不能邀請朋友加入；正式版請先設定 Firebase，再建立可共用的房間。</div>`:`<div class="lobby-code"><div><div class="eyebrow">房間代碼</div><div class="code-digits">${esc(state.roomCode)}</div></div><button class="btn dark small-btn" data-action="copy">🔗 複製邀請</button></div><p class="share-link space-top">${esc(inviteUrl())}</p>`}<div class="split space-top"><h2 class="mini-heading tight">👋 已到場 ${n} 人</h2><span class="chip ${n>=10?'mint':'yellow'}">建議 10–20 人</span></div><div class="avatars space-top">${playerPills()||'<p class="empty">正在等待大家加入…</p>'}</div><div class="divider"></div><div class="split"><span class="muted">${state.room.totalRounds} 回合 × ${state.room.seconds} 秒</span><span class="chip">${state.mode==='demo'?'🎭 示範模式':'🌐 即時連線'}</span></div><div class="space-top">${host?`<button class="btn full" data-action="start" ${n<2?'disabled':''}>🔥 開始荒謬挑戰（${n} 人）</button><p class="fineprint">主持人也能參賽。開始後不接受新玩家加入；玩家中途離開會保留原有分數。</p>`:`<div class="info-box">⏳ 房主正在準備中！先看看今天會與誰展開默契大戰。</div>`}</div></div><div class="space-top"><button class="btn tertiary full" data-action="leave">← 回首頁</button></div>`, `<span class="status-tag">${esc(state.roomCode)}</span>`);
+    return surface(`${title(state.mode==='demo'?'歡迎來到示範局！':'人都到齊了嗎？',state.mode==='demo'?'12 位虛擬玩家已到場。先試試荒謬投票和排行榜，正式活動再開多人房間。':'分享房間網址，讓大家用手機填入暱稱一起加入。')}<div class="card section-gap">${state.mode==='demo'?`<div class="info-box">🎭 <strong>這是單人示範模式</strong>，不能邀請朋友加入；正式版請先設定 Firebase，再建立可共用的房間。</div>`:`<div class="lobby-code"><div><div class="eyebrow">房間代碼</div><div class="code-digits">${esc(state.roomCode)}</div></div><button class="btn dark small-btn" data-action="copy">🔗 複製邀請</button></div><p class="share-link space-top">${esc(inviteUrl())}</p>`}<div class="split space-top"><h2 class="mini-heading tight">👋 已到場 ${n} 人</h2><span class="chip ${n>=10?'mint':'yellow'}">建議 10–20 人</span></div><div class="avatars space-top">${playerPills()||'<p class="empty">正在等待大家加入…</p>'}</div>${host?heroControls(true):''}<div class="divider"></div><div class="split"><span class="muted">${state.room.totalRounds} 題 × 每題 ${state.room.seconds} 秒</span><span class="chip">${state.mode==='demo'?'🎭 示範模式':'🌐 即時連線'}</span></div><div class="space-top">${host?`<button class="btn full" data-action="start" ${n<2?'disabled':''}>🔥 開始荒謬挑戰（${n} 人）</button><p class="fineprint">主持人也能參賽。開始後不接受新玩家加入；玩家中途離開會保留原有分數。</p>`:`<div class="info-box">⏳ 房主正在準備中！先看看今天會與誰展開默契大戰。</div>`}</div></div><div class="space-top"><button class="btn tertiary full" data-action="leave">← 回首頁</button></div>`, `<span class="status-tag">${esc(state.roomCode)}</span>`);
   }
   function choiceButtons(field,selected,q){return `<div class="option-grid">${q.a.map((a,i)=>`<button type="button" class="option ${selected===i?(field==='choice'?'selected':'guess-selected'):''}" data-${field}="${i}" aria-pressed="${selected===i}"><span class="option-letter">${'ABCD'[i]}</span><span>${esc(a)}</span></button>`).join('')}</div>`;}
-  function roundHeader(){return `<div class="round-header"><span class="chip yellow">第 ${state.room.roundIndex+1}／${state.room.totalRounds} 回合</span><span class="rank-pill">🏅 第 ${myRank()||'–'} 名 · ${myScore()} 分</span></div><div class="progress" aria-label="回合進度"><div style="width:${Math.round(100*(state.room.roundIndex+1)/state.room.totalRounds)}%"></div></div>`;}
+  function roundHeader(){return `<div class="round-header"><span class="chip yellow">第 ${state.room.roundIndex+1}／${state.room.totalRounds} 題</span><span class="rank-pill">🏅 第 ${myRank()||'–'} 名 · ${myScore()} 分</span></div><div class="progress" aria-label="題目進度"><div style="width:${Math.round(100*(state.room.roundIndex+1)/state.room.totalRounds)}%"></div></div>`;}
   function renderVote(){
     const q=question(), v=myVote(), n=state.players.length, count=state.votes.length, remaining=Math.max(0,Math.ceil(((state.room.deadline||Date.now())-Date.now())/1000));
     return surface(`${roundHeader()}<section class="space-top question-card"><div class="q-label">😈 靈魂拷問 • 第 ${state.room.roundIndex+1} 題</div><div class="question-text">${esc(q.q)}</div></section>
@@ -282,7 +356,7 @@
     const q=question(),last=state.room.lastResult||{},g=last.gains?.[state.uid],v=myVote();
     const scoreText=g?`${g.total}`:'0';
     return surface(`${roundHeader()}<section class="space-top question-card"><div class="q-label">🎉 答案開獎啦！</div><div class="question-text">${esc(q.q)}</div></section>${renderPoll()}
-      <div class="score-highlight section-gap"><span class="eyebrow">本回合得分</span><div class="split"><div><div class="score-big">+${scoreText}</div><div class="score-detail">${v?`猜多數 ${g?.guess||0} 分${g?.doubleUsed?'（王牌生效）':''} · 冷門 ${g?.rare||0} 分 · 連勝 ${g?.streakBonus||0} 分`:'本回合未作答'}</div></div><span style="font-size:50px">${g?.total>=100?'😎':'🤪'}</span></div></div>
+      <div class="score-highlight section-gap"><span class="eyebrow">本題得分</span><div class="split"><div><div class="score-big">+${scoreText}</div><div class="score-detail">${v?`猜多數 ${g?.guess||0} 分${g?.doubleUsed?'（王牌生效）':''} · 冷門 ${g?.rare||0} 分 · 連勝 ${g?.streakBonus||0} 分`:'本題未作答'}</div></div><span style="font-size:50px">${g?.total>=100?'😎':'🤪'}</span></div></div>
       <div class="info-box section-gap"><strong>🎤 這題的爆笑交流時間</strong><div>${esc(q.talk)}</div><div class="fineprint">自願分享就好，不用強迫任何人表演。</div></div>
       ${renderLeaderboard(true)}
       <div class="section-gap">${isHost()?`<button class="btn full" data-action="next">${state.room.roundIndex+1>=state.room.totalRounds?'🏆 公布最終冠軍！':'➡️ 下一題，繼續失控！'}</button><p class="fineprint">建議每題留 30–60 秒聊天，讓大家不只看排名，也能認識彼此。</p>`:`<div class="info-box">🎙 等主持人帶大家聊天完，就一起進下一題！</div>`}</div>
@@ -294,7 +368,7 @@
       <div class="card section-gap"><h2 class="mini-heading">🙌 你的最後成績</h2><div class="split"><div><div class="score-big">#${myPosition||'–'}</div><div class="fineprint">個人名次／${state.players.length} 人</div></div><div style="text-align:right"><div class="score-big">${myScore()}</div><div class="fineprint">總分</div></div></div></div>${renderLeaderboard(false)}
       <section class="info-box section-gap"><strong>🗣 遊戲結束，再留 3 分鐘：</strong><div>找一位你今天最意外「原來你也這樣！」的朋友，分享一件剛才還沒說完的趣事。<br>或是全場選出「最荒謬但最有道理的答案」。</div></section>
       <div class="btn-row section-gap">${state.mode==='online'?`<button class="btn secondary" data-action="copy">🔗 複製活動網址</button>`:''}<button class="btn" data-action="leave">🔁 再開一局</button></div>
-    `, `<span class="status-tag">${state.room.totalRounds} 回合已完成</span>`);
+    `, `<span class="status-tag">${state.room.totalRounds} 題挑戰完成</span>`);
   }
   function render(){
     if(!state.mode || !state.room) {$app.innerHTML=state.page==='manager'?renderManager():renderHome();return;}
@@ -335,7 +409,7 @@
     const preparedQuestions=buildRoomQuestions();
     clearListeners();state.mode='demo';state.uid='demo-me';state.roomCode='DEMO88';
     state.players=[{uid:state.uid,name,emoji:'😎',joinedAt:0},...BOT_NAMES.map((name,i)=>({uid:'bot'+i,name,emoji:EMOJIS[i],joinedAt:i+1}))];
-    state.room={hostUid:state.uid,phase:'lobby',roundIndex:-1,totalRounds:state.rounds,seconds:state.seconds,questions:preparedQuestions,scores:{},streaks:{},usedDoubles:{},lastResult:null,deadline:null};
+    state.room={hostUid:state.uid,phase:'lobby',roundIndex:-1,totalRounds:state.rounds,seconds:state.seconds,questions:preparedQuestions,scores:{},streaks:{},usedDoubles:{},lastResult:null,deadline:null,heroImage:state.heroImage};
     state.votes=[];state.choice=null;state.guess=null;state.double=false;history.replaceState(null,'',location.pathname);render();
   }
   function validateName(){const s=state.nickname.trim().slice(0,14);if(!s){state.error='先填入暱稱，這樣排行榜才知道誰是誰。';render();return null;}state.nickname=s;localStorage.setItem('mqs_name',s);state.error='';return s;}
@@ -365,7 +439,7 @@
     let code='';
     for(let i=0;i<6;i++){const candidate=randomCode();const snap=await L.getDoc(roomRef(candidate));if(!snap.exists()){code=candidate;break;}}
     if(!code)throw new Error('房間代碼產生失敗，請再試一次。');
-    const data={hostUid:state.uid,phase:'lobby',roundIndex:-1,totalRounds:state.rounds,seconds:state.seconds,questions:preparedQuestions,scores:{},streaks:{},usedDoubles:{},lastResult:null,deadline:null,createdAt:Date.now()};
+    const data={hostUid:state.uid,phase:'lobby',roundIndex:-1,totalRounds:state.rounds,seconds:state.seconds,questions:preparedQuestions,scores:{},streaks:{},usedDoubles:{},lastResult:null,deadline:null,createdAt:Date.now(),heroImage:state.heroImage};
     await L.setDoc(roomRef(code),data);
     await L.setDoc(playerRef(code,state.uid),{uid:state.uid,name,emoji:emojiFor(state.uid),joinedAt:Date.now()});
     state.mode='online';state.roomCode=code;state.room=data;state.player=state.uid;history.replaceState(null,'',`?room=${code}`);
@@ -478,13 +552,14 @@
     if(['customQ','customTalk','customA0','customA1','customA2','customA3'].includes(e.target.id)){state.customDraft={q:document.getElementById('customQ')?.value||'',a:[0,1,2,3].map(i=>document.getElementById(`customA${i}`)?.value||''),talk:document.getElementById('customTalk')?.value||''};}
   });
   document.addEventListener('change',e=>{
-    if(e.target.name==='rounds')state.rounds=Number(e.target.value);
+    if(e.target.name==='rounds'){state.rounds=Number(e.target.value);state.geminiCount=state.rounds;state.aiPreview=[];render();}
     if(e.target.name==='seconds')state.seconds=Number(e.target.value);
     if(e.target.id==='double')state.double=e.target.checked;
     if(e.target.name==='bankMode'){state.bankMode=e.target.value;localStorage.setItem('mqs_bank_mode',state.bankMode);render();}
     if(e.target.name==='geminiDirection'){state.geminiDirection=e.target.value;state.aiPreview=[];render();}
-    if(e.target.name==='geminiCount'){state.geminiCount=Number(e.target.value);state.aiPreview=[];render();}
+    if(e.target.name==='geminiCount'){state.geminiCount=Number(e.target.value);render();}
     if(e.target.id==='restoreBank'&&e.target.files?.length){restoreBank(e.target.files[0]).catch(err=>{state.managerError=err.message;}).finally(()=>render());}
+    if(e.target.id==='heroPhotoUpload'&&e.target.files?.length)onHeroFile(e.target.files[0]);
   });
   document.addEventListener('click',async e=>{
     const c=e.target.closest('[data-choice]'),g=e.target.closest('[data-guess]');
@@ -493,6 +568,10 @@
     const b=e.target.closest('[data-action]');if(!b||state.busy)return;
     const action=b.dataset.action;
     if(action==='leave'){leave();return;}
+    if(action==='reset-hero'){
+      try{await setHero('');state.toast='已還原原本的 🤪 表情符號。';state.error='';}
+      catch(err){state.error=friendlyError(err);}render();return;
+    }
     if(action==='manage'){state.page='manager';state.managerError='';state.managerNotice='';render();window.scrollTo(0,0);return;}
     if(action==='manager-back'){state.page='home';state.customEditId=null;state.customDraft=null;render();window.scrollTo(0,0);return;}
     if(action==='bank-tab'){state.managerTab=b.dataset.tab;state.managerError='';state.managerNotice='';state.customEditId=null;state.customDraft=null;render();return;}
@@ -526,6 +605,6 @@
   });
   window.addEventListener('unhandledrejection',e=>{console.error('Unhandled game error:',e.reason);});
   window.setInterval(currentTimeTick,1000);
-  window.__GAME_TEST__={QUESTIONS,evaluateRound,sampleQuestions,questionClean,parseAiQuestions,buildRoomQuestions,getBank:()=>bank,getRoom:()=>state.room};
+  window.__GAME_TEST__={QUESTIONS,evaluateRound,sampleQuestions,questionClean,parseAiQuestions,buildRoomQuestions,safeHero,compressHero,getBank:()=>bank,getRoom:()=>state.room,getHero:()=>state.heroImage};
   render();
 })();

@@ -49,3 +49,25 @@
   .bank-answer-grid{grid-template-columns:1fr}.bank-list-item{gap:8px}.bank-actions .btn{font-size:11px}
   .manager-heading .page-title{font-size:32px}
 }
+
+/* 遊戲題數 ↔ Gemini 生成題數連動提示 */
+.gemini-count-hint{padding:11px 13px;margin:8px 0 10px;border:1px solid rgba(118,239,219,.34);background:rgba(118,239,219,.08);border-radius:12px;color:var(--text);font-size:13px;line-height:1.7}
+.gemini-count-hint strong{color:var(--mint)}
+.gemini-home-hint{margin:14px 0 0}
+
+
+/* v4：主持人自訂活動主視覺，圓形照片取代首頁 🤪 表情 */
+.hero-face.photo-face{filter:none;transform:rotate(7deg);display:grid;place-items:center}
+.hero-photo{display:block;width:148px;height:148px;border-radius:50%;border:6px solid rgba(255,255,255,.91);object-fit:cover;box-shadow:0 17px 0 rgba(43,23,74,.7),0 18px 40px rgba(0,0,0,.25)}
+.hero-controls{padding:14px 18px;display:grid;gap:6px;border:1px solid rgba(255,205,118,.23)}
+.hero-controls b{font-size:14px;color:var(--yellow)}
+.hero-controls .fineprint{margin:5px 0 0}
+.hero-control-actions{display:flex;gap:9px;flex-wrap:wrap}
+.hero-upload-label{cursor:pointer;position:relative}
+.hero-upload-label input{display:none}
+.room-look{display:flex;align-items:center;gap:11px;margin:-11px 0 17px;padding:9px 12px;border:1px solid rgba(255,205,118,.22);border-radius:14px;background:rgba(255,205,118,.06);color:var(--yellow);font-size:12px;font-weight:800}
+.room-look-image{width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,.85);object-fit:cover;flex-shrink:0}
+@media(max-width:580px){.hero-photo{width:95px;height:95px;border-width:4px}.hero-controls{padding:13px}.hero-control-actions .btn{font-size:12px}}
+
+.room-look.lobby-look .room-look-image{width:64px;height:64px}
+@media(max-width:580px){.hero-graphic.has-photo{opacity:.92}.room-look.lobby-look .room-look-image{width:58px;height:58px}}
