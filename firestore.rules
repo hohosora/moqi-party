@@ -1,0 +1,66 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+    function roomPath(code) {
+      return /databases/$(database)/documents/rooms/$(code);
+    }
+    function roomIsVoting(code) {
+      return get(roomPath(code)).data.phase == 'voting';
+    }
+    function playerExists(code, uid) {
+      return exists(/databases/$(database)/documents/rooms/$(code)/players/$(uid));
+    }
+
+    match /rooms/{code} {
+      // 知道房號且匿名登入的玩家，才可讀取房間；不提供房間總列表。
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn()
+        && code.matches('^[A-HJ-NP-Z2-9]{6}$')
+        && request.resource.data.hostUid == request.auth.uid
+        && request.resource.data.phase == 'lobby'
+        && request.resource.data.totalRounds in [6,8,10,12]
+        && request.resource.data.seconds in [30,45,60];
+      allow update: if signedIn()
+        && resource.data.hostUid == request.auth.uid
+        && request.resource.data.hostUid == resource.data.hostUid;
+      allow delete: if false;
+
+      match /players/{uid} {
+        allow read: if signedIn();
+        allow create: if signedIn()
+          && request.auth.uid == uid
+          && request.resource.data.uid == uid
+          && get(roomPath(code)).data.phase == 'lobby'
+          && request.resource.data.name is string
+          && request.resource.data.name.size() >= 1
+          && request.resource.data.name.size() <= 60
+          && request.resource.data.emoji is string;
+        allow update, delete: if false;
+      }
+
+      match /votes/{voteId} {
+        allow read: if signedIn();
+        allow create: if signedIn()
+          && playerExists(code,request.auth.uid)
+          && roomIsVoting(code)
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.roundIndex == get(roomPath(code)).data.roundIndex
+          && voteId == request.auth.uid + '_' + string(request.resource.data.roundIndex)
+          && request.resource.data.keys().hasOnly(['uid','roundIndex','choice','guess','double','at'])
+          && request.resource.data.keys().hasAll(['uid','roundIndex','choice','guess','double','at'])
+          && request.resource.data.choice is int
+          && request.resource.data.guess is int
+          && request.resource.data.choice >= 0
+          && request.resource.data.choice <= 3
+          && request.resource.data.guess >= 0
+          && request.resource.data.guess <= 3
+          && request.resource.data.double is bool;
+        allow update, delete: if false;
+      }
+    }
+  }
+}
