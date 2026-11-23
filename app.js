@@ -39,7 +39,10 @@
     choice:null, guess:null, double:false, nickname:localStorage.getItem('mqs_name') || '',
     codeInput:new URLSearchParams(location.search).get('room')?.toUpperCase() || '',
     rounds:8, seconds:45, busy:false, error:'', toast:'',
-    unsubs:[], voteUnsub:null, watchedRound:null, firebase:null, autoRevealing:false
+    unsubs:[], voteUnsub:null, watchedRound:null, firebase:null, autoRevealing:false,
+    page:'home', bankMode:localStorage.getItem('mqs_bank_mode')||'mixed', managerTab:'custom',
+    customEditId:null, customDraft:null, geminiDirection:'trends', geminiCount:10, aiText:'',
+    aiPreview:[], aiPreviewSkipped:0, managerNotice:'', managerError:''
   };
   const CONFIGURED = Boolean(window.GAME_FIREBASE_CONFIG?.apiKey && window.GAME_FIREBASE_CONFIG?.projectId);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
@@ -68,12 +71,166 @@
   const notify = msg => {state.toast=msg;render();setTimeout(()=>{if(state.toast===msg){state.toast='';render();}},2900);};
   function shuffle(xs){let a=[...xs];for(let i=a.length-1;i>0;i--){let k=Math.floor(Math.random()*(i+1));[a[i],a[k]]=[a[k],a[i]];}return a;}
   function sampleQuestions(n){return shuffle(QUESTIONS.map((_,i)=>i)).slice(0,n);}
+  // ------ 三合一題庫：經典 28 題永久保留，新增題庫僅保存在主持人這台裝置 ------
+  const BANK_KEY='mqs_personal_bank_v2';
+  const BANK_LIMIT=100;
+  const DIRECTIONS={
+    trends:{name:'🔥 最近流行話題',desc:'台灣熱門話題、網路迷因、娛樂與生活流行'},
+    everyday:{name:'🤣 荒謬日常',desc:'上班、通勤、飲食、手機、睡眠與朋友聚會的無厘頭選擇'},
+    friends:{name:'💛 朋友默契',desc:'友誼、小組相處、習慣反差與相互理解的輕鬆題目'}
+  };
+  function loadBank(){
+    try{
+      const b=JSON.parse(localStorage.getItem(BANK_KEY)||'{}');
+      return {custom:Array.isArray(b.custom)?b.custom.slice(0,BANK_LIMIT):[],ai:Array.isArray(b.ai)?b.ai.slice(0,BANK_LIMIT):[]};
+    }catch{return {custom:[],ai:[]};}
+  }
+  let bank=loadBank();
+  function saveBank(){
+    try{localStorage.setItem(BANK_KEY,JSON.stringify(bank));}
+    catch{throw new Error('本機儲存空間不足，請先備份題庫並刪除不需要的題目。');}
+  }
+  function normalKey(q){return String(q||'').replace(/[\s\p{P}\p{S}]/gu,'').toLowerCase();}
+  function questionClean(raw){
+    if(!raw||typeof raw!=='object'||Array.isArray(raw))throw new Error('題目必須是包含 q、a、talk 的資料物件。');
+    const q=typeof raw.q==='string'?raw.q.trim():'';
+    const a=Array.isArray(raw.a)?raw.a.map(x=>typeof x==='string'?x.trim():''):[];
+    const talk=typeof raw.talk==='string'?raw.talk.trim():'';
+    if(!q||q.length>120)throw new Error('題目文字必須有內容且不超過 120 字。');
+    if(a.length!==4||a.some(x=>!x||x.length>100))throw new Error('每一題都要有 4 個不超過 100 字的答案。');
+    if(new Set(a.map(normalKey)).size!==4)throw new Error('同一題的 4 個答案不能重複。');
+    if(!talk||talk.length>160)throw new Error('請提供不超過 160 字的開獎後聊天引導 talk。');
+    return {q,a,talk};
+  }
+  function allExistingKeys(){return new Set([...QUESTIONS,...bank.custom,...bank.ai].map(x=>normalKey(x.q)));}
+  function selectedQuestions(){
+    const mode=state.bankMode;
+    const pool=mode==='classic'?QUESTIONS:mode==='custom'?bank.custom:mode==='ai'?bank.ai:[...QUESTIONS,...bank.custom,...bank.ai];
+    const keys=new Set();
+    return pool.filter(item=>{const key=normalKey(item.q);if(!key||keys.has(key))return false;keys.add(key);return true;});
+  }
+  function buildRoomQuestions(){
+    const pool=selectedQuestions();
+    if(pool.length<state.rounds){
+      throw new Error(`目前「${bankModeName()}」只有 ${pool.length} 題，少於設定的 ${state.rounds} 回合。請新增題目、減少回合數或改用混合題庫。`);
+    }
+    if(state.bankMode!=='mixed')return shuffle(pool).slice(0,state.rounds).map(x=>questionClean(x));
+    // 混合模式均衡選題，避免大量經典題把少量新題完全蓋掉。
+    const groups=shuffle([shuffle(QUESTIONS),shuffle(bank.custom),shuffle(bank.ai)].filter(xs=>xs.length));
+    const result=[],seen=new Set();
+    while(result.length<state.rounds && groups.some(xs=>xs.length)){
+      for(const group of groups){
+        while(group.length){
+          const candidate=group.shift(),key=normalKey(candidate.q);
+          if(seen.has(key))continue;
+          seen.add(key);result.push(questionClean(candidate));break;
+        }
+        if(result.length===state.rounds)break;
+      }
+    }
+    return shuffle(result);
+  }
+  function bankModeName(){return ({classic:'經典歷史題庫',custom:'主持人自訂題庫',ai:'Gemini 生成題庫',mixed:'三種題庫混合'})[state.bankMode]||'三種題庫混合';}
+  function geminiPrompt(){
+    const n=state.geminiCount,d=DIRECTIONS[state.geminiDirection];
+    return `你是台灣派對遊戲「默契失控局」的專業綜藝出題企劃。請為 10–20 位朋友準備 ${n} 題真正好笑、放鬆、能引發聊天的四選一破冰題目。\n\n出題方向：${d.name}，重點包含：${d.desc}。\n${state.geminiDirection==='trends'?'請先利用你可用的搜尋能力查找近期台灣流行話題與迷因，再改寫為不需要事先知道新聞背景也能回答的日常情境；如果無法查到近期資料，請明確避免假稱正在流行，改用一般生活幽默。':''}\n\n規則：\n1. 全部使用台灣繁體中文與自然口語，不要簡體字。\n2. 每題是一個輕鬆、有畫面感、沒有正確答案的假設情境，不考時事知識。\n3. 每題提供恰好四個不重複、都有人可能想選的爆笑答案；不要把某一選項做成唯一正確解答。\n4. 加上「開獎後能自願分享或聊天」的短引導，不強迫表演、不要求暴露隱私。\n5. 避免嘲笑個人外貌、身分、疾病、信仰或災難，避免政治對立與令人尷尬的私密話題。\n6. 題目 q 最多 120 字；每個選項最多 100 字；talk 最多 160 字。\n7. 避免重複創意、避免空泛選項，每題要有不同笑點。\n\n非常重要：只輸出可直接解析的 JSON 陣列，絕對不要加說明文字、不要使用 Markdown 代碼框。格式完全遵循：\n[\n  {"q":"如果你的鬧鐘突然變成人會說什麼？","a":["請你放過我","再睡五分鐘我就辭職","我已經響到懷疑人生","今天起你叫我老闆"],"talk":"聊聊你最爆笑的起床經驗。"}\n]\n\n請直接輸出 ${n} 題，不要輸出範例題的重複版本。`;
+  }
+  function parseAiQuestions(raw){
+    let text=String(raw||'').trim();
+    if(text.length>100000)throw new Error('一次匯入的文字太長，請每次最多生成 20 題。');
+    if(text.startsWith('```'))text=text.replace(/^```(?:json)?\s*/i,'').replace(/\s*```\s*$/,'').trim();
+    let data;
+    try{data=JSON.parse(text);}catch{throw new Error('無法解析 Gemini 回覆，請複製完整 JSON 陣列，包含最前面的 [ 與最後的 ]。');}
+    if(data&&typeof data==='object'&&!Array.isArray(data)&&Array.isArray(data.questions))data=data.questions;
+    if(!Array.isArray(data)||!data.length)throw new Error('請貼上至少一題的 JSON 陣列。');
+    if(data.length>30)throw new Error('每次最多匯入 30 題，請分批處理。');
+    const known=allExistingKeys(),valid=[];let skipped=0;
+    data.forEach((item,i)=>{
+      let q;try{q=questionClean(item);}catch(e){throw new Error(`第 ${i+1} 題：${e.message}`);}
+      const key=normalKey(q.q);
+      if(known.has(key)){skipped++;return;}
+      known.add(key);valid.push(q);
+    });
+    if(!valid.length)throw new Error('這批題目全部與現有題庫重複，沒有可新增的題目。');
+    return {items:valid,skipped};
+  }
+  function bankRows(items,type){
+    if(!items.length)return '<p class="fineprint">目前沒有題目。可以使用下方功能新增或匯入。</p>';
+    return `<div class="bank-list">${items.map((item,i)=>`<div class="bank-list-item"><div class="bank-list-info"><span class="bank-counter">第 ${i+1} 題</span><strong>${esc(item.q)}</strong><small>${item.a.map(x=>esc(x)).join(' ／ ')}</small></div><div class="bank-actions">${type==='custom'?`<button class="btn dark small-btn" data-action="edit-custom" data-index="${i}">編輯</button>`:''}${type!=='classic'?`<button class="btn dark small-btn" data-action="remove-bank" data-kind="${type}" data-index="${i}">刪除</button>`:''}</div></div>`).join('')}</div>`;
+  }
+  function renderManager(){
+    const tab=state.managerTab;
+    const menu=`<div class="bank-tabs"><button data-action="bank-tab" data-tab="custom" class="bank-tab ${tab==='custom'?'active':''}">✏️ 主持人自訂 <span>${bank.custom.length}</span></button><button data-action="bank-tab" data-tab="ai" class="bank-tab ${tab==='ai'?'active':''}">✨ Gemini 生成 <span>${bank.ai.length}</span></button><button data-action="bank-tab" data-tab="classic" class="bank-tab ${tab==='classic'?'active':''}">📚 經典歷史 <span>28</span></button></div>`;
+    let body='';
+    if(tab==='custom'){
+      const original=bank.custom.find(q=>q.id===state.customEditId);
+      const draft=state.customDraft||original||{};
+      body=`<div class="card"><h2 class="mini-heading">${original?'修改自訂題目':'自己編一題，讓朋友笑出來'}</h2><div class="field"><span>題目</span><textarea id="customQ" rows="2" maxlength="120" placeholder="如果小組要成立一個超怪部門，你會是什麼主管？">${esc(draft.q||'')}</textarea></div><div class="bank-answer-grid">${[0,1,2,3].map(i=>`<label class="field"><span>答案 ${'ABCD'[i]}</span><input id="customA${i}" maxlength="100" value="${esc(draft.a?.[i]||'')}" placeholder="輸入一個荒謬但好選的答案"></label>`).join('')}</div><label class="field space-top"><span>開獎後聊天引導</span><textarea id="customTalk" rows="2" maxlength="160" placeholder="例如：請大家自願分享，為什麼會選這一項？">${esc(draft.talk||'')}</textarea></label><div class="btn-row space-top"><button class="btn secondary" data-action="save-custom">${original?'💾 儲存修改':'➕ 加入自訂題庫'}</button>${original?'<button class="btn tertiary" data-action="cancel-edit">取消編輯</button>':''}</div></div><section class="card section-gap"><h2 class="mini-heading">我的自訂題目（${bank.custom.length} 題）</h2>${bankRows(bank.custom,'custom')}</section>`;
+    }else if(tab==='ai'){
+      body=`<div class="card"><h2 class="mini-heading">三步驟，請 Gemini 幫你出題</h2><p class="fineprint">不需 API、不需額外帳號串接。主持人使用自己的 Gemini 網頁，把生成的結果複製回這裡即可。</p><div class="field"><span>① 選擇出題方向</span><div class="direction-options">${Object.entries(DIRECTIONS).map(([k,v])=>`<label class="direction-item ${state.geminiDirection===k?'picked':''}"><input type="radio" name="geminiDirection" value="${k}" ${state.geminiDirection===k?'checked':''}><span><strong>${v.name}</strong><small>${v.desc}</small></span></label>`).join('')}</div></div><label class="field space-top"><span>要產生幾題？</span><select name="geminiCount"><option value="5" ${state.geminiCount===5?'selected':''}>5 題</option><option value="10" ${state.geminiCount===10?'selected':''}>10 題（推薦）</option><option value="20" ${state.geminiCount===20?'selected':''}>20 題</option></select></label><div class="btn-row space-top"><button class="btn secondary" data-action="copy-prompt">📋 ② 複製出題指令</button><a class="btn dark" href="https://gemini.google.com/app" target="_blank" rel="noopener noreferrer">↗ 開啟 Gemini 網頁</a></div><p class="fineprint">到 Gemini 貼上指令、送出，再複製生成的整段 JSON。這裡不會自動讀取你的 Gemini 對話。</p><details class="prompt-details"><summary>查看這次要給 Gemini 的指令</summary><pre>${esc(geminiPrompt())}</pre></details><div class="divider"></div><label class="field"><span>③ 把 Gemini 產生的 JSON 貼在下方</span><textarea id="aiJson" name="aiJson" rows="8" placeholder='貼入 Gemini 回傳的 JSON，例如：[{"q":"...","a":["...","...","...","..."],"talk":"..."}]'>${esc(state.aiText)}</textarea></label><button class="btn full space-top" data-action="preview-ai">🔎 檢查題目與預覽</button>${state.aiPreview.length?`<div class="preview-panel"><div class="chip mint">✓ ${state.aiPreview.length} 題通過格式檢查${state.aiPreviewSkipped?'，另跳過 '+state.aiPreviewSkipped+' 題重複內容':''}</div>${state.aiPreview.map((q,i)=>`<div class="preview-item"><b>${i+1}. ${esc(q.q)}</b><small>${q.a.map((x,j)=>'ABCD'[j]+' '+esc(x)).join('　·　')}</small><small>🎤 ${esc(q.talk)}</small></div>`).join('')}<button class="btn secondary full space-top" data-action="confirm-ai">✅ 確認加入 Gemini 題庫</button></div>`:''}</div><section class="card section-gap"><h2 class="mini-heading">已收藏的 Gemini 題目（${bank.ai.length} 題）</h2>${bankRows(bank.ai,'ai')}</section>`;
+    }else{
+      body=`<div class="card"><h2 class="mini-heading">經典 28 題，永久保留</h2><p class="fineprint">這是原始版本的幽默題庫，不會被 Gemini 匯入或主持人編輯覆蓋。已開局的題目也不會中途變動。</p>${bankRows(QUESTIONS,'classic')}</div>`;
+    }
+    return surface(`<div class="manager-heading"><button class="btn tertiary small-btn" data-action="manager-back">← 返回建立房間</button><div class="eyebrow">主持人專用工作區（本機題庫）</div><h1 class="page-title">🎲 題庫管理中心</h1><p class="subhead">自訂、Gemini、經典三種題庫自由搭配。<br>新題目保存在<span class="accent-text">這台裝置的瀏覽器</span>，不會直接修改 GitHub 原始檔。</p></div>${state.managerError?`<div class="notice" role="alert">${esc(state.managerError)}</div>`:''}${state.managerNotice?`<div class="chip mint manager-notice">✓ ${esc(state.managerNotice)}</div>`:''}${menu}${body}<div class="card soft section-gap"><h2 class="mini-heading">💾 備份與換裝置</h2><p class="fineprint">自訂／AI 題庫僅儲存在本機瀏覽器。清除瀏覽資料或換手機可能遺失，建議定期下載備份。還原時會自動略過重複題目。</p><div class="btn-row"><button class="btn dark" data-action="export-bank">⬇ 下載題庫備份</button><label class="btn tertiary file-restore">⬆ 匯入備份檔<input type="file" id="restoreBank" accept=".json,application/json" hidden></label></div></div>`);
+  }
+  function collectCustomForm(){
+    return questionClean({q:document.getElementById('customQ')?.value,a:[0,1,2,3].map(i=>document.getElementById(`customA${i}`)?.value),talk:document.getElementById('customTalk')?.value});
+  }
+  function saveCustom(){
+    const q=collectCustomForm();
+    const own=bank.custom.find(x=>x.id===state.customEditId);
+    const duplicate=[...QUESTIONS,...bank.custom.filter(x=>x.id!==state.customEditId),...bank.ai].some(x=>normalKey(x.q)===normalKey(q.q));
+    if(duplicate)throw new Error('這道題目已存在，請調整題目名稱以免重複。');
+    if(own)Object.assign(own,q);
+    else{
+      if(bank.custom.length>=BANK_LIMIT)throw new Error(`自訂題庫最多保留 ${BANK_LIMIT} 題，請先備份並整理舊題。`);
+      bank.custom.unshift({...q,id:'c'+Date.now()+Math.random().toString(36).slice(2,7)});
+    }
+    saveBank();state.customEditId=null;state.customDraft=null;state.managerError='';state.managerNotice=own?'題目已更新。':'新題已加入自訂題庫。';
+  }
+  function previewAi(){const result=parseAiQuestions(state.aiText);state.aiPreview=result.items;state.aiPreviewSkipped=result.skipped;state.managerError='';state.managerNotice=`格式檢查完成，共 ${result.items.length} 題可以匯入。`;}
+  function confirmAi(){
+    if(!state.aiPreview.length)throw new Error('請先按「檢查題目與預覽」。');
+    if(bank.ai.length+state.aiPreview.length>BANK_LIMIT)throw new Error(`Gemini 題庫最多保留 ${BANK_LIMIT} 題，請先備份並整理舊題。`);
+    const found=allExistingKeys(),items=state.aiPreview.filter(q=>!found.has(normalKey(q.q))).map(q=>({...q,id:'g'+Date.now()+Math.random().toString(36).slice(2,8)}));
+    if(!items.length)throw new Error('這些題目已經匯入過，沒有新的題目。');
+    bank.ai.unshift(...items);saveBank();state.aiPreview=[];state.aiText='';state.managerNotice=`已收藏 ${items.length} 道 Gemini 題目，可回首頁選擇使用。`;state.managerError='';
+  }
+  async function copyGeminiPrompt(){
+    const prompt=geminiPrompt();
+    if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(prompt);state.managerNotice='出題指令已複製！現在開啟 Gemini，貼上並送出。';}
+    else{window.prompt('請複製下面的指令，貼到 Gemini：',prompt);state.managerNotice='請將指令貼到 Gemini。';}
+  }
+  function exportBank(){
+    const data=JSON.stringify({version:2,app:'默契失控局',exportedAt:new Date().toISOString(),custom:bank.custom,ai:bank.ai},null,2);
+    const u=URL.createObjectURL(new Blob([data],{type:'application/json;charset=utf-8'}));
+    const a=document.createElement('a');a.href=u;a.download='默契失控局_我的題庫備份.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),2500);
+    state.managerNotice='備份檔已下載，請自行妥善保存。';
+  }
+  async function restoreBank(file){
+    if(!file||file.size>250000)throw new Error('請選擇不超過 250 KB 的 JSON 題庫備份檔。');
+    let data;
+    try{data=JSON.parse(await file.text());}catch{throw new Error('無法讀取備份檔，請確認它是 JSON 格式。');}
+    if(!data||data.app!=='默契失控局'||!Array.isArray(data.custom)||!Array.isArray(data.ai))throw new Error('這不是《默契失控局》的題庫備份檔。');
+    const known=allExistingKeys(),valid={custom:[],ai:[]};
+    for(const type of ['custom','ai']){
+      if(data[type].length>150)throw new Error('備份題目過多，請整理後再匯入。');
+      for(let i=0;i<data[type].length;i++){
+        let q;try{q=questionClean(data[type][i]);}catch(e){throw new Error(`備份檔「${type}」第 ${i+1} 題：${e.message}`);}
+        const key=normalKey(q.q);if(known.has(key))continue;
+        known.add(key);valid[type].push({...q,id:type[0]+Date.now()+Math.random().toString(36).slice(2,9)});
+      }
+    }
+    for(const type of ['custom','ai'])if(bank[type].length+valid[type].length>BANK_LIMIT)throw new Error(`「${type==='custom'?'自訂':'Gemini'}」題庫超過 ${BANK_LIMIT} 題，請先整理舊題再還原。`);
+    bank.custom.push(...valid.custom);bank.ai.push(...valid.ai);saveBank();
+    state.managerError='';state.managerNotice=`已還原 ${valid.custom.length} 道自訂題、${valid.ai.length} 道 Gemini 題（重複題目已跳過）。`;
+  }
   function randomCode(){const s='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';return Array.from({length:6},()=>s[Math.floor(Math.random()*s.length)]).join('');}
   function emojiFor(uid){let v=0;for(const ch of uid)v+=ch.charCodeAt(0);return EMOJIS[v % EMOJIS.length];}
   function inviteUrl(){let u = new URL(location.href);u.searchParams.set('room',state.roomCode);u.hash='';return u.toString();}
   const me=()=>state.players.find(p=>p.uid===state.uid);
   const isHost=()=>!!state.room && state.room.hostUid===state.uid;
-  const question=()=>state.room && state.room.roundIndex>=0 ? QUESTIONS[state.room.questionIds[state.room.roundIndex]]:null;
+  const question=()=>state.room && state.room.roundIndex>=0 ? (state.room.questions?.[state.room.roundIndex] || QUESTIONS[state.room.questionIds?.[state.room.roundIndex]]):null;
   const myVote=()=>state.votes.find(v=>v.uid===state.uid && v.roundIndex===state.room?.roundIndex);
   function scoresSorted(){let scores=state.room?.scores||{};return [...state.players].sort((a,b)=>(scores[b.uid]||0)-(scores[a.uid]||0) || a.joinedAt-b.joinedAt);}
   function myRank(){const sorted=scoresSorted();return sorted.findIndex(p=>p.uid===state.uid)+1;}
@@ -85,6 +242,7 @@
       <section class="grid-hero"><div><div class="eyebrow">最鬧默契大挑戰</div><h1 class="hero-title">默契<span>失控局！</span></h1><p class="subhead">你以為大家跟你一樣？<br><b>選荒謬答案、猜全場多數、搶排行榜！</b><br>比的不是知識，是你有多懂這群人。</p></div><div class="hero-graphic"><div class="splat"></div><div class="hero-face shine">🤪</div><i class="star a">✳</i><i class="star b">✦</i></div></section>
       <section class="card section-gap"><h2 class="mini-heading">🎮 立即開一局</h2><label class="field"><span>你的遊戲暱稱</span><input id="nick" name="nickname" maxlength="14" autocomplete="nickname" placeholder="例如：火鍋教主" value="${esc(state.nickname)}"></label>
         <div class="form-grid space-top"><label class="field"><span>遊戲回合</span><select id="rounds" name="rounds"><option value="6" ${state.rounds===6?'selected':''}>6 回合｜快速暖場</option><option value="8" ${state.rounds===8?'selected':''}>8 回合｜推薦</option><option value="10" ${state.rounds===10?'selected':''}>10 回合｜歡樂加倍</option><option value="12" ${state.rounds===12?'selected':''}>12 回合｜完整挑戰</option></select></label><label class="field"><span>每回合作答時間</span><select id="seconds" name="seconds"><option value="30" ${state.seconds===30?'selected':''}>30 秒</option><option value="45" ${state.seconds===45?'selected':''}>45 秒（推薦）</option><option value="60" ${state.seconds===60?'selected':''}>60 秒</option></select></label></div>
+        <div class="bank-picker space-top"><div class="split"><h2 class="mini-heading tight">🗃️ 這次要使用哪一套題庫？</h2><button class="btn dark small-btn" data-action="manage">⚙️ 管理題庫</button></div><label class="field space-top"><span>出題來源</span><select id="bankMode" name="bankMode"><option value="mixed" ${state.bankMode==='mixed'?'selected':''}>🎲 三種混合｜各種笑點一起來</option><option value="classic" ${state.bankMode==='classic'?'selected':''}>📚 經典歷史｜原始 28 題</option><option value="custom" ${state.bankMode==='custom'?'selected':''}>✏️ 主持人自訂｜${bank.custom.length} 題</option><option value="ai" ${state.bankMode==='ai'?'selected':''}>✨ Gemini 生成｜${bank.ai.length} 題</option></select></label><p class="fineprint">目前「${bankModeName()}」共 ${selectedQuestions().length} 題可抽選；新題目要先到「管理題庫」加入。開局後題目會固定，不會被其他人修改。</p></div>
         <div class="btn-row space-top"><button class="btn full" data-action="host">🚀 建立多人房間</button><button class="btn tertiary full" data-action="demo">🎭 先玩示範局</button></div>
         <div class="divider"></div><h2 class="mini-heading">📲 已有房間？輸入代碼加入</h2><div class="form-grid"><label class="field"><span>6 碼房間代碼</span><input id="codeInput" name="codeInput" maxlength="6" inputmode="text" autocapitalize="characters" placeholder="例如：AB3P8K" value="${esc(state.codeInput)}"></label><div style="align-self:end"><button class="btn secondary full" data-action="join">加入朋友的局 →</button></div></div>
         ${!CONFIGURED?`<p class="fineprint">⚙️ 目前未設定 Firebase：<b>示範局可以直接玩</b>；跨手機即時連線請先依操作說明設定 Firebase 專案，再放上 GitHub Pages。</p>`:`<p class="fineprint">🟢 多人連線已啟用！主持人建立房間後，分享房間代碼或網址即可加入。</p>`}
@@ -139,7 +297,7 @@
     `, `<span class="status-tag">${state.room.totalRounds} 回合已完成</span>`);
   }
   function render(){
-    if(!state.mode || !state.room) {$app.innerHTML=renderHome();return;}
+    if(!state.mode || !state.room) {$app.innerHTML=state.page==='manager'?renderManager():renderHome();return;}
     if(state.room.phase==='lobby') $app.innerHTML=renderLobby();
     else if(state.room.phase==='voting') $app.innerHTML=renderVote();
     else if(state.room.phase==='reveal') $app.innerHTML=renderReveal();
@@ -174,14 +332,15 @@
   }
   function beginDemo(){
     const name=validateName();if(!name)return;
+    const preparedQuestions=buildRoomQuestions();
     clearListeners();state.mode='demo';state.uid='demo-me';state.roomCode='DEMO88';
     state.players=[{uid:state.uid,name,emoji:'😎',joinedAt:0},...BOT_NAMES.map((name,i)=>({uid:'bot'+i,name,emoji:EMOJIS[i],joinedAt:i+1}))];
-    state.room={hostUid:state.uid,phase:'lobby',roundIndex:-1,totalRounds:state.rounds,seconds:state.seconds,questionIds:sampleQuestions(state.rounds),scores:{},streaks:{},usedDoubles:{},lastResult:null,deadline:null};
+    state.room={hostUid:state.uid,phase:'lobby',roundIndex:-1,totalRounds:state.rounds,seconds:state.seconds,questions:preparedQuestions,scores:{},streaks:{},usedDoubles:{},lastResult:null,deadline:null};
     state.votes=[];state.choice=null;state.guess=null;state.double=false;history.replaceState(null,'',location.pathname);render();
   }
   function validateName(){const s=state.nickname.trim().slice(0,14);if(!s){state.error='先填入暱稱，這樣排行榜才知道誰是誰。';render();return null;}state.nickname=s;localStorage.setItem('mqs_name',s);state.error='';return s;}
   function clearListeners(){for(const f of state.unsubs){try{f();}catch{}}state.unsubs=[];if(state.voteUnsub){state.voteUnsub();state.voteUnsub=null;}state.watchedRound=null;}
-  function leave(){clearListeners();state.room=null;state.mode=null;state.roomCode='';state.votes=[];state.players=[];state.choice=null;state.guess=null;state.double=false;state.error='';history.replaceState(null,'',location.pathname);render();}
+  function leave(){clearListeners();state.page='home';state.room=null;state.mode=null;state.roomCode='';state.votes=[];state.players=[];state.choice=null;state.guess=null;state.double=false;state.error='';history.replaceState(null,'',location.pathname);render();}
   // ------ Firebase Web SDK：延後載入，離線示範模式不必連任何服務 ------
   async function getFirebase(){
     if(state.firebase)return state.firebase;
@@ -201,11 +360,12 @@
   const votesCollection=code=>state.firebase.dbLib.collection(state.firebase.db,'rooms',code,'votes');
   async function createOnline(){
     const name=validateName();if(!name)return;
+    const preparedQuestions=buildRoomQuestions();
     const f=await getFirebase(),L=f.dbLib;
     let code='';
     for(let i=0;i<6;i++){const candidate=randomCode();const snap=await L.getDoc(roomRef(candidate));if(!snap.exists()){code=candidate;break;}}
     if(!code)throw new Error('房間代碼產生失敗，請再試一次。');
-    const data={hostUid:state.uid,phase:'lobby',roundIndex:-1,totalRounds:state.rounds,seconds:state.seconds,questionIds:sampleQuestions(state.rounds),scores:{},streaks:{},usedDoubles:{},lastResult:null,deadline:null,createdAt:Date.now()};
+    const data={hostUid:state.uid,phase:'lobby',roundIndex:-1,totalRounds:state.rounds,seconds:state.seconds,questions:preparedQuestions,scores:{},streaks:{},usedDoubles:{},lastResult:null,deadline:null,createdAt:Date.now()};
     await L.setDoc(roomRef(code),data);
     await L.setDoc(playerRef(code,state.uid),{uid:state.uid,name,emoji:emojiFor(state.uid),joinedAt:Date.now()});
     state.mode='online';state.roomCode=code;state.room=data;state.player=state.uid;history.replaceState(null,'',`?room=${code}`);
@@ -314,11 +474,17 @@
   document.addEventListener('input',e=>{
     if(e.target.name==='nickname'){state.nickname=e.target.value;localStorage.setItem('mqs_name',state.nickname);}
     if(e.target.name==='codeInput')state.codeInput=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);
+    if(e.target.name==='aiJson'){state.aiText=e.target.value;state.aiPreview=[];}
+    if(['customQ','customTalk','customA0','customA1','customA2','customA3'].includes(e.target.id)){state.customDraft={q:document.getElementById('customQ')?.value||'',a:[0,1,2,3].map(i=>document.getElementById(`customA${i}`)?.value||''),talk:document.getElementById('customTalk')?.value||''};}
   });
   document.addEventListener('change',e=>{
     if(e.target.name==='rounds')state.rounds=Number(e.target.value);
     if(e.target.name==='seconds')state.seconds=Number(e.target.value);
     if(e.target.id==='double')state.double=e.target.checked;
+    if(e.target.name==='bankMode'){state.bankMode=e.target.value;localStorage.setItem('mqs_bank_mode',state.bankMode);render();}
+    if(e.target.name==='geminiDirection'){state.geminiDirection=e.target.value;state.aiPreview=[];render();}
+    if(e.target.name==='geminiCount'){state.geminiCount=Number(e.target.value);state.aiPreview=[];render();}
+    if(e.target.id==='restoreBank'&&e.target.files?.length){restoreBank(e.target.files[0]).catch(err=>{state.managerError=err.message;}).finally(()=>render());}
   });
   document.addEventListener('click',async e=>{
     const c=e.target.closest('[data-choice]'),g=e.target.closest('[data-guess]');
@@ -327,6 +493,20 @@
     const b=e.target.closest('[data-action]');if(!b||state.busy)return;
     const action=b.dataset.action;
     if(action==='leave'){leave();return;}
+    if(action==='manage'){state.page='manager';state.managerError='';state.managerNotice='';render();window.scrollTo(0,0);return;}
+    if(action==='manager-back'){state.page='home';state.customEditId=null;state.customDraft=null;render();window.scrollTo(0,0);return;}
+    if(action==='bank-tab'){state.managerTab=b.dataset.tab;state.managerError='';state.managerNotice='';state.customEditId=null;state.customDraft=null;render();return;}
+    if(action==='cancel-edit'){state.customEditId=null;state.customDraft=null;render();return;}
+    if(action==='edit-custom'){state.managerTab='custom';state.customEditId=bank.custom[Number(b.dataset.index)]?.id||null;state.customDraft=null;state.managerNotice='';render();window.scrollTo(0,0);return;}
+    if(action==='remove-bank'){
+      const kind=b.dataset.kind,index=Number(b.dataset.index);
+      if(!['custom','ai'].includes(kind)||!bank[kind][index])return;
+      if(!window.confirm('確定刪除這道題目嗎？建議先備份重要題庫。'))return;
+      bank[kind].splice(index,1);state.customEditId=null;state.aiPreview=[];
+      try{saveBank();state.managerError='';state.managerNotice='題目已刪除。';}catch(err){state.managerError=err.message;}
+      render();return;
+    }
+
     state.busy=true;state.error='';b.disabled=true;
     try{
       if(action==='demo')beginDemo();
@@ -336,11 +516,16 @@
       if(action==='submit')await submitVote();
       if(action==='reveal')await revealRound();
       if(action==='copy')await copyInvite();
-    }catch(err){state.error=friendlyError(err);}
+      if(action==='save-custom')saveCustom();
+      if(action==='copy-prompt')await copyGeminiPrompt();
+      if(action==='preview-ai')previewAi();
+      if(action==='confirm-ai')confirmAi();
+      if(action==='export-bank')exportBank();
+    }catch(err){if(state.page==='manager'){state.managerError=err.message||friendlyError(err);state.managerNotice='';}else state.error=friendlyError(err);}
     finally{state.busy=false;render();}
   });
   window.addEventListener('unhandledrejection',e=>{console.error('Unhandled game error:',e.reason);});
   window.setInterval(currentTimeTick,1000);
-  window.__GAME_TEST__={QUESTIONS,evaluateRound,sampleQuestions};
+  window.__GAME_TEST__={QUESTIONS,evaluateRound,sampleQuestions,questionClean,parseAiQuestions,buildRoomQuestions,getBank:()=>bank,getRoom:()=>state.room};
   render();
 })();
