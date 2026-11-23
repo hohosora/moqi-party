@@ -49,3 +49,8 @@
   .bank-answer-grid{grid-template-columns:1fr}.bank-list-item{gap:8px}.bank-actions .btn{font-size:11px}
   .manager-heading .page-title{font-size:32px}
 }
+
+/* 遊戲題數 ↔ Gemini 生成題數連動提示 */
+.gemini-count-hint{padding:11px 13px;margin:8px 0 10px;border:1px solid rgba(118,239,219,.34);background:rgba(118,239,219,.08);border-radius:12px;color:var(--text);font-size:13px;line-height:1.7}
+.gemini-count-hint strong{color:var(--mint)}
+.gemini-home-hint{margin:14px 0 0}
