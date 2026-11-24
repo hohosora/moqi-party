@@ -3999,3 +3999,42 @@ html[data-theme="panel"][data-game-screen="finished"] .info-box{
 @media(max-width:370px){
   .simple-home-hero .hero-graphic .emoji-face{font-size:84px}
 }
+
+/* v17｜經典像素風：修正原生 select 下拉清單黑底／黑字看不清。
+   僅限 party 主題；原生表單保持觸控、鍵盤及系統選取行為。 */
+html[data-theme="party"] select,
+html[data-theme="party"] .field select{
+  color-scheme:light;
+  appearance:auto;
+  -webkit-appearance:menulist;
+  background-color:#fffdf6;
+  background-image:none;
+  color:#101015;
+  -webkit-text-fill-color:#101015;
+  border:2px solid #0a0810;
+  border-radius:0;
+  font-size:17px;
+  font-weight:800;
+  opacity:1;
+}
+html[data-theme="party"] select option,
+html[data-theme="party"] select optgroup{
+  color-scheme:light;
+  background-color:#fffdf6;
+  color:#101015;
+  -webkit-text-fill-color:#101015;
+  font-size:17px;
+  font-weight:700;
+}
+html[data-theme="party"] select option:checked{
+  background-color:#ecff00;
+  color:#080810;
+  -webkit-text-fill-color:#080810;
+}
+html[data-theme="party"] select:focus-visible{
+  outline:3px solid #ecff00;
+  outline-offset:3px;
+}
+html[data-theme="party"] select:disabled{
+  opacity:.65;
+}
