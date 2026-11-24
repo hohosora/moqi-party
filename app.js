@@ -48,7 +48,7 @@
     minimalHue:normalizeMinimalHue(localStorage.getItem('mqs_minimal_hue_v1'))
   };
   // 只切換視覺樣式，不改答題流程。舊房間或未知主題沿用既有 party 代碼，外觀顯示為經典像素風。
-  const THEME_NAMES={party:'經典像素風',panel:'3D 療癒風',minimal:'極簡設計風'};
+  const THEME_NAMES={party:'經典像素風',panel:'復古機械風',minimal:'極簡設計風'};
   function normalizeTheme(value){return value==='panel'||value==='minimal'?value:'party';}
   function activeTheme(){return state.room?normalizeTheme(state.room.theme):state.themeChoice;}
   // 色相統一限制在 0–359，不讓未驗證的房間資料進入 CSS。
@@ -71,7 +71,7 @@
     const selected=inRoom?normalizeTheme(state.room?.theme):state.themeChoice;
     const themes=[
       {id:'party',name:'經典像素風',detail:'電玩紫黃・像素街機'},
-      {id:'panel',name:'3D 療癒風',detail:'奶油白・鼠尾草綠・柔軟立體'},
+      {id:'panel',name:'復古機械風',detail:'橘黑電路・控制模組・復古按鍵'},
       {id:'minimal',name:'極簡設計風',detail:'全版主色・柔霧浮雕'}
     ];
     return `<section class="theme-setting space-top" aria-label="選擇遊戲介面風格">
@@ -483,7 +483,7 @@
     document.documentElement.setAttribute('data-game-screen',state.room?.phase||state.page||'home');
     document.documentElement.style.setProperty('--m-hue',String(activeMinimalHue()));
     const metaThemeColor=document.querySelector('meta[name="theme-color"]');
-    if(metaThemeColor)metaThemeColor.setAttribute('content',activeTheme()==='panel'?'#4c6568':'#121028');
+    if(metaThemeColor)metaThemeColor.setAttribute('content',activeTheme()==='panel'?'#f76a12':'#121028');
     if(!state.mode || !state.room) {$app.innerHTML=state.page==='manager'?renderManager():state.page==='host'?renderHost():state.page==='join'?renderJoin():renderHome();return;}
     // 每次新題啟動時，先顯示題目，不沿用上一題或等候室留在頁面底部的位置。
     // 以「房間＋題號」辨識，只捲動一次；同一題收到其他玩家的票數時不干擾目前閱讀位置。
