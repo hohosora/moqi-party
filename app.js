@@ -450,6 +450,22 @@
   function hasDouble(){return !state.room?.usedDoubles?.[state.uid];}
   function surface(content, right=''){return `<main class="container"><div class="topbar"><button type="button" class="brand brand-home" data-action="brand-home" aria-label="默契失控局，點擊回首頁" title="回首頁"><span class="brand-mark" aria-hidden="true"><span>✦</span></span><span class="brand-title">默契失控局</span></button></div>${right ? `<div class="header-room-status">${right}</div>` : ''}<div class="retro-pcb-backplane" aria-hidden="true"><i class="retro-pcb-channel left"></i><i class="retro-pcb-channel right"></i><i class="retro-pcb-chip upper"></i><i class="retro-pcb-chip lower"></i></div><div class="retro-circuit-deck" aria-hidden="true"><span class="retro-deck-switches"><i></i><i></i><i></i></span><span class="retro-deck-pipes"><i></i><i></i><i></i><i></i></span><span class="retro-deck-chip"><b></b><i></i><i></i><i></i></span><span class="retro-deck-leds"><i></i><i></i><i></i></span></div>${state.room && safeHero(state.room.heroImage)?`<div class="room-look ${state.room.phase==='lobby'?'lobby-look':''}"><img class="room-look-image" src="${esc(state.room.heroImage)}" alt="本場活動主視覺"><span>🎉 本場活動主視覺</span></div>`:''}${state.error?`<div class="notice" role="alert">${esc(state.error)}</div>`:''}${state.toast?`<div class="chip mint" style="margin-bottom:12px">✓ ${esc(state.toast)}</div>`:''}${content}<div class="footer">適合 10–20 人 ✦ 有笑點的社交，不是尷尬的面試<br>先笑出來，再慢慢認識彼此 ✨</div></main>`;}
   // 首頁只做角色分流；進階設定全部放進主持人頁面。
+  // 玩家只從「猜大家」得分：最熱門 +100、非零最冷門 +40；選自己不計分。
+  function scoringRules(){
+    return `<div class="scoring-rules" aria-label="遊戲計分方式">
+      <div class="scoring-rule-grid"><div class="scoring-rule-item"><strong>🔥 最多票</strong><b>+100 分</b></div><div class="scoring-rule-item"><strong>🧊 最少票</strong><b>+40 分</b></div><div class="scoring-rule-item"><strong>➖ 其他</strong><b>+0 分</b></div></div>
+      <p class="scoring-rule-note">只有「猜大家」計分；「選自己」只用來統計票數，可以放心選真心話。</p>
+      <details class="scoring-rule-details"><summary>平手、連勝、雙倍王牌怎麼算？</summary>
+        <ul>
+          <li><b>平手：</b>並列最多票都算 +100；並列最少票都算 +40。若全部有票選項票數一樣，只算最多票。</li>
+          <li><b>零票不算冷門：</b>冷門必須至少 1 票，而且票數低於最多票。只猜得到零票選項不加分。</li>
+          <li><b>連勝：</b>連續猜中熱門或冷門都能累積；第 2 次 +20、第 3 次 +40、第 4 次起 +60。猜錯重算。</li>
+          <li><b>雙倍王牌：</b>每人每場 1 次，猜中熱門 200 分、猜中冷門 80 分；只加倍猜中分數，不加倍連勝。猜錯也會消耗。</li>
+          <li><b>選自己／猜大家相同：</b>完全可以，無特殊加減分。</li>
+        </ul>
+      </details>
+    </div>`;
+  }
   function renderHome(){
     return surface(`
       <section class="grid-hero simple-home-hero"><div><div class="eyebrow">一起笑，才是真的有默契</div><h1 class="hero-title">默契<span>失控局！</span></h1><p class="subhead">選自己的答案，猜大家會怎麼選。<br><b>用笑點開場，用故事認識彼此。</b></p></div><div class="hero-graphic ${safeHero(state.heroImage)?'has-photo':''}"><div class="splat"></div>${heroVisual(state.heroImage)}${safeHero(state.heroImage)?'<i class="star a">✳</i>':''}<i class="star b">✦</i></div></section>
@@ -458,7 +474,7 @@
         <button class="role-choice role-host" data-action="open-host"><span class="role-icon">🎤</span><span><strong>我是主持人</strong><small>選題目、設時間，開一場新的局</small></span><span class="role-arrow" aria-hidden="true">→</span></button>
       </section>
       <p class="landing-note">不用下載 App｜適合 10–20 人一起玩｜繁體中文</p>
-      <details class="how-to-play"><summary>第一次玩？30 秒看懂玩法</summary><ol><li>選出你自己的答案。</li><li>猜全場最多人選哪個。</li><li>🃏 每人每場有一次「雙倍王牌」：在「猜大家」時勾選，猜中多數可得 200 分（原本 100 分）；猜錯也會用掉，其他加分不加倍。</li><li>開獎後分享最意外的發現，累積分數拚排行榜。</li></ol></details>
+      <details class="how-to-play"><summary>第一次玩？30 秒看懂玩法與計分</summary><ol><li><b>選自己：</b>選你真正想選的答案，這一步不直接得分。</li><li><b>猜大家：</b>選一個你預測會是「最多票」或「最少票」的答案。</li><li><b>確認送出：</b>完成兩步並送出答案，等全場開獎。</li><li><b>開獎聊聊：</b>看看誰最懂大家，分享最意外的選擇！</li></ol>${scoringRules()}</details>
     `);
   }
   function renderJoin(){
@@ -478,7 +494,7 @@
         <p class="fineprint">${CONFIGURED?'🟢 已填入 Firebase 連線設定；多人功能仍需 Firestore 權限正常。':'⚠️ 尚未設定 Firebase；目前僅可玩示範局。'}</p>
       </section>
       <details class="host-extra section-gap"><summary>進階設定：更換活動主視覺照片</summary>${heroControls(false)}</details>
-      <details class="how-to-play"><summary>查看得分規則</summary><p>猜中全場多數 +100 分，連勝有加分；冷門答案也可能加分。每人有一次猜中分數 ×2 的王牌。最後公布完整排行榜。</p><p>Gemini 的生成題數會跟著首頁選擇的遊戲題數，也能在題庫管理多準備幾題。</p></details>
+      <details class="how-to-play"><summary>📘 查看本場計分規則</summary>${scoringRules()}<p class="fineprint">Gemini 的生成題數會跟著首頁選擇的遊戲題數，也能在題庫管理多準備幾題。</p></details>
     `);
   }
   function playerPills(){return state.players.map(p=>`<div class="avatar-pill"><span class="avatar-circle">${esc(p.emoji||emojiFor(p.uid))}</span>${esc(p.name)}${p.uid===state.room?.hostUid?'<span class="host-badge">房主</span>':''}${p.uid===state.uid?'<span class="host-badge">你</span>':''}</div>`).join('');}
@@ -493,24 +509,25 @@
     const step=state.choice===null?'choice':state.voteStep;
     const locked=Boolean(v)||state.voteSubmitState==='sent'||state.voteSubmitState==='sending';
     const confirmedVote=v||((state.voteSubmitState==='sent'||state.voteSubmitState==='sending')?{choice:state.choice,guess:state.guess}:null);
-    const waiting=locked?`<section class="card section-gap submitted"><div class="icon">📨</div><strong>${state.voteSubmitState==='sending'&&!v?'⏳ 正在送出答案，請保持網頁開啟…':'✅ 答案已成功送達，等大家一起開獎！'}</strong><p class="muted">你選：${esc(q.a[confirmedVote.choice])}<br>你猜多數：${esc(q.a[confirmedVote.guess])}</p><span class="chip mint">✓ 答案已鎖定</span></section>`:'';
+    const waiting=locked?`<section class="card section-gap submitted"><div class="icon">📨</div><strong>${state.voteSubmitState==='sending'&&!v?'⏳ 正在送出答案，請保持網頁開啟…':'✅ 答案已成功送達，等大家一起開獎！'}</strong><p class="muted">你選：${esc(q.a[confirmedVote.choice])}<br>你猜大家：${esc(q.a[confirmedVote.guess])}</p><span class="chip mint">✓ 答案已鎖定</span></section>`:'';
     let task='';
     if(!locked&&step==='choice'){
-      task=`<section class="vote-area one-step vote-step-choice"><div class="answer-stepper" aria-label="第一步：選自己的答案"><span class="current" aria-current="step">① 選自己</span><span>② 猜大家</span></div><h2 class="vote-label">如果是你，你會選哪一個？</h2><p class="vote-tip">點一下答案，就會進入下一步。</p>${choiceButtons('choice',state.choice,q)}</section>`;
+      task=`<section class="vote-area one-step vote-step-choice"><div class="answer-stepper" aria-label="第一步：選自己的答案"><span class="current" aria-current="step">① 選自己</span><span>② 猜大家</span></div><h2 class="vote-label">如果是你，你會選哪一個？</h2><p class="vote-tip">選自己不直接得分，放心選你真正喜歡的答案。點一下進入下一步。</p>${choiceButtons('choice',state.choice,q)}</section>`;
     }else if(!locked){
-      task=`<section class="vote-area one-step vote-step-guess"><div class="answer-stepper" aria-label="第二步：猜大家的答案"><span class="done">✓ 已選自己</span><span class="current" aria-current="step">② 猜大家</span></div><div class="self-selection"><span><small>你選的是</small><strong>${esc(q.a[state.choice])}</strong></span><button class="btn dark small-btn" data-action="edit-choice">修改</button></div><h2 class="vote-label">你猜大家最多人會選哪個？</h2>${choiceButtons('guess',state.guess,q)}<label class="powerup compact-powerup"><input type="checkbox" id="double" ${state.double?'checked':''} ${!hasDouble()||state.voteSubmitState==='sending'?'disabled':''}><span><b>🃏 ${hasDouble()?'使用雙倍王牌':'雙倍王牌已用完'}</b><small>${hasDouble()?'可選，用掉後本局無法再使用':'繼續作答就好'}</small></span></label></section><div class="submit-feedback ${state.voteSubmitState==='sending'?'is-sending':state.voteSubmitState==='error'?'is-error':'is-ready'}" role="status" aria-live="polite">${state.voteSubmitState==='sending'?'⏳ 正在送出，請保持網頁開啟…':state.voteSubmitState==='error'?'⚠️ 上次未送達，答案已保留，請再按送出。':state.guess===null?'請先選擇預測答案':'✅ 已選好答案，最後要按下「確認送出」才算完成！'}</div>
+      task=`<section class="vote-area one-step vote-step-guess"><div class="answer-stepper" aria-label="第二步：猜大家的答案"><span class="done">✓ 已選自己</span><span class="current" aria-current="step">② 猜大家</span></div><div class="self-selection"><span><small>你選的是</small><strong>${esc(q.a[state.choice])}</strong></span><button class="btn dark small-btn" data-action="edit-choice">修改</button></div><h2 class="vote-label">你猜哪個選項會最多票或最少票？</h2><p class="vote-tip">只能猜一個：最多票 +100，非零最少票 +40，其餘 +0。</p>${choiceButtons('guess',state.guess,q)}<label class="powerup compact-powerup"><input type="checkbox" id="double" ${state.double?'checked':''} ${!hasDouble()||state.voteSubmitState==='sending'?'disabled':''}><span><b>🃏 ${hasDouble()?'使用雙倍王牌':'雙倍王牌已用完'}</b><small>${hasDouble()?'猜中熱門 +200／冷門 +80；猜錯也會用掉':'繼續作答就好'}</small></span></label></section><div class="submit-feedback ${state.voteSubmitState==='sending'?'is-sending':state.voteSubmitState==='error'?'is-error':'is-ready'}" role="status" aria-live="polite">${state.voteSubmitState==='sending'?'⏳ 正在送出，請保持網頁開啟…':state.voteSubmitState==='error'?'⚠️ 上次未送達，答案已保留，請再按送出。':state.guess===null?'請先選擇預測答案':'✅ 已選好答案，最後要按下「確認送出」才算完成！'}</div>
       <div class="sticky-submit"><button class="btn full" data-action="submit" ${state.guess===null||state.voteSubmitState==='sending'?'disabled':''}>${state.voteSubmitState==='sending'?'⏳ 正在送出…':state.guess===null?'請先選一個預測答案':'✅ 確認送出答案（完成作答）'}</button></div>`;
     }
     return surface(`${roundHeader()}<section class="space-top question-card voting-question"><div class="q-label">😈 靈魂拷問 • 第 ${state.room.roundIndex+1} 題</div><div class="question-text">${esc(q.q)}</div></section>
       <div class="poll-status"><span id="vote-count" aria-live="polite">📬 已答 ${count} / ${n} 人 ${state.mode==='demo'?'（含虛擬玩家）':''}</span><span class="timer ${remaining<=10?'urgent':''}" id="timer" role="timer" aria-label="倒數計時，剩餘 ${remaining} 秒"><span class="timer-caption" aria-hidden="true">倒數計時</span><strong class="timer-digits">⏱ ${remaining} 秒</strong></span></div>
       <div class="vote-sync-indicator" id="vote-sync-indicator" role="status">${state.mode==='demo'?'🎭 示範模式':state.voteSyncFromCache?'📡 網路同步中，主持人數字可能稍有延遲':'☁️ 已連線，票數將自動更新'}</div>
       ${locked?waiting:task}
+      <details class="score-lookup"><summary>📘 不清楚分數？查看計分規則</summary>${scoringRules()}</details>
       ${isHost()?`<details class="host-vote-tools"><summary>🎤 主持人控制（<span id="host-vote-count">已作答 ${count}/${n}</span>）</summary><p class="fineprint">所有人完成或時間結束即可開獎；主持人網頁保持開啟，倒數結束會自動揭曉。</p><button class="btn secondary full" data-action="reveal" ${count===0?'disabled':''}>🎊 現在開獎</button></details>`:v?'<p class="look-up-note">👀 抬頭看看大家，猜猜誰跟你選得一樣！</p>':''}
     `, `<span class="status-tag">${esc(state.roomCode)}</span>`);
   }
   function renderPoll(){
-    const q=question(),counts=state.room.lastResult?.counts || [0,0,0,0], tops=state.room.lastResult?.top||[],total=counts.reduce((a,b)=>a+b,0);
-    return `<div class="card section-gap"><h2 class="mini-heading">📊 全場民調：答案揭曉</h2>${q.a.map((a,i)=>`<div class="result-bar"><div class="bar-letter">${'ABCD'[i]}</div><div class="bar-track ${tops.includes(i)?'winner':''}"><div class="bar-fill" style="width:${total?counts[i]/total*100:0}%"></div><div class="bar-text">${esc(a)} ${tops.includes(i)?'👑':''}</div></div><div class="bar-votes">${counts[i]} 票</div></div>`).join('')}<p class="fineprint">共 ${total} 人作答；票數最多的答案都算猜中。</p></div>`;
+    const q=question(),counts=state.room.lastResult?.counts || [0,0,0,0],tops=state.room.lastResult?.top||[],cold=state.room.lastResult?.cold||[],total=counts.reduce((a,b)=>a+b,0);
+    return `<div class="card section-gap"><h2 class="mini-heading">📊 全場民調：答案揭曉</h2>${q.a.map((a,i)=>`<div class="result-bar"><div class="bar-letter">${'ABCD'[i]}</div><div class="bar-track ${tops.includes(i)?'winner':cold.includes(i)?'coldest':''}"><div class="bar-fill" style="width:${total?counts[i]/total*100:0}%"></div><div class="bar-text">${esc(a)} ${tops.includes(i)?'👑 最多票':cold.includes(i)?'🧊 最少票':''}</div></div><div class="bar-votes">${counts[i]} 票</div></div>`).join('')}<p class="fineprint">共 ${total} 人作答；👑 並列最多票都算熱門，🧊 並列非零最少票都算冷門。零票選項不算冷門。</p></div>`;
   }
   function renderLeaderboard(compact=false){
     const sorted=scoresSorted(), map=state.room?.scores||{};
@@ -526,12 +543,26 @@
     const rows=top.map((p,i)=>`<div class="quick-rank-line"><span>${['🥇','🥈','🥉'][i]} ${esc(p.emoji||emojiFor(p.uid))} ${esc(p.name)}</span><b>${scores[p.uid]||0} 分</b></div>`).join('');
     return `<section class="card quick-ranking section-gap"><div class="split"><h2 class="mini-heading tight">🏆 目前領先</h2><span class="chip yellow">你第 ${myRank()||'–'} 名</span></div>${rows}<details class="full-rank-toggle"><summary>想看完整排行榜？點這裡展開</summary>${renderLeaderboard(true)}</details></section>`;
   }
+  function scoreBreakdown(g,v,q){
+    if(!v)return '<div class="score-detail">這題未作答，所以沒有分數。</div>';
+    if(!g)return '<div class="score-detail">本題沒有取得計分明細。</div>';
+    if(!g.predictionType){
+      // 兼容更新前已開獎的房間：歷史回合仍顯示其原計分方式。
+      return `<div class="score-detail">本題沿用舊版計分：猜中多數 +${g.guess||0} · 自選冷門 +${g.rare||0} · 連勝 +${g.streakBonus||0}</div>`;
+    }
+    const label=g.predictionType==='hot'?'🔥 猜中最多票':g.predictionType==='cold'?'🧊 猜中最少票':'➖ 沒猜中熱門或冷門';
+    return `<div class="score-detail score-breakdown">
+      <div class="score-breakdown-line"><span>${label}<small>你猜：${esc(q.a[v.guess])}</small></span><strong>+${g.guess||0}</strong></div>
+      <div class="score-breakdown-line"><span>🔥 連勝獎勵${g.streak?'（連續命中 '+g.streak+' 次）':''}</span><strong>+${g.streakBonus||0}</strong></div>
+      ${g.doubleUsed?'<p class="score-breakdown-note">🃏 本題已使用雙倍王牌：只加倍猜中熱門／冷門的分數；猜錯也會消耗。</p>':''}
+    </div>`;
+  }
   function renderReveal(){
     const q=question(),last=state.room.lastResult||{},g=last.gains?.[state.uid],v=myVote();
     const scoreText=g?`${g.total}`:'0';
     return surface(`${roundHeader()}<section class="space-top question-card"><div class="q-label">🎉 答案開獎啦！</div><div class="question-text">${esc(q.q)}</div></section>${renderPoll()}
       <section class="talk-first section-gap"><span class="talk-eyebrow">🎤 最重要的 30–60 秒</span><h2>先抬頭聊聊吧！</h2><p>${esc(q.talk)}</p><small>主持人可以邀請 1–2 位自願分享，沒有標準答案，也不用強迫任何人表演。</small></section>
-      <div class="score-highlight section-gap slim-score"><span class="eyebrow">本題得分</span><div class="split"><div><div class="score-big">+${scoreText}</div><div class="score-detail">${v?`猜多數 ${g?.guess||0} 分${g?.doubleUsed?'（王牌生效）':''} · 冷門 ${g?.rare||0} 分 · 連勝 ${g?.streakBonus||0} 分`:'本題未作答'}</div></div><span class="score-emote">${g?.total>=100?'😎':'🤪'}</span></div></div>
+      <div class="score-highlight section-gap slim-score"><span class="eyebrow">本題得分</span><div class="split"><div><div class="score-big">+${scoreText}</div>${scoreBreakdown(g,v,q)}</div><span class="score-emote">${g?.total>=100?'😎':'🤪'}</span></div></div>
       ${renderQuickRanking()}
       <div class="section-gap">${isHost()?`<button class="btn full" data-action="next">${state.room.roundIndex+1>=state.room.totalRounds?'🏆 公布最終排行榜':'➡️ 聊完了，進下一題'}</button><p class="fineprint">請先留一點時間讓大家互相分享，再繼續下一題。</p>`:`<div class="info-box">👂 等主持人帶大家聊完，就會一起進下一題。</div>`}</div>
     `, `<span class="status-tag">${esc(state.roomCode)}</span>`);
@@ -576,21 +607,29 @@
   function evaluateRound(room, players, votes){
     const vots=votes.filter(v=>Number.isInteger(v.choice)&&v.choice>=0&&v.choice<4&&Number.isInteger(v.guess)&&v.guess>=0&&v.guess<4 && players.some(p=>p.uid===v.uid));
     const counts=[0,0,0,0]; for(const v of vots)counts[v.choice]++;
-    const max=Math.max(...counts);const top=max>0?counts.map((x,i)=>x===max?i:null).filter(x=>x!==null):[];
+    const max=Math.max(...counts);
+    const top=max>0?counts.map((x,i)=>x===max?i:null).filter(x=>x!==null):[];
+    // 冷門是有實際得票、且嚴格低於最高票的最低票；0 票不算。
+    const positive=counts.filter(n=>n>0);
+    const minPositive=positive.length?Math.min(...positive):0;
+    const cold=minPositive>0&&minPositive<max
+      ?counts.map((x,i)=>x===minPositive?i:null).filter(i=>i!==null):[];
     const scores={...room.scores},streaks={...room.streaks},usedDoubles={...room.usedDoubles},gains={};
     for(const v of vots){
-      const correct=top.includes(v.guess), dbl=!!v.double&&!usedDoubles[v.uid];
-      const lastStreak=streaks[v.uid]||0;
-      const streak=correct?lastStreak+1:0;
+      const hitHot=top.includes(v.guess),hitCold=!hitHot&&cold.includes(v.guess);
+      const correct=hitHot||hitCold;
+      const dbl=!!v.double&&!usedDoubles[v.uid];
+      const streak=correct?(streaks[v.uid]||0)+1:0;
       const bonus=correct?Math.min(streak-1,3)*20:0;
-      const pred=correct?(dbl?200:100):0;
-      const rare=counts[v.choice]===1?40:counts[v.choice]<max?20:0;
-      if(dbl)usedDoubles[v.uid]=true;
-      const total=pred+bonus+rare;
+      const base=hitHot?100:hitCold?40:0;
+      const pred=dbl?base*2:base;
+      if(dbl)usedDoubles[v.uid]=true; // 選擇使用後，猜錯也照樣消耗。
+      const total=pred+bonus;
       scores[v.uid]=(scores[v.uid]||0)+total;streaks[v.uid]=streak;
-      gains[v.uid]={total,guess:pred,rare,streakBonus:bonus,doubleUsed:dbl,correct};
+      gains[v.uid]={total,guess:pred,streakBonus:bonus,doubleUsed:dbl,correct,
+        predictionType:hitHot?'hot':hitCold?'cold':'miss',basePoints:base,streak};
     }
-    return {scores,streaks,usedDoubles,lastResult:{counts,top,totalVotes:vots.length,gains},phase:'reveal'};
+    return {scores,streaks,usedDoubles,lastResult:{counts,top,cold,totalVotes:vots.length,gains},phase:'reveal'};
   }
   function simulateBots(roundIndex){
     const favored=(roundIndex+Math.floor(Math.random()*3))%4;
