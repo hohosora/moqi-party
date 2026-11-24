@@ -183,3 +183,285 @@ html{font-size:17px;-webkit-text-size-adjust:100%;text-size-adjust:100%}
 .brand-title{font-size:18px;white-space:nowrap}
 .brand-home-hint{white-space:nowrap;font-size:13px;font-weight:800;color:var(--mint)}
 @media(max-width:420px){.brand-home{gap:7px;min-width:0}.brand-title{font-size:16px}.brand-home-hint{font-size:12px}.topbar{gap:5px}}
+
+/* ───── v8：三種主題共用版面，只變更材質、配色及按壓狀態 ───── */
+/* 主題選擇區：三款小型預覽，不增加玩家端的額外步驟。 */
+.theme-setting{border:1px solid var(--line);border-radius:19px;padding:15px;background:rgba(128,128,128,.055)}
+.theme-setting-heading{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:13px}
+.theme-setting-heading strong{font-size:17px;line-height:1.5}
+.theme-selected-name{font-size:14px;font-weight:800;color:var(--muted)}
+.theme-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.theme-choice{appearance:none;display:flex;flex-direction:column;align-items:stretch;text-align:left;gap:6px;min-width:0;padding:9px;border:2px solid var(--line);border-radius:14px;color:var(--text);background:rgba(128,128,128,.06);min-height:150px;box-shadow:none;cursor:pointer;transition:border-color .12s,transform .12s}
+.theme-choice.active{border-color:var(--yellow);box-shadow:0 0 0 2px rgba(255,205,118,.12)}
+.theme-choice:active{transform:translateY(2px)}
+.theme-choice:focus-visible{outline:3px solid var(--yellow);outline-offset:3px}
+.theme-choice strong{font-size:15px;line-height:1.4}
+.theme-choice small{display:block;color:var(--muted);font-size:12px;line-height:1.45;min-height:35px}
+.theme-check{margin-top:auto;font-size:12px;color:var(--muted);font-weight:800}
+.theme-choice.active .theme-check{color:var(--yellow)}
+.theme-swatch{display:flex;flex-wrap:wrap;align-content:center;align-items:center;justify-content:space-around;gap:5px;padding:9px;width:100%;height:72px;border-radius:9px;overflow:hidden}
+.theme-swatch i,.theme-swatch b,.theme-swatch em,.theme-swatch span{display:block;flex:0 0 auto;min-width:0;box-shadow:0 2px 3px rgba(0,0,0,.16)}
+.theme-swatch i{width:29px;height:29px;border-radius:7px}
+.theme-swatch b{width:24px;height:24px;border-radius:50%}
+.theme-swatch em{width:69%;height:11px;border-radius:8px}
+.theme-swatch span{width:55%;height:8px;border-radius:7px}
+.theme-swatch-party{background:#241d43}.theme-swatch-party i{background:#ffcb78}.theme-swatch-party b{background:#fd8ab6}.theme-swatch-party em{background:#79eed4}.theme-swatch-party span{background:#a89bff}
+.theme-swatch-panel{background:linear-gradient(135deg,#bcbab6,#888987);box-shadow:inset 0 2px 4px #636463}
+.theme-swatch-panel i{background:linear-gradient(#ffab63,#ef6b22);border:2px solid #e6ded4;box-shadow:1px 3px 0 #76594c,2px 5px 6px #555}
+.theme-swatch-panel b{background:radial-gradient(circle at 35% 30%,#666,#1d2022 70%);border:2px solid #c9c6c0}
+.theme-swatch-panel em{background:linear-gradient(#eceae5,#aaa7a3);border:1px solid #eee;box-shadow:0 3px 0 #686867}
+.theme-swatch-panel span{background:#ee6e2e}
+.theme-swatch-minimal{background:#323b44}.theme-swatch-minimal i{background:#ff4d2a;border-radius:16px 16px 3px 16px}
+.theme-swatch-minimal b{background:#080a0b}.theme-swatch-minimal em{background:#f4f2ee;border-radius:0}.theme-swatch-minimal span{background:#ff4d2a;border-radius:0}
+.theme-help{font-size:14px;line-height:1.65;color:var(--muted);margin:11px 0 0}
+.room-theme-label{font-size:15px;font-weight:800;color:var(--muted);margin:12px 0 0}
+@media(max-width:420px){.theme-grid{gap:6px}.theme-setting{padding:12px}.theme-choice{padding:6px;min-height:143px}.theme-choice strong{font-size:14px}.theme-choice small{font-size:11px}.theme-swatch{height:64px;padding:7px}}
+@media(max-width:340px){.theme-grid{grid-template-columns:1fr}.theme-choice{min-height:0;display:grid;grid-template-columns:82px 1fr;align-items:center;gap:6px 10px}.theme-swatch{grid-row:span 3;height:58px}.theme-choice small{min-height:0}}
+
+/* 共享色彩令牌：經典派對不改動，兩個新增主題各自覆蓋。 */
+html[data-theme="panel"]{
+  --bg:#a9a9a6;--bg2:#bbb9b5;--card:#d3d1cc;--card2:#eceae5;--text:#1d2226;--muted:#50545a;
+  --yellow:#f47828;--pink:#ffa368;--mint:#ed7738;--purple:#8f8f8b;--line:rgba(36,39,40,.25);
+  --shadow:0 3px 0 rgba(255,255,255,.6) inset,0 -3px 0 rgba(48,49,50,.24) inset,0 8px 16px rgba(20,24,25,.22);
+  color-scheme:light
+}
+html[data-theme="minimal"]{
+  --bg:#354049;--bg2:#28323a;--card:#f4f1ed;--card2:#e7e4df;--text:#151719;--muted:#42464b;
+  --yellow:#ff512d;--pink:#ff8165;--mint:#ff512d;--purple:#303b44;--line:rgba(12,15,18,.28);
+  --shadow:0 5px 0 rgba(8,10,12,.22);
+  color-scheme:light
+}
+html[data-theme="panel"] body{
+  color:var(--text);
+  background:linear-gradient(115deg,rgba(255,255,255,.16),transparent 45%),linear-gradient(160deg,#b5b3ae,#949795 85%);
+}
+html[data-theme="minimal"] body{
+  color:#f6f5f3;
+  background:radial-gradient(circle at 100% 0%,#49545b 0,#354049 30%,#29333b 100%);
+}
+html[data-theme="panel"] .ambient,html[data-theme="minimal"] .ambient{opacity:0;filter:none}
+html[data-theme="panel"] :focus-visible,html[data-theme="minimal"] :focus-visible{outline:3px solid var(--yellow);outline-offset:3px}
+/* 共用基礎組件覆蓋。避免增加網頁圖片、API 或動畫負擔。 */
+html[data-theme="panel"] .brand,html[data-theme="panel"] .page-title,html[data-theme="panel"] .mini-heading,
+html[data-theme="panel"] .hero-title,html[data-theme="panel"] .eyebrow{color:#202326}
+html[data-theme="minimal"] .brand,html[data-theme="minimal"] .hero-title,html[data-theme="minimal"] .page-title,
+html[data-theme="minimal"] .entry-heading .eyebrow{color:#fbfaf6}
+html[data-theme="panel"] .brand-home:hover{background:rgba(255,255,255,.22)}
+html[data-theme="minimal"] .brand-home:hover{background:rgba(255,255,255,.09)}
+html[data-theme="panel"] .brand-home-hint{color:#9d380e}
+html[data-theme="minimal"] .brand-home-hint{color:#ffad97}
+html[data-theme="panel"] .brand-mark{
+  background:linear-gradient(150deg,#ffc67e,#f37c2b);
+  border:1px solid #ffead6;color:#262524;box-shadow:inset 1px 2px 2px #ffdbb9,inset -1px -2px 2px #ab480c,0 4px 0 #7c5d49,0 7px 12px #777
+}
+html[data-theme="minimal"] .brand-mark{background:#ff512d;color:#111;border-radius:15px 15px 3px 15px;box-shadow:4px 4px 0 #13171a}
+html[data-theme="panel"] .card{
+  color:#252729;background:linear-gradient(145deg,#e2e0dc,#bebcb7 86%);border:2px solid #e7e5e0;
+  box-shadow:inset 2px 3px 3px rgba(255,255,255,.7),inset -2px -3px 5px #92908c,0 4px 0 #858582,0 11px 23px rgba(28,28,29,.23)
+}
+html[data-theme="minimal"] .card{
+  color:#131719;background:#f4f1ed;border:2px solid #111518;border-radius:20px;
+  box-shadow:6px 6px 0 rgba(0,0,0,.36)
+}
+html[data-theme="panel"] .question-card{
+  background:linear-gradient(128deg,#f9d3c0,#eab899);color:#292724;border:3px solid #f6e5d7;
+  box-shadow:inset 2px 3px 4px #fff5e8,inset -2px -3px 3px #b58a72,0 5px 0 #8b7770,0 10px 19px rgba(44,40,39,.2)
+}
+html[data-theme="minimal"] .question-card{
+  background:#ff512d;color:#141414;border:0;border-radius:24px 24px 6px 24px;
+  box-shadow:7px 7px 0 #111518
+}
+html[data-theme="panel"] .question-card:after{color:#ad6e50;opacity:.18}
+html[data-theme="minimal"] .question-card:after{color:#111;opacity:.11}
+html[data-theme="panel"] .subhead,html[data-theme="panel"] .fineprint,html[data-theme="panel"] .muted,
+html[data-theme="panel"] .footer,html[data-theme="panel"] .landing-note,html[data-theme="panel"] .vote-tip,
+html[data-theme="panel"] .look-up-note,html[data-theme="panel"] .host-bank-help{color:#4b4b4a}
+html[data-theme="minimal"] .subhead,html[data-theme="minimal"] .landing-note,html[data-theme="minimal"] .footer{color:#e5e5e1}
+html[data-theme="minimal"] .muted,html[data-theme="minimal"] .fineprint,html[data-theme="minimal"] .vote-tip,
+html[data-theme="minimal"] .look-up-note{color:#d4d6d6}
+html[data-theme="minimal"] .card .muted,html[data-theme="minimal"] .card .fineprint,
+html[data-theme="minimal"] .card .host-bank-help{color:#4f5559}
+html[data-theme="panel"] .hero-title span{color:#e96d22}
+html[data-theme="minimal"] .hero-title span{color:#ff5a35}
+html[data-theme="panel"] .splat{background:#e9854e}
+html[data-theme="minimal"] .splat{background:#ff512d}
+html[data-theme="panel"] .hero-face:not(.photo-face){filter:drop-shadow(0 7px 1px #7d6760)}
+html[data-theme="minimal"] .hero-face:not(.photo-face){filter:drop-shadow(6px 7px 0 #131719)}
+/* 立體按鍵風：真實按鍵的上光、下緣、凹槽與按壓狀態。 */
+html[data-theme="panel"] .btn{
+  background:linear-gradient(#ffab68,#f27321 66%,#c75515);color:#181a1c;border:2px solid #e4b38c;
+  border-radius:13px;box-shadow:inset 0 2px 1px #ffe3bc,inset 0 -2px 2px #a9480f,0 5px 0 #6b6762,0 8px 14px rgba(33,33,34,.22);
+  text-shadow:0 1px rgba(255,255,255,.3)
+}
+html[data-theme="panel"] .btn.secondary{background:linear-gradient(#d8d8d5,#a4a4a1);border-color:#ecebe7;color:#191d1e;box-shadow:inset 0 2px 2px white,0 5px 0 #656767}
+html[data-theme="panel"] .btn.tertiary,html[data-theme="panel"] .btn.dark{
+  background:linear-gradient(#515353,#252829);color:#fff;border-color:#777877;box-shadow:inset 0 2px 2px #898a86,0 4px 0 #191a1a
+}
+html[data-theme="panel"] .btn:active:not(:disabled),html[data-theme="panel"] .role-choice:active,
+html[data-theme="panel"] .option:active:not(:disabled){
+  transform:translateY(4px);box-shadow:inset 0 3px 6px rgba(0,0,0,.28),0 1px 0 #606160
+}
+html[data-theme="panel"] .role-choice{
+  background:linear-gradient(150deg,#e8e6e0,#b8b7b1);color:#171b1e;border:3px solid #e6e4dc;
+  box-shadow:inset 2px 3px 2px #fff,inset -2px -3px 3px #91928f,0 5px 0 #6d6e6c,0 13px 18px rgba(0,0,0,.24)
+}
+html[data-theme="panel"] .role-choice:first-child{background:linear-gradient(160deg,#e2ded6,#b4b3ae);border-color:#ede9e2}
+html[data-theme="panel"] .role-choice small{color:#46494a}
+html[data-theme="panel"] .role-choice .role-icon{
+  background:linear-gradient(#f69a5e,#ce4f16);border:2px solid #e4b088;
+  border-radius:12px;padding:4px;box-shadow:inset 0 2px 2px #ffd7b6,0 4px 0 #766357
+}
+html[data-theme="panel"] .role-choice.role-host .role-icon{background:linear-gradient(#505151,#262a2c);border-color:#777;color:#fff}
+html[data-theme="panel"] .role-arrow{color:#b94a12}
+html[data-theme="panel"] .option{
+  color:#16191b;background:linear-gradient(160deg,#eae8e3,#b6b7b4);border:3px solid #e6e5e0;border-radius:15px;
+  box-shadow:inset 2px 2px 3px #fff,inset -2px -2px 3px #90918c,0 5px 0 #777876,0 9px 11px rgba(0,0,0,.19)
+}
+html[data-theme="panel"] .option:hover{background:linear-gradient(#f3f1ea,#bdbcb6)}
+html[data-theme="panel"] .option.selected,html[data-theme="panel"] .option.guess-selected{
+  border-color:#e88c4b;background:linear-gradient(#ffddb9,#f2ad71);color:#151516;
+  box-shadow:inset 0 3px 7px #ba7a46,0 2px 0 #a05b30
+}
+html[data-theme="panel"] .option-letter{background:linear-gradient(#535557,#222526);color:#f8f8f8;border:1px solid #717577;box-shadow:0 3px 0 #161818;border-radius:9px}
+html[data-theme="panel"] .option.selected .option-letter,html[data-theme="panel"] .option.guess-selected .option-letter{background:linear-gradient(#ff953c,#e65c15);color:#171717}
+html[data-theme="panel"] .sticky-submit{background:linear-gradient(0deg,rgba(166,165,162,.99) 80%,rgba(166,165,162,.83))}
+html[data-theme="panel"] .sticky-submit .btn{box-shadow:inset 0 2px 2px #ffe1bc,0 5px 0 #777}
+/* 立體按鍵風：輔助控制與狀態面板。 */
+html[data-theme="panel"] .field input,html[data-theme="panel"] .field select,html[data-theme="panel"] .field textarea{
+  color:#17191a;background:#f3f0e9;border:2px solid #959793;box-shadow:inset 0 3px 5px #c8c6c0
+}
+html[data-theme="panel"] .field span,html[data-theme="panel"] .label{color:#3d4042}
+html[data-theme="panel"] .field input::placeholder,html[data-theme="panel"] .field textarea::placeholder{color:#6d6d6d}
+html[data-theme="panel"] .eyebrow,html[data-theme="panel"] .q-label{color:#8b340c}
+html[data-theme="panel"] .card .eyebrow,html[data-theme="panel"] .card .mini-heading{color:#26282a}
+html[data-theme="panel"] .status-tag,html[data-theme="panel"] .chip,html[data-theme="panel"] .rank-pill,
+html[data-theme="panel"] .timer{
+  background:linear-gradient(#515456,#292b2c);color:#fff;border:2px solid #8d8d8b;
+  box-shadow:inset 0 2px 2px #777,0 3px 0 #6f6f6e
+}
+html[data-theme="panel"] .chip.mint,html[data-theme="panel"] .chip.yellow{color:#ffae6a}
+html[data-theme="panel"] .timer.urgent{background:linear-gradient(#bf512c,#7a261d);color:white}
+html[data-theme="panel"] .progress{background:#6f7371;border:2px solid #eee;box-shadow:inset 0 2px 3px #404341}
+html[data-theme="panel"] .progress>div{background:linear-gradient(#ffbb68,#ec6826);box-shadow:0 0 5px #fa812b}
+html[data-theme="panel"] .poll-status,html[data-theme="panel"] .vote-sync-indicator{color:#2d3234}
+html[data-theme="panel"] .answer-stepper span,html[data-theme="panel"] .self-selection,
+html[data-theme="panel"] .powerup,html[data-theme="panel"] .submit-feedback,
+html[data-theme="panel"] .host-vote-tools,html[data-theme="panel"] .info-box,html[data-theme="panel"] .how-to-play,
+html[data-theme="panel"] .host-extra,html[data-theme="panel"] .direction-item,html[data-theme="panel"] .bank-picker,
+html[data-theme="panel"] .lobby-code,html[data-theme="panel"] .avatar-pill,html[data-theme="panel"] .room-look{
+  background:linear-gradient(#dedcd6,#b7b6b2);border:2px solid #ebebe7;color:#25292a;
+  box-shadow:inset 0 2px 3px white,0 3px 0 #7c7d78
+}
+html[data-theme="panel"] .self-selection strong,html[data-theme="panel"] .powerup b{color:#1c1e1e}
+html[data-theme="panel"] .self-selection small{color:#93461c}
+html[data-theme="panel"] .answer-stepper span.current,html[data-theme="panel"] .answer-stepper span.done{
+  background:linear-gradient(#ffe0ba,#efab75);color:#40220d;border-color:#e39049
+}
+html[data-theme="panel"] .submit-feedback.is-error{background:#ffe2d6;color:#7d2d18;border-color:#c96e43}
+html[data-theme="panel"] .submit-feedback.is-sending{background:#ffdaad;color:#4c290e;border-color:#f28d46}
+html[data-theme="panel"] .talk-first{background:linear-gradient(#505354,#26292b);border:3px solid #9d9e9a;color:white;box-shadow:inset 0 2px 2px #6f7170,0 5px 0 #777}
+html[data-theme="panel"] .talk-first h2,html[data-theme="panel"] .talk-first p{color:#fff}
+html[data-theme="panel"] .talk-first small{color:#e1e4e1}
+html[data-theme="panel"] .talk-eyebrow{color:#ffb475}
+html[data-theme="panel"] .score-highlight{background:linear-gradient(#f1d6bd,#e3b88e);border:2px solid #f8e2c8;color:#202122;box-shadow:0 4px 0 #89837b}
+html[data-theme="panel"] .score-big,html[data-theme="panel"] .score-highlight .eyebrow{color:#aa400d}
+html[data-theme="panel"] .bar-track{background:#969893;box-shadow:inset 0 2px 3px #656661;color:#151718}
+html[data-theme="panel"] .bar-fill{background:linear-gradient(#ffcd96,#f28d4b)}
+html[data-theme="panel"] .bar-letter{background:linear-gradient(#585a5b,#292c2d);box-shadow:0 3px 0 #171919}
+html[data-theme="panel"] .bar-text,html[data-theme="panel"] .bar-votes{color:#1d2021}
+html[data-theme="panel"] .quick-rank-line,html[data-theme="panel"] .rank-item,html[data-theme="panel"] .rank-name{color:#252729}
+html[data-theme="panel"] .bank-tab,html[data-theme="panel"] .theme-choice{background:linear-gradient(#e5e3dd,#bdbbb7);color:#292b2d;border-color:#aaa9a4}
+html[data-theme="panel"] .bank-tab.active,html[data-theme="panel"] .theme-choice.active{background:linear-gradient(#ffdfbe,#e9b68f);border-color:#d76824;color:#161717}
+html[data-theme="panel"] .direction-item strong,html[data-theme="panel"] .direction-item small{color:#252729}
+html[data-theme="panel"] .gemini-count-hint{color:#292b2b;background:#f4ddc5}
+html[data-theme="panel"] .footer{color:#535653}
+html[data-theme="panel"] .theme-setting{background:#c2c1bc;border:2px solid #e9e8e3;box-shadow:inset 0 2px 3px #fff,0 3px 0 #797b78}
+html[data-theme="panel"] .theme-choice small,html[data-theme="panel"] .theme-check{color:#4c4d4c}
+html[data-theme="panel"] .theme-choice.active .theme-check{color:#8a370f}
+/* 極簡設計風：參考橘紅／黑／灰白色塊、幾何圓角及大字。 */
+html[data-theme="minimal"] .btn{
+  color:#111416;background:#ff512d;border:2px solid #111518;border-radius:17px 17px 5px 17px;box-shadow:4px 4px 0 #111518;
+  text-shadow:none
+}
+html[data-theme="minimal"] .btn:hover:not(:disabled){filter:brightness(1.04)}
+html[data-theme="minimal"] .btn:active:not(:disabled){transform:translate(3px,3px);box-shadow:1px 1px 0 #111518}
+html[data-theme="minimal"] .btn.secondary{background:#f7f5f1;color:#101314;border-color:#101314;box-shadow:4px 4px 0 #171a1c}
+html[data-theme="minimal"] .btn.tertiary,html[data-theme="minimal"] .btn.dark{background:#101213;color:#f9f8f5;border-color:#101213;box-shadow:4px 4px 0 #ff512d}
+html[data-theme="minimal"] .role-choice{background:#ff512d;color:#0f1112;border:2px solid #141515;box-shadow:7px 7px 0 #151718;border-radius:30px 30px 7px 30px}
+html[data-theme="minimal"] .role-choice:first-child{background:#ff512d;border-color:#141515}
+html[data-theme="minimal"] .role-choice.role-host{background:#101213;color:#fafafa;border:2px solid #fafafa}
+html[data-theme="minimal"] .role-choice small{color:#272829}
+html[data-theme="minimal"] .role-choice.role-host small{color:#eeeae4}
+html[data-theme="minimal"] .role-choice .role-icon{font-size:34px;display:grid;place-items:center;background:rgba(255,255,255,.3);border-radius:50%}
+html[data-theme="minimal"] .role-choice.role-host .role-icon{background:#ff512d}
+html[data-theme="minimal"] .role-arrow{color:#111}
+html[data-theme="minimal"] .role-host .role-arrow{color:#ff512d}
+html[data-theme="minimal"] .option{
+  background:#f5f3ef;color:#16191b;border:2px solid #121515;border-radius:21px 21px 5px 21px;box-shadow:4px 4px 0 #0d1113
+}
+html[data-theme="minimal"] .option:hover{background:#fffaf5}
+html[data-theme="minimal"] .option.selected,html[data-theme="minimal"] .option.guess-selected{
+  border-color:#101213;background:#ff512d;color:#121516;box-shadow:4px 4px 0 #0d1113
+}
+html[data-theme="minimal"] .option-letter{background:#101213;color:#f9f7f4;border-radius:50%}
+html[data-theme="minimal"] .option.selected .option-letter,html[data-theme="minimal"] .option.guess-selected .option-letter{background:#f6f2ea;color:#111516}
+html[data-theme="minimal"] .sticky-submit{background:linear-gradient(0deg,rgba(43,53,61,.99) 80%,rgba(43,53,61,.87))}
+html[data-theme="minimal"] .sticky-submit .btn{box-shadow:4px 4px 0 #101416}
+html[data-theme="minimal"] .field input,html[data-theme="minimal"] .field select,html[data-theme="minimal"] .field textarea{
+  color:#121517;background:#fffefa;border:2px solid #17191a;border-radius:13px
+}
+html[data-theme="minimal"] .field input::placeholder,html[data-theme="minimal"] .field textarea::placeholder{color:#64696b}
+html[data-theme="minimal"] .field span,html[data-theme="minimal"] .label{color:#202528}
+html[data-theme="minimal"] .eyebrow,html[data-theme="minimal"] .q-label{color:#ff6c4e}
+html[data-theme="minimal"] .question-card .q-label{color:#141414}
+html[data-theme="minimal"] .card .eyebrow{color:#b53716}
+html[data-theme="minimal"] .card .mini-heading{color:#14181a}
+html[data-theme="minimal"] .status-tag,html[data-theme="minimal"] .chip,html[data-theme="minimal"] .rank-pill,
+html[data-theme="minimal"] .timer{background:#111517;color:#f9f8f6;border:1px solid #757c81;border-radius:18px}
+html[data-theme="minimal"] .chip.mint,html[data-theme="minimal"] .chip.yellow{color:#ff9b81}
+html[data-theme="minimal"] .timer.urgent{background:#ff512d;color:#111;border-color:#111}
+html[data-theme="minimal"] .progress{background:#15191b;border-radius:2px}
+html[data-theme="minimal"] .progress>div{background:#ff512d;border-radius:2px}
+html[data-theme="minimal"] .poll-status,html[data-theme="minimal"] .vote-sync-indicator{color:#e4e2dd}
+html[data-theme="minimal"] .answer-stepper span,html[data-theme="minimal"] .self-selection,
+html[data-theme="minimal"] .powerup,html[data-theme="minimal"] .submit-feedback,
+html[data-theme="minimal"] .host-vote-tools,html[data-theme="minimal"] .info-box,html[data-theme="minimal"] .how-to-play,
+html[data-theme="minimal"] .host-extra,html[data-theme="minimal"] .direction-item,html[data-theme="minimal"] .bank-picker,
+html[data-theme="minimal"] .lobby-code,html[data-theme="minimal"] .avatar-pill,html[data-theme="minimal"] .room-look{
+  background:#f1eee9;color:#16191b;border:2px solid #17191b;border-radius:17px
+}
+html[data-theme="minimal"] .answer-stepper span.current,html[data-theme="minimal"] .answer-stepper span.done{background:#ff512d;color:#111;border-color:#111}
+html[data-theme="minimal"] .self-selection small,html[data-theme="minimal"] .self-selection strong,html[data-theme="minimal"] .powerup small,
+html[data-theme="minimal"] .powerup b,html[data-theme="minimal"] .how-to-play summary,
+html[data-theme="minimal"] .host-extra summary{color:#16191b}
+html[data-theme="minimal"] .submit-feedback.is-error{background:#ffe6df;color:#8e2615}
+html[data-theme="minimal"] .submit-feedback.is-sending{background:#ffb6a3;color:#2e1110}
+html[data-theme="minimal"] .talk-first{background:#111416;color:#fff;border:2px solid #ff512d;border-radius:24px 24px 5px 24px;box-shadow:6px 6px 0 #ff512d}
+html[data-theme="minimal"] .talk-first h2,html[data-theme="minimal"] .talk-first p{color:#fff}
+html[data-theme="minimal"] .talk-first small{color:#e5e5e2}
+html[data-theme="minimal"] .talk-eyebrow{color:#ff7554}
+html[data-theme="minimal"] .score-highlight{background:#ff512d;color:#121416;border:2px solid #17191a;box-shadow:5px 5px 0 #111416}
+html[data-theme="minimal"] .score-big,html[data-theme="minimal"] .score-highlight .eyebrow{color:#111517}
+html[data-theme="minimal"] .bar-track{background:#d5d4d0;color:#111518;border:1px solid #8b8b86}
+html[data-theme="minimal"] .bar-fill{background:#ff9e85}
+html[data-theme="minimal"] .bar-letter{background:#111517;color:#fff}
+html[data-theme="minimal"] .bar-text,html[data-theme="minimal"] .bar-votes{color:#16191a}
+html[data-theme="minimal"] .quick-rank-line,html[data-theme="minimal"] .rank-item,
+html[data-theme="minimal"] .rank-name,html[data-theme="minimal"] .rank-points{color:#14181a}
+html[data-theme="minimal"] .bank-tab,html[data-theme="minimal"] .theme-choice{color:#101415;background:#eeece8;border-color:#17191b}
+html[data-theme="minimal"] .bank-tab.active,html[data-theme="minimal"] .theme-choice.active{color:#111;background:#ff512d;border-color:#121617}
+html[data-theme="minimal"] .theme-check,html[data-theme="minimal"] .theme-choice small{color:#384149}
+html[data-theme="minimal"] .theme-choice.active .theme-check{color:#111}
+html[data-theme="minimal"] .theme-setting{background:#1b242b;border:1px solid #71808a}
+html[data-theme="minimal"] .theme-setting-heading strong{color:#f3f2ee}
+html[data-theme="minimal"] .theme-selected-name,html[data-theme="minimal"] .theme-help{color:#e1dfdd}
+html[data-theme="minimal"] .direction-item strong,html[data-theme="minimal"] .direction-item small{color:#14181a}
+html[data-theme="minimal"] .gemini-count-hint{color:#141719;background:#ffcabd}
+html[data-theme="minimal"] .bank-list-item,html[data-theme="minimal"] .preview-panel{background:#f4f1ed;color:#17191b}
+html[data-theme="minimal"] .full-rank-toggle summary{color:#202527}
+html[data-theme="minimal"] .footer{color:#d3d3d0}
+/* 表單與可讀性：三主題共用原本 18px 主要按鈕、28px 手機題目，且尊重減少動態效果設定。 */
+@media(prefers-reduced-motion:reduce){
+  html[data-theme="panel"] .btn,html[data-theme="panel"] .option,html[data-theme="minimal"] .btn,
+  html[data-theme="minimal"] .option, .theme-choice{transition:none!important}
+}

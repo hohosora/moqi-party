@@ -43,8 +43,44 @@
     page:new URLSearchParams(location.search).has('room')?'join':'home', voteStep:'choice', bankMode:localStorage.getItem('mqs_bank_mode')||'mixed', managerTab:'custom',
     customEditId:null, customDraft:null, geminiDirection:'trends', geminiCount:8, aiText:'',
     aiPreview:[], aiPreviewSkipped:0, managerNotice:'', managerError:'',
-    heroImage:'', photoBusy:false, voteSubmitState:'idle', voteSyncFromCache:false, lastVisibleQuestionKey:null
+    heroImage:'', photoBusy:false, voteSubmitState:'idle', voteSyncFromCache:false, lastVisibleQuestionKey:null,
+    themeChoice:normalizeTheme(localStorage.getItem('mqs_visual_theme_v1'))
   };
+  // 只切換視覺樣式，不改答題流程。舊房間或未知主題自動使用經典派對風。
+  const THEME_NAMES={party:'經典派對風',panel:'立體按鍵風',minimal:'極簡設計風'};
+  function normalizeTheme(value){return value==='panel'||value==='minimal'?value:'party';}
+  function activeTheme(){return state.room?normalizeTheme(state.room.theme):(state.page==='host'||state.page==='manager'?state.themeChoice:'party');}
+  function themePicker(inRoom=false){
+    const selected=inRoom?normalizeTheme(state.room?.theme):state.themeChoice;
+    const themes=[
+      {id:'party',name:'經典派對風',detail:'深紫派對・活潑繽紛'},
+      {id:'panel',name:'立體按鍵風',detail:'霧面灰・立體機械按鍵'},
+      {id:'minimal',name:'極簡設計風',detail:'橘紅黑白・幾何色塊'}
+    ];
+    return `<section class="theme-setting space-top" aria-label="選擇遊戲介面風格">
+      <div class="theme-setting-heading"><strong>🎨 遊戲介面風格</strong><span class="theme-selected-name">目前：${esc(THEME_NAMES[selected])}</span></div>
+      <div class="theme-grid" role="group" aria-label="三種視覺主題">
+        ${themes.map(t=>`<button type="button" class="theme-choice ${selected===t.id?'active':''}" data-action="choose-theme" data-theme-id="${t.id}" aria-pressed="${selected===t.id}" aria-label="${t.name}，${t.detail}">
+          <span class="theme-swatch theme-swatch-${t.id}" aria-hidden="true"><i></i><b></b><em></em><span></span></span>
+          <strong>${t.name}</strong><small>${t.detail}</small>
+          <span class="theme-check">${selected===t.id?'✓ 已選擇':'點選套用'}</span>
+        </button>`).join('')}
+      </div>
+      <p class="theme-help">${inRoom?'可在開始前更換；所有玩家會同步看到新主題。':'建立房間後所有玩家會自動使用相同風格；位置、字級、題庫與玩法都不變。'}</p>
+    </section>`;
+  }
+  async function chooseTheme(raw){
+    if(!Object.hasOwn(THEME_NAMES,raw))throw new Error('無法辨識這個介面風格。');
+    if(state.room){
+      if(!isHost()||state.room.phase!=='lobby')throw new Error('只能由主持人在開始前更換本房間風格。');
+      if(normalizeTheme(state.room.theme)!==raw)await updateRoom({theme:raw});
+    }
+    state.themeChoice=raw;
+    try{localStorage.setItem('mqs_visual_theme_v1',raw);}catch{}
+    // 本機先更新設定，遠端房間待 Firestore 同步後再套用。
+    if(state.room)state.room={...state.room,theme:raw};
+    render();
+  }
   // 右上角主視覺：照片只在主持人裝置留有原圖的壓縮版本。
   // 線上開房時把小圖快照儲存在該房間文件，玩家加入後才會看到。
   const HERO_KEY='mqs_event_hero_v1';
@@ -339,6 +375,7 @@
         <div class="form-grid space-top"><label class="field"><span>遊戲題數</span><select name="rounds"><option value="6" ${state.rounds===6?'selected':''}>6 題｜快速暖場</option><option value="8" ${state.rounds===8?'selected':''}>8 題｜推薦</option><option value="10" ${state.rounds===10?'selected':''}>10 題｜歡樂加倍</option><option value="12" ${state.rounds===12?'selected':''}>12 題｜完整挑戰</option></select></label><label class="field"><span>每題作答時間</span><select name="seconds"><option value="15" ${state.seconds===15?'selected':''}>15 秒｜快速挑戰</option><option value="30" ${state.seconds===30?'selected':''}>30 秒（推薦）</option><option value="45" ${state.seconds===45?'selected':''}>45 秒｜輕鬆作答</option></select></label></div>
         <label class="field space-top"><span>本場題庫</span><select name="bankMode"><option value="mixed" ${state.bankMode==='mixed'?'selected':''}>🎲 三種混合｜笑點不重複</option><option value="classic" ${state.bankMode==='classic'?'selected':''}>📚 經典歷史｜原始 28 題</option><option value="custom" ${state.bankMode==='custom'?'selected':''}>✏️ 主持人自訂｜${bank.custom.length} 題</option><option value="ai" ${state.bankMode==='ai'?'selected':''}>✨ Gemini 生成｜${bank.ai.length} 題</option></select></label>
         <div class="host-bank-help"><span>這套題庫目前可用 ${selectedQuestions().length} 題</span><button class="btn dark small-btn" data-action="manage">⚙️ 管理題庫</button></div>
+        ${themePicker()}
         <button class="btn full space-top" data-action="host">🚀 建立多人房間</button><button class="btn tertiary full space-top" data-action="demo">🎭 先玩示範局</button>
         <p class="fineprint">${CONFIGURED?'🟢 已填入 Firebase 連線設定；多人功能仍需 Firestore 權限正常。':'⚠️ 尚未設定 Firebase；目前僅可玩示範局。'}</p>
       </section>
@@ -349,7 +386,7 @@
   function playerPills(){return state.players.map(p=>`<div class="avatar-pill"><span class="avatar-circle">${esc(p.emoji||emojiFor(p.uid))}</span>${esc(p.name)}${p.uid===state.room?.hostUid?'<span class="host-badge">房主</span>':''}${p.uid===state.uid?'<span class="host-badge">你</span>':''}</div>`).join('');}
   function renderLobby(){
     const n=state.players.length, host=isHost();
-    return surface(`${title(state.mode==='demo'?'歡迎來到示範局！':'人都到齊了嗎？',state.mode==='demo'?'12 位虛擬玩家已到場。先試試荒謬投票和排行榜，正式活動再開多人房間。':'分享房間網址，讓大家用手機填入暱稱一起加入。')}<div class="card section-gap">${state.mode==='demo'?`<div class="info-box">🎭 <strong>這是單人示範模式</strong>，不能邀請朋友加入；正式版請先設定 Firebase，再建立可共用的房間。</div>`:`<div class="lobby-code"><div><div class="eyebrow">房間代碼</div><div class="code-digits">${esc(state.roomCode)}</div></div><button class="btn dark small-btn" data-action="copy">🔗 複製邀請</button></div><p class="share-link space-top">${esc(inviteUrl())}</p>`}<div class="split space-top"><h2 class="mini-heading tight">👋 已到場 ${n} 人</h2><span class="chip ${n>=10?'mint':'yellow'}">建議 10–20 人</span></div><div class="avatars space-top">${playerPills()||'<p class="empty">正在等待大家加入…</p>'}</div>${host?heroControls(true):''}<div class="divider"></div><div class="split"><span class="muted">${state.room.totalRounds} 題 × 每題 ${state.room.seconds} 秒</span><span class="chip">${state.mode==='demo'?'🎭 示範模式':'🌐 即時連線'}</span></div><div class="space-top">${host?`<button class="btn full" data-action="start" ${n<2?'disabled':''}>🔥 開始荒謬挑戰（${n} 人）</button><p class="fineprint">主持人也能參賽。開始後不接受新玩家加入；玩家中途離開會保留原有分數。</p>`:`<div class="info-box">⏳ 房主正在準備中！先看看今天會與誰展開默契大戰。</div>`}</div></div><div class="space-top"><button class="btn tertiary full" data-action="leave">← 回首頁</button></div>`, `<span class="status-tag">${esc(state.roomCode)}</span>`);
+    return surface(`${title(state.mode==='demo'?'歡迎來到示範局！':'人都到齊了嗎？',state.mode==='demo'?'12 位虛擬玩家已到場。先試試荒謬投票和排行榜，正式活動再開多人房間。':'分享房間網址，讓大家用手機填入暱稱一起加入。')}<div class="card section-gap">${state.mode==='demo'?`<div class="info-box">🎭 <strong>這是單人示範模式</strong>，不能邀請朋友加入；正式版請先設定 Firebase，再建立可共用的房間。</div>`:`<div class="lobby-code"><div><div class="eyebrow">房間代碼</div><div class="code-digits">${esc(state.roomCode)}</div></div><button class="btn dark small-btn" data-action="copy">🔗 複製邀請</button></div><p class="share-link space-top">${esc(inviteUrl())}</p>`}<div class="split space-top"><h2 class="mini-heading tight">👋 已到場 ${n} 人</h2><span class="chip ${n>=10?'mint':'yellow'}">建議 10–20 人</span></div><div class="avatars space-top">${playerPills()||'<p class="empty">正在等待大家加入…</p>'}</div>${host?`${themePicker(true)}${heroControls(true)}`:`<p class="room-theme-label">🎨 本房間風格：${esc(THEME_NAMES[normalizeTheme(state.room.theme)])}</p>`}<div class="divider"></div><div class="split"><span class="muted">${state.room.totalRounds} 題 × 每題 ${state.room.seconds} 秒</span><span class="chip">${state.mode==='demo'?'🎭 示範模式':'🌐 即時連線'}</span></div><div class="space-top">${host?`<button class="btn full" data-action="start" ${n<2?'disabled':''}>🔥 開始荒謬挑戰（${n} 人）</button><p class="fineprint">主持人也能參賽。開始後不接受新玩家加入；玩家中途離開會保留原有分數。</p>`:`<div class="info-box">⏳ 房主正在準備中！先看看今天會與誰展開默契大戰。</div>`}</div></div><div class="space-top"><button class="btn tertiary full" data-action="leave">← 回首頁</button></div>`, `<span class="status-tag">${esc(state.roomCode)}</span>`);
   }
   function choiceButtons(field,selected,q){return `<div class="option-grid">${q.a.map((a,i)=>`<button type="button" class="option ${selected===i?(field==='choice'?'selected':'guess-selected'):''}" data-${field}="${i}" aria-pressed="${selected===i}"><span class="option-letter">${'ABCD'[i]}</span><span>${esc(a)}</span></button>`).join('')}</div>`;}
   function roundHeader(){return `<div class="round-header"><span class="chip yellow">第 ${state.room.roundIndex+1}／${state.room.totalRounds} 題</span><span class="rank-pill">🏅 第 ${myRank()||'–'} 名 · ${myScore()} 分</span></div><div class="progress" aria-label="題目進度"><div style="width:${Math.round(100*(state.room.roundIndex+1)/state.room.totalRounds)}%"></div></div>`;}
@@ -410,6 +447,8 @@
     `, `<span class="status-tag">${state.room.totalRounds} 題挑戰完成</span>`);
   }
   function render(){
+    // 房間主題由主持人建立時寫入 Firestore，玩家不需自行設定。
+    document.documentElement.setAttribute('data-theme',activeTheme());
     if(!state.mode || !state.room) {$app.innerHTML=state.page==='manager'?renderManager():state.page==='host'?renderHost():state.page==='join'?renderJoin():renderHome();return;}
     // 每次新題啟動時，先顯示題目，不沿用上一題或等候室留在頁面底部的位置。
     // 以「房間＋題號」辨識，只捲動一次；同一題收到其他玩家的票數時不干擾目前閱讀位置。
@@ -462,7 +501,7 @@
     const preparedQuestions=buildRoomQuestions();
     clearListeners();state.mode='demo';state.uid='demo-me';state.roomCode='DEMO88';
     state.players=[{uid:state.uid,name,emoji:'😎',joinedAt:0},...BOT_NAMES.map((name,i)=>({uid:'bot'+i,name,emoji:EMOJIS[i],joinedAt:i+1}))];
-    state.room={hostUid:state.uid,phase:'lobby',roundIndex:-1,totalRounds:state.rounds,seconds:state.seconds,questions:preparedQuestions,scores:{},streaks:{},usedDoubles:{},lastResult:null,deadline:null,heroImage:state.heroImage};
+    state.room={hostUid:state.uid,phase:'lobby',roundIndex:-1,totalRounds:state.rounds,seconds:state.seconds,questions:preparedQuestions,scores:{},streaks:{},usedDoubles:{},lastResult:null,deadline:null,heroImage:state.heroImage,theme:state.themeChoice};
     state.votes=[];state.choice=null;state.guess=null;state.double=false;state.voteStep='choice';state.voteSubmitState='idle';history.replaceState(null,'',location.pathname);render();
   }
   function validateName(){const s=state.nickname.trim().slice(0,14);if(!s){state.error='先填入暱稱，這樣排行榜才知道誰是誰。';render();return null;}state.nickname=s;localStorage.setItem('mqs_name',s);state.error='';return s;}
@@ -510,7 +549,7 @@
     let code='';
     for(let i=0;i<6;i++){const candidate=randomCode();const snap=await L.getDoc(roomRef(candidate));if(!snap.exists()){code=candidate;break;}}
     if(!code)throw new Error('房間代碼產生失敗，請再試一次。');
-    const data={hostUid:state.uid,phase:'lobby',roundIndex:-1,totalRounds:state.rounds,seconds:state.seconds,questions:preparedQuestions,scores:{},streaks:{},usedDoubles:{},lastResult:null,deadline:null,createdAt:Date.now(),heroImage:state.heroImage};
+    const data={hostUid:state.uid,phase:'lobby',roundIndex:-1,totalRounds:state.rounds,seconds:state.seconds,questions:preparedQuestions,scores:{},streaks:{},usedDoubles:{},lastResult:null,deadline:null,createdAt:Date.now(),heroImage:state.heroImage,theme:state.themeChoice};
     await L.setDoc(roomRef(code),data);
     await L.setDoc(playerRef(code,state.uid),{uid:state.uid,name,emoji:emojiFor(state.uid),joinedAt:Date.now()});
     state.mode='online';state.roomCode=code;state.room=data;state.player=state.uid;history.replaceState(null,'',`?room=${code}`);
@@ -666,6 +705,14 @@
     const b=e.target.closest('[data-action]');if(!b||state.busy)return;
     const action=b.dataset.action;
     if(action==='brand-home'){goHomeFromBrand();return;}
+    if(action==='choose-theme'){
+      if(!Object.hasOwn(THEME_NAMES,b.dataset.themeId))return;
+      state.busy=true;
+      try{await chooseTheme(b.dataset.themeId);state.error='';}
+      catch(err){state.error=friendlyError(err);}
+      finally{state.busy=false;render();}
+      return;
+    }
     if(action==='leave'){leave();return;}
     if(action==='open-home'){state.page='home';state.error='';render();window.scrollTo(0,0);return;}
     if(action==='open-host'){state.page='host';state.error='';render();window.scrollTo(0,0);return;}
