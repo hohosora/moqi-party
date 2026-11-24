@@ -3963,3 +3963,10 @@ html[data-theme="panel"][data-game-screen="finished"] .info-box{
     transition:none!important
   }
 }
+
+/* 像素白狗保留原圖方格邊緣，不繼承上一版平滑插畫的縮放設定。 */
+.hero-face .mascot-dog,
+.simple-home-hero .hero-graphic .mascot-dog{
+  image-rendering:crisp-edges;
+  image-rendering:pixelated;
+}
