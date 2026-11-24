@@ -2418,3 +2418,821 @@ html[data-theme="minimal"] .hero-face .mascot-dog{
   .simple-home-hero .hero-graphic{min-height:131px}
   .simple-home-hero .hero-graphic .hero-photo{width:87px;height:87px}
 }
+
+/* ────────────────────────────────────────────────────────────────
+   v13  REALISTIC HARDWARE CONSOLE  /  2026-11-24
+   Target: photorealistic brushed aluminum control unit with dark
+   engraved inserts, genuine tactile caps, LEDs and rotary knobs.
+   Only html[data-theme="panel"] is affected. All knobs, grills,
+   screws and lamps are visual details (pointer-events:none).
+   No remote fonts/images; CSS gradients are used for material.
+   ──────────────────────────────────────────────────────────────── */
+html[data-theme="panel"]{
+  --hw-shell-top:#787b75;
+  --hw-shell-bottom:#353a36;
+  --hw-plate-light:#c5c4bc;
+  --hw-plate:#989b93;
+  --hw-plate-shadow:#545b55;
+  --hw-screen:#151b19;
+  --hw-accent:#ff7020;
+  --hw-accent-hot:#ffb16a;
+  --hw-lcd:#f8f8ef;
+  --hw-gold:#e7a06b;
+  --hw-ink:#171d19;
+  --hw-light-bevel:rgba(255,255,249,.76);
+  --hw-deep-shadow:rgba(12,18,13,.65);
+  --text:#f4f4eb;
+  --muted:#e3e4da;
+  --yellow:#ff802a;
+  --mint:#e7f073;
+  --line:rgba(249,246,232,.28);
+  color-scheme:dark
+}
+html[data-theme="panel"] body{
+  color:var(--text);
+  background:
+    radial-gradient(ellipse at 46% -13%,rgba(233,230,215,.3),transparent 48%),
+    radial-gradient(ellipse at 105% 95%,rgba(0,0,0,.48),transparent 65%),
+    linear-gradient(145deg,#797b74,#464b46 37%,#222722 85%);
+}
+html[data-theme="panel"] .ambient{display:none}
+
+/* ONE continuous hardware chassis, not a stack of flat web cards. */
+html[data-theme="panel"] .container{
+  position:relative;isolation:isolate;
+  border:4px solid #222622;border-radius:29px;
+  margin-top:13px;margin-bottom:18px;
+  padding-top:30px;padding-bottom:44px;
+  background:
+    radial-gradient(ellipse at 12% -6%,rgba(255,255,241,.43),transparent 38%),
+    linear-gradient(103deg,rgba(255,255,255,.17) 0 2%,transparent 13% 79%,rgba(0,0,0,.22) 98%),
+    repeating-linear-gradient(0deg,rgba(20,22,19,.035) 0 1px,rgba(255,255,255,.018) 1px 2px,transparent 2px 4px),
+    repeating-linear-gradient(90deg,rgba(255,255,255,.023) 0 1px,transparent 1px 9px),
+    linear-gradient(155deg,#a09f97 0%,#737871 22%,#555b55 57%,#353b36 100%);
+  box-shadow:
+    inset 0 0 0 2px #b7b8b0,
+    inset 0 7px 5px rgba(255,255,255,.48),
+    inset 0 -13px 16px rgba(0,0,0,.67),
+    inset 9px 0 12px rgba(255,255,245,.13),
+    inset -8px 0 13px rgba(0,0,0,.28),
+    0 7px 0 #141814,
+    0 13px 20px rgba(0,0,0,.42),
+    0 22px 45px rgba(4,7,5,.32);
+}
+html[data-theme="panel"] .container::before{
+  content:"";position:absolute;top:9px;left:50%;
+  transform:translateX(-50%);width:124px;height:12px;
+  pointer-events:none;
+  border:1px solid #333933;border-radius:3px;
+  background:
+    radial-gradient(circle at center,#121612 0 1.7px,#92978f 1.8px 2.6px,transparent 2.7px) 0 0/10px 10px,
+    linear-gradient(#555952,#3e443e);
+  box-shadow:inset 0 3px 5px #1d231e,0 1px 0 rgba(255,255,255,.48)
+}
+html[data-theme="panel"] .container::after{
+  content:"";position:absolute;inset:0;
+  pointer-events:none;z-index:9;border-radius:inherit;
+  background:
+    radial-gradient(circle at center,#151a16 0 12%,#565e57 13% 32%,#c5c6bb 33% 48%,#656b64 49% 55%,transparent 59%) left 9px top 9px/17px 17px no-repeat,
+    radial-gradient(circle at center,#151a16 0 12%,#565e57 13% 32%,#c5c6bb 33% 48%,#656b64 49% 55%,transparent 59%) right 9px top 9px/17px 17px no-repeat,
+    radial-gradient(circle at center,#151a16 0 12%,#565e57 13% 32%,#c5c6bb 33% 48%,#656b64 49% 55%,transparent 59%) left 9px bottom 9px/17px 17px no-repeat,
+    radial-gradient(circle at center,#151a16 0 12%,#565e57 13% 32%,#c5c6bb 33% 48%,#656b64 49% 55%,transparent 59%) right 9px bottom 9px/17px 17px no-repeat;
+}
+
+/* The silvery top plate is engraved, with right LCD window. */
+html[data-theme="panel"] .topbar{
+  position:relative;z-index:2;
+  margin:0 0 8px;padding:13px 12px 14px;
+  min-height:78px;gap:9px;
+  border:3px solid #b7b8af;border-radius:11px;
+  color:#f6f5eb;
+  background:
+    linear-gradient(102deg,rgba(255,255,255,.22),transparent 22% 76%,rgba(0,0,0,.15)),
+    repeating-linear-gradient(0deg,rgba(255,255,255,.038) 0 1px,rgba(0,0,0,.023) 1px 2px,transparent 2px 4px),
+    linear-gradient(163deg,#999a92,#777b75 43%,#5a5f58);
+  box-shadow:
+    inset 0 3px 3px #deded1,
+    inset 0 -5px 5px #2a312a,
+    inset 3px 0 5px rgba(255,255,255,.38),
+    0 3px 0 #343a33,
+    0 8px 13px rgba(4,8,5,.3);
+}
+html[data-theme="panel"] .topbar::after{
+  content:"MODEL MQ-01 / METAL CONTROLLER";
+  position:absolute;left:15px;right:15px;bottom:3px;
+  pointer-events:none;text-align:center;
+  color:#2d312d;
+  font:800 9px/1.35 ui-monospace,SFMono-Regular,Consolas,monospace;
+  letter-spacing:.12em;text-shadow:0 1px rgba(255,255,255,.54)
+}
+html[data-theme="panel"] .brand-home{
+  color:#f8f7f0;border:0;background:transparent;
+  min-height:54px;padding:4px 5px;
+}
+html[data-theme="panel"] .brand-home:hover{background:rgba(255,255,255,.1)}
+html[data-theme="panel"] .brand-title{
+  color:#f3f3ed;font-weight:1000;
+  text-shadow:0 2px 2px rgba(10,14,11,.85),0 -1px rgba(255,255,245,.65);
+  letter-spacing:.015em
+}
+html[data-theme="panel"] .brand-home-hint{
+  color:#f5aa72;text-shadow:0 1px #151a15
+}
+html[data-theme="panel"] .brand-mark{
+  border:3px solid #9c9d94;border-radius:9px;
+  background:linear-gradient(157deg,#e0e0d8 0%,#9c9e96 35%,#494e47 76%,#232824 100%);
+  color:#282e28;transform:none;
+  box-shadow:inset 0 2px 2px #f7f8ed,inset 0 -3px 3px #292e28,
+    0 4px 0 #393f37,0 6px 8px rgba(0,0,0,.38)
+}
+html[data-theme="panel"] .brand-mark span{
+  color:#242923;transform:none;
+  text-shadow:0 1px rgba(255,255,255,.6)
+}
+html[data-theme="panel"] .status-tag{
+  position:relative;min-height:49px;
+  display:inline-flex;align-items:center;
+  padding:9px 12px 9px 18px;
+  background:linear-gradient(180deg,#0e1411,#232b24 55%,#171c18);
+  color:#f7a65d;
+  border:2px solid #a3a79e;border-radius:7px;
+  box-shadow:inset 0 4px 7px rgba(0,0,0,.93),inset 0 -1px 1px #778075,
+    0 1px 0 #f2f0e4;
+  font-weight:950;text-shadow:0 0 6px rgba(255,106,21,.45)
+}
+html[data-theme="panel"] .status-tag::before{
+  content:"";position:absolute;top:6px;left:6px;
+  width:7px;height:7px;border-radius:50%;
+  background:radial-gradient(circle at 34% 30%,#fff1b6,#ff881c 50%,#7a2905);
+  box-shadow:0 0 7px #ff7428,0 0 0 1px #3b493f;
+}
+html[data-theme="panel"] .hw-console-strip{
+  display:flex;align-items:center;gap:10px;
+  min-height:28px;margin:3px 5px 21px;padding:4px 14px 5px;
+  color:#bfc6b8;text-transform:uppercase;
+  font:800 10px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace;
+  letter-spacing:.12em;
+  border:2px solid #a4a59c;border-radius:5px;
+  background:linear-gradient(#3d423d,#222822);
+  box-shadow:inset 0 3px 4px #101611,0 1px rgba(255,255,255,.52)
+}
+html[data-theme="panel"] .hw-console-led{
+  width:9px;height:9px;flex:none;border-radius:50%;
+  border:1px solid #8f4219;
+  background:radial-gradient(circle at 35% 30%,#fff6d1 0,#ffad63 35%,#ff5a08 72%,#5a1a0b);
+  box-shadow:0 0 7px 1px rgba(255,110,23,.72)
+}
+html[data-theme="panel"] .hw-console-meter{
+  margin-left:auto;flex:none;width:58px;height:13px;border:1px solid #71776a;
+  border-radius:3px;
+  background:
+    repeating-linear-gradient(90deg,#d9e679 0 4px,#303a25 4px 8px) 0 0/100% 100%,
+    #273323;
+  box-shadow:inset 0 2px 3px #080c06,0 0 5px rgba(211,230,77,.3)
+}
+
+/* Light metallic floating plates with actual-looking screw heads. */
+html[data-theme="panel"] .card{
+  position:relative;isolation:isolate;
+  color:var(--hw-ink);
+  border:3px solid #c6c8bd;border-radius:16px;
+  background:
+    radial-gradient(ellipse at 16% -15%,rgba(255,255,247,.55),transparent 48%),
+    repeating-linear-gradient(0deg,rgba(25,31,27,.04) 0 1px,rgba(255,255,255,.03) 1px 2px,transparent 2px 4px),
+    linear-gradient(115deg,rgba(255,255,255,.2),transparent 32%,rgba(0,0,0,.09) 84%),
+    linear-gradient(#b9bab1,#999c94 52%,#797e76);
+  box-shadow:
+    inset 0 3px 3px rgba(255,255,248,.86),
+    inset 0 -5px 5px rgba(32,40,33,.54),
+    inset 3px 0 3px rgba(255,255,255,.3),
+    0 3px 0 #394238,
+    0 8px 14px rgba(9,17,10,.44);
+}
+html[data-theme="panel"] .card.soft{
+  background:linear-gradient(#969a91,#7c8079);
+  color:#141b15;
+  border-color:#c3c4b9;
+  box-shadow:inset 0 3px 7px #5d675c,inset 0 -2px 1px #ddded2,0 2px 0 #3c433c;
+}
+html[data-theme="panel"] .card:not(.soft)::before{
+  content:"";position:absolute;inset:0;z-index:3;pointer-events:none;
+  border-radius:inherit;
+  background:
+    radial-gradient(circle at 49% 49%,#171d18 0 18%,#a5a89c 20% 38%,#e1e0d4 40% 55%,transparent 59%) left 10px top 10px/14px 14px no-repeat,
+    radial-gradient(circle at 49% 49%,#171d18 0 18%,#a5a89c 20% 38%,#e1e0d4 40% 55%,transparent 59%) right 10px top 10px/14px 14px no-repeat,
+    radial-gradient(circle at 49% 49%,#171d18 0 18%,#a5a89c 20% 38%,#e1e0d4 40% 55%,transparent 59%) left 10px bottom 10px/14px 14px no-repeat,
+    radial-gradient(circle at 49% 49%,#171d18 0 18%,#a5a89c 20% 38%,#e1e0d4 40% 55%,transparent 59%) right 10px bottom 10px/14px 14px no-repeat;
+}
+html[data-theme="panel"] .card:not(.soft)::after{
+  content:"";position:absolute;z-index:3;pointer-events:none;top:9px;right:34px;
+  width:39px;height:14px;border:1px solid #727970;border-radius:3px;
+  background:radial-gradient(circle,#171b17 0 1.2px,#989c92 1.3px 2px,transparent 2.1px) 0 0/7px 7px,
+    linear-gradient(#656a62,#363b34);
+  box-shadow:inset 0 2px 4px #1c211b,0 1px 0 rgba(255,255,255,.6)
+}
+html[data-theme="panel"] .card .mini-heading,
+html[data-theme="panel"] .card .eyebrow,
+html[data-theme="panel"] .card .host-bank-help{
+  color:#202923;text-shadow:0 1px rgba(255,255,255,.5)
+}
+html[data-theme="panel"] .card .fineprint,
+html[data-theme="panel"] .card .muted{
+  color:#313c33;text-shadow:none
+}
+html[data-theme="panel"] .entry-card{
+  padding-top:50px;
+  border-color:#c7c8bf;
+}
+html[data-theme="panel"] .entry-card::before,
+html[data-theme="panel"] .card.entry-card::before{
+  content:"●  HOST CONTROLS / MODULE 01";
+  position:absolute;inset:auto;top:9px;left:14px;right:auto;bottom:auto;
+  z-index:4;pointer-events:none;width:max-content;max-width:calc(100% - 80px);
+  background:linear-gradient(#202720,#101711);
+  padding:6px 10px;border-radius:5px;border:1px solid #d0d1c6;
+  color:#ffa45e;
+  box-shadow:inset 0 2px 3px #050b06,0 1px 1px #e8e7dd;
+  text-shadow:0 0 3px rgba(255,107,23,.4);
+  font:950 10px/1.1 ui-monospace,Consolas,monospace;
+  letter-spacing:.09em;
+}
+html[data-theme="panel"] .entry-card::after{
+  top:13px;right:11px;width:51px;height:22px
+}
+
+/* Recessed black LCD fields, with genuinely raised passive rotary
+   knobs alongside the TWO time / round selectors. */
+html[data-theme="panel"] .field span,
+html[data-theme="panel"] .label{
+  color:#283129;
+  font-weight:900;
+  text-shadow:0 1px rgba(255,255,246,.5)
+}
+html[data-theme="panel"] .field input,
+html[data-theme="panel"] .field select,
+html[data-theme="panel"] .field textarea{
+  min-width:0;
+  color:var(--hw-lcd);
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.09),transparent 22%),
+    linear-gradient(#111712,#242e25 66%,#161d17);
+  border:3px solid #5b6258;border-radius:7px;
+  box-shadow:
+    inset 0 5px 9px #080d09,
+    inset 0 -1px 1px rgba(225,232,210,.22),
+    0 1px 0 rgba(255,255,242,.77);
+  text-shadow:0 1px 1px #000;
+  padding-left:14px;
+}
+html[data-theme="panel"] .field input::placeholder,
+html[data-theme="panel"] .field textarea::placeholder{
+  color:#bdc6b6;opacity:1
+}
+html[data-theme="panel"] .field select option{
+  color:#f9f8f0;background:#202720
+}
+html[data-theme="panel"] .field input:focus,
+html[data-theme="panel"] .field select:focus,
+html[data-theme="panel"] .field textarea:focus{
+  border-color:#f2a36a;
+  outline:3px solid rgba(255,115,42,.33);outline-offset:2px;
+  box-shadow:inset 0 4px 8px #060906,0 0 10px rgba(255,123,36,.25)
+}
+html[data-theme="panel"] .entry-card > .field{
+  display:block;padding:12px;
+  background:
+    linear-gradient(160deg,#aaa9a1,#92958b);
+  border:2px solid #d3d4c7;border-radius:10px;
+  box-shadow:inset 0 2px 2px #f4f3e5,inset 0 -3px 3px #62695f,0 2px 0 #394238
+}
+html[data-theme="panel"] .entry-card > .field > span{
+  display:block;margin-bottom:9px
+}
+html[data-theme="panel"] .form-grid{
+  gap:11px;
+  align-items:stretch;
+}
+html[data-theme="panel"] .form-grid .field{
+  display:grid;
+  grid-template-columns:51px minmax(0,1fr);
+  grid-template-rows:auto minmax(62px,auto);
+  gap:10px;
+  position:relative;
+  padding:13px 11px 15px;
+  border:3px solid #c4c7bb;border-radius:11px;
+  background:
+    linear-gradient(133deg,rgba(255,255,255,.39),transparent 40%),
+    linear-gradient(#a9aca2,#898e84);
+  box-shadow:inset 0 2px 3px #f1f0e5,inset 0 -4px 5px #565f54,0 3px 0 #3d463c
+}
+html[data-theme="panel"] .form-grid .field > span{
+  grid-column:1/-1;grid-row:1;
+  font-size:15px;line-height:1.35;
+  margin:0;
+}
+html[data-theme="panel"] .form-grid .field::before{
+  content:"";pointer-events:none;z-index:1;
+  grid-column:1;grid-row:2;align-self:center;justify-self:center;
+  width:48px;height:48px;border-radius:50%;
+  border:3px solid #d2d3c8;
+  background:
+    linear-gradient(90deg,transparent 0 47%,rgba(255,115,25,.95) 48% 52%,transparent 53%) center 3px/28px 8px no-repeat,
+    conic-gradient(from -23deg,
+      #3d433b 0deg,#aeb0a6 30deg,#f5f3e8 74deg,
+      #7d857a 118deg,#373c35 190deg,
+      #d9dace 254deg,#888b7f 320deg,#3c433b 360deg);
+  box-shadow:
+    inset 0 1px 1px #fff,
+    inset 0 -4px 4px #353a33,
+    0 2px 0 #313a30,
+    0 5px 8px rgba(5,9,6,.52);
+}
+html[data-theme="panel"] .form-grid .field::after{
+  content:"";pointer-events:none;z-index:1;
+  position:absolute;left:31px;bottom:11px;width:11px;height:7px;
+  border-radius:50%;background:#ef631d;
+  box-shadow:0 0 5px 1px rgba(255,111,33,.56);
+}
+html[data-theme="panel"] .form-grid .field > select{
+  grid-column:2;grid-row:2;
+  width:100%;min-height:62px;
+  font-size:16px;font-weight:900;line-height:1.35;
+  padding:8px 6px;
+  border-color:#656c60;
+  align-self:stretch
+}
+
+/* Switches = metal caps in steel sockets; selected = lit orange module. */
+html[data-theme="panel"] .theme-setting{
+  color:#eeeae0;
+  border:4px solid #a3a69b;border-radius:14px;
+  padding:17px 13px 19px;
+  background:
+    radial-gradient(ellipse at 50% -20%,rgba(255,255,255,.16),transparent 54%),
+    repeating-linear-gradient(0deg,rgba(255,255,255,.033) 0 1px,transparent 1px 5px),
+    linear-gradient(#5e645c,#343b34);
+  box-shadow:inset 0 3px 5px #1c241d,inset 0 -2px 3px #a4a99c,
+    0 4px 0 #252d25,0 8px 12px rgba(6,12,6,.36);
+}
+html[data-theme="panel"] .theme-setting-heading strong,
+html[data-theme="panel"] .theme-selected-name,
+html[data-theme="panel"] .theme-help{
+  color:#f4f2e8
+}
+html[data-theme="panel"] .theme-setting-heading strong::before{
+  content:"●";color:#ff8b39;font-size:13px;margin-right:7px;
+  text-shadow:0 0 7px #ff772a
+}
+html[data-theme="panel"] .theme-grid{gap:9px}
+html[data-theme="panel"] .theme-choice{
+  position:relative;
+  color:#191f19;
+  background:
+    linear-gradient(156deg,rgba(255,255,255,.24),transparent 42%),
+    linear-gradient(#ced0c4,#a5a99f 53%,#787e74);
+  border:3px solid #d4d5c8;border-radius:11px;
+  padding:8px 7px 12px;
+  box-shadow:
+    inset 0 3px 2px #f4f3e9,
+    inset 0 -4px 4px #545c51,
+    0 4px 0 #30382e,
+    0 7px 10px rgba(4,9,4,.48);
+}
+html[data-theme="panel"] .theme-choice strong,
+html[data-theme="panel"] .theme-choice small,
+html[data-theme="panel"] .theme-choice .theme-check{
+  color:#191f1a;text-shadow:0 1px rgba(255,255,247,.48)
+}
+html[data-theme="panel"] .theme-choice .theme-check{
+  font-size:12px;font-weight:900
+}
+html[data-theme="panel"] .theme-choice.active{
+  color:#21170f;
+  border-color:#f2b17e;
+  background:
+    linear-gradient(152deg,rgba(255,255,255,.46),transparent 40%),
+    linear-gradient(#ffc18a,#f58a3f 58%,#db5b1e);
+  box-shadow:
+    inset 0 3px 5px #ffe5c7,
+    inset 0 -5px 5px #9f4515,
+    0 2px 0 #3b3c2f,
+    0 4px 9px rgba(250,113,38,.38)
+}
+html[data-theme="panel"] .theme-choice.active strong,
+html[data-theme="panel"] .theme-choice.active small,
+html[data-theme="panel"] .theme-choice.active .theme-check{
+  color:#24170d
+}
+html[data-theme="panel"] .theme-choice:active{
+  transform:translateY(3px);
+  box-shadow:inset 0 5px 7px rgba(24,30,21,.3),0 1px 0 #2c362a
+}
+html[data-theme="panel"] .theme-swatch-panel{
+  border:2px solid #c9c7b9;border-radius:6px;
+  background:linear-gradient(#777d71,#343b35);
+  box-shadow:inset 0 3px 6px #161e16,0 1px #f1eee2
+}
+
+/* Real thick action keys, with a recessed steel key-well and bezel.
+   Each active interaction compresses 5px rather than "just darkening". */
+html[data-theme="panel"] .btn{
+  position:relative;
+  color:#211b13;text-shadow:0 1px rgba(255,237,213,.65);
+  font-size:18px;font-weight:1000;
+  border:3px solid #f5b680;border-radius:12px;
+  background:
+    linear-gradient(110deg,rgba(255,255,255,.35),transparent 28% 78%,rgba(97,25,4,.17)),
+    linear-gradient(178deg,#ffd4a2 0%,#ffb16d 18%,#ff842b 48%,#e65d18 78%,#a6320b 100%);
+  box-shadow:
+    inset 0 3px 2px rgba(255,247,222,.93),
+    inset 0 -5px 4px rgba(100,26,4,.7),
+    inset 2px 0 3px rgba(255,255,250,.35),
+    0 2px 0 #e19055,
+    0 6px 0 #50392a,
+    0 10px 15px rgba(0,0,0,.52);
+  transition:transform .09s,box-shadow .09s,filter .12s
+}
+html[data-theme="panel"] .btn.secondary{
+  color:#1a211b;text-shadow:0 1px rgba(255,255,255,.72);
+  background:linear-gradient(#f5f2e8,#c7c9be 27%,#a1a59a 63%,#6d7468);
+  border-color:#dcddd0;
+  box-shadow:inset 0 3px 2px #fff,inset 0 -4px 4px #566054,
+    0 2px 0 #b1b3a7,0 6px 0 #3b4539,0 10px 13px #080e0888
+}
+html[data-theme="panel"] .btn.tertiary,
+html[data-theme="panel"] .btn.dark{
+  color:#f5f4e9;text-shadow:0 -1px #111610;
+  background:linear-gradient(#898d83,#575e55 29%,#353b35 71%,#171e17);
+  border-color:#a5a79b;
+  box-shadow:inset 0 3px 2px #c0c1b6,inset 0 -4px 4px #141b13,
+    0 2px 0 #828980,0 6px 0 #222b20,0 9px 12px #04080488
+}
+html[data-theme="panel"] .btn:hover:not(:disabled){filter:brightness(1.045);transform:none}
+html[data-theme="panel"] .btn:active:not(:disabled){
+  transform:translateY(5px);
+  box-shadow:inset 0 6px 9px rgba(49,23,8,.42),0 1px 0 #3d4a3b
+}
+html[data-theme="panel"] .btn:focus-visible,
+html[data-theme="panel"] .option:focus-visible,
+html[data-theme="panel"] .theme-choice:focus-visible{
+  outline:3px solid #ffe59c;outline-offset:4px
+}
+html[data-theme="panel"] .entry-card > .btn.full[data-action="host"]{
+  display:block;width:100%;min-height:72px;
+  margin-top:23px;margin-bottom:11px;
+  border:4px solid #ffd1a5;border-radius:13px;
+  font-size:22px;letter-spacing:.025em;
+  background:
+    linear-gradient(90deg,rgba(255,255,255,.4),transparent 27% 78%,rgba(114,33,8,.2)),
+    linear-gradient(#ffc98a,#ff902c 36%,#fb6e1e 67%,#c13d0a);
+  box-shadow:
+    inset 0 3px 2px #fff1d5,
+    inset 0 -6px 5px rgba(118,31,5,.77),
+    0 0 0 4px #656a60,
+    0 0 0 7px #c7c8b7,
+    0 5px 0 7px #424c40,
+    0 13px 15px 5px rgba(16,21,16,.57),
+    0 0 21px rgba(255,122,32,.27);
+}
+html[data-theme="panel"] .entry-card > .btn.full[data-action="host"]:active:not(:disabled){
+  transform:translateY(5px);
+  box-shadow:
+    inset 0 7px 10px rgba(95,39,12,.65),
+    0 0 0 4px #4a5349,0 0 0 7px #bcbeb1,
+    0 1px 0 7px #323c31,0 7px 11px rgba(10,18,9,.43)
+}
+html[data-theme="panel"] .entry-card > .btn.full[data-action="demo"]{
+  margin-top:20px;
+  min-height:58px;
+}
+html[data-theme="panel"] .sticky-submit{
+  background:linear-gradient(0deg,rgba(45,51,44,.99) 70%,transparent 100%);
+}
+html[data-theme="panel"] .sticky-submit .btn{
+  min-height:62px
+}
+
+/* Every answer behaves like a real switch, not a CSS card. */
+html[data-theme="panel"] .option{
+  position:relative;color:#1c261d;
+  background:
+    linear-gradient(114deg,rgba(255,255,255,.36),transparent 24% 82%,rgba(34,43,34,.13)),
+    linear-gradient(#e2e2d6,#c0c4b6 42%,#9da497 72%,#777f72);
+  border:3px solid #e5e5d9;border-radius:12px;
+  box-shadow:inset 0 3px 3px #fff,
+    inset 0 -4px 5px #687466,
+    0 2px 0 #adb5a6,
+    0 6px 0 #394437,
+    0 11px 14px rgba(5,10,5,.42);
+  text-shadow:0 1px rgba(255,255,247,.68);
+  min-height:132px
+}
+html[data-theme="panel"] .option:hover{filter:brightness(1.045);background-color:#d5d8cc}
+html[data-theme="panel"] .option.selected,
+html[data-theme="panel"] .option.guess-selected{
+  background:linear-gradient(#ffe3b9,#ffc086 34%,#ed8e4c 78%,#de7030);
+  color:#291c11;border-color:#ffcd9c;
+  box-shadow:inset 0 6px 9px rgba(119,53,10,.38),
+    inset 0 -1px 1px #fff0d3,0 2px 0 #515f50;
+  transform:translateY(4px)
+}
+html[data-theme="panel"] .option:active:not(:disabled){
+  transform:translateY(5px);
+  box-shadow:inset 0 6px 9px #49574999,0 1px 0 #455342
+}
+html[data-theme="panel"] .option-letter{
+  border:2px solid #b9bbb0;border-radius:9px;
+  background:radial-gradient(circle at 33% 23%,#a2a79c,#575e55 47%,#222b23 85%);
+  color:#f9f6ec;
+  box-shadow:inset 0 2px 2px #b4b8ac,inset 0 -4px 4px #171e17,0 3px 0 #4e594d;
+  text-shadow:0 -1px #151a16
+}
+html[data-theme="panel"] .option.selected .option-letter,
+html[data-theme="panel"] .option.guess-selected .option-letter{
+  background:linear-gradient(#ffbb78,#f67b2d);
+  border-color:#ffd1a5;color:#27170f;
+  box-shadow:inset 0 3px 3px #ffeacb,0 2px 0 #99552d
+}
+
+/* Black recessed data windows: timers, scores, room code and status. */
+html[data-theme="panel"] .question-card{
+  position:relative;
+  color:#fff9ef;background:
+    linear-gradient(180deg,rgba(255,255,255,.055),transparent 22%),
+    repeating-linear-gradient(90deg,rgba(255,255,255,.019) 0 1px,transparent 1px 8px),
+    linear-gradient(#343c34,#141b15 82%);
+  border:4px solid #aeb3a5;border-radius:12px;
+  box-shadow:inset 0 5px 9px #020803,
+    inset 0 -1px 1px rgba(213,225,200,.25),
+    0 2px 0 #e0e0d0,0 6px 0 #454d43,0 10px 16px rgba(5,10,5,.39);
+}
+html[data-theme="panel"] .question-card .q-label{color:#ffc18a}
+html[data-theme="panel"] .question-card .question-text{
+  color:#f8f8ee;text-shadow:0 1px 2px #060b07
+}
+html[data-theme="panel"] .question-card::before{
+  background:linear-gradient(#ffffa6,#e0e954 55%,#8ca339);
+  box-shadow:0 0 9px 1px rgba(220,235,82,.65)
+}
+html[data-theme="panel"] .timer,
+html[data-theme="panel"] .rank-pill,
+html[data-theme="panel"] .chip{
+  background:linear-gradient(#212a22,#0d140e 83%);
+  color:#f8f9ed;
+  border:2px solid #989e8e;border-radius:9px;
+  box-shadow:inset 0 4px 5px #020602,0 2px 0 #c9c9b9;
+  font-weight:850;text-shadow:0 1px #000
+}
+html[data-theme="panel"] .timer::after{
+  background:radial-gradient(circle at 36% 35%,#fcffdc,#eff99a 43%,#b4c74b 78%);
+  box-shadow:0 0 11px rgba(227,248,99,.65),0 0 0 2px #293128
+}
+html[data-theme="panel"] .timer.urgent::after{
+  background:radial-gradient(circle,#ffccb1,#f9672b 65%);
+  box-shadow:0 0 9px #f96b2b
+}
+html[data-theme="panel"] .chip.yellow,
+html[data-theme="panel"] .chip.mint{color:#dfe967}
+html[data-theme="panel"] .poll-status,
+html[data-theme="panel"] .vote-sync-indicator{color:#f0eee5}
+html[data-theme="panel"] .progress{
+  height:13px;border:2px solid #aaa99f;border-radius:5px;
+  background:#181e17;
+  box-shadow:inset 0 3px 5px #060b05,0 1px #d2d4c5
+}
+html[data-theme="panel"] .progress>div{
+  background:linear-gradient(#eaf68d,#c2d54c,#7d9634);
+  border-radius:3px;
+  box-shadow:inset 0 1px #fffdb7,0 0 9px rgba(217,237,84,.4)
+}
+
+/* Secondary information is engraved in metal rather than floating
+   white text on generic glass cards. */
+html[data-theme="panel"] .lobby-code,
+html[data-theme="panel"] .info-box,
+html[data-theme="panel"] .self-selection,
+html[data-theme="panel"] .powerup,
+html[data-theme="panel"] .submit-feedback,
+html[data-theme="panel"] .host-vote-tools,
+html[data-theme="panel"] .how-to-play,
+html[data-theme="panel"] .host-extra,
+html[data-theme="panel"] .avatar-pill,
+html[data-theme="panel"] .room-look,
+html[data-theme="panel"] .bank-picker,
+html[data-theme="panel"] .answer-stepper span{
+  color:#171f18;background:linear-gradient(#bdbeb3,#969b90);
+  border:2px solid #cacdbf;border-radius:10px;
+  box-shadow:inset 0 2px 2px #f4f3e7,inset 0 -3px 4px #656e62,0 2px 0 #424d40
+}
+html[data-theme="panel"] .self-selection strong,
+html[data-theme="panel"] .self-selection small,
+html[data-theme="panel"] .powerup b,
+html[data-theme="panel"] .powerup small,
+html[data-theme="panel"] .how-to-play summary,
+html[data-theme="panel"] .host-extra summary{
+  color:#1f281f
+}
+html[data-theme="panel"] .answer-stepper span.current,
+html[data-theme="panel"] .answer-stepper span.done{
+  background:linear-gradient(#fff0b4,#e1de76);
+  color:#202419;border-color:#f5de91;
+  box-shadow:inset 0 3px 5px #a69a3f
+}
+html[data-theme="panel"] .submit-feedback.is-ready{
+  color:#1e261e;background:#bec3b4
+}
+html[data-theme="panel"] .submit-feedback.is-sending{
+  color:#272016;background:linear-gradient(#ffe0ad,#e4b171)
+}
+html[data-theme="panel"] .submit-feedback.is-error{
+  color:#5f2116;background:#efbbb0
+}
+html[data-theme="panel"] .talk-first{
+  background:linear-gradient(#434c40,#1c261d);
+  color:#fff7ed;
+  border:4px solid #aeb2a6;border-radius:13px;
+  box-shadow:inset 0 4px 6px #0a120b,0 2px 0 #f1f0dc,
+    0 6px 0 #464d40,0 10px 15px #0d180db0
+}
+html[data-theme="panel"] .talk-first h2,
+html[data-theme="panel"] .talk-first p{color:#fff9ee}
+html[data-theme="panel"] .talk-first small{color:#e3e7d9}
+html[data-theme="panel"] .talk-eyebrow{color:#ffa560}
+html[data-theme="panel"] .score-highlight{
+  background:linear-gradient(#eac99c,#c8a275 62%,#a47c55);
+  color:#1c221a;border:3px solid #f6d7af;border-radius:11px;
+  box-shadow:inset 0 3px 2px #fff0d4,inset 0 -4px 4px #6e5138,
+    0 3px 0 #525249,0 7px 10px #080e08a8
+}
+html[data-theme="panel"] .score-big,
+html[data-theme="panel"] .score-highlight .eyebrow{color:#56290f}
+html[data-theme="panel"] .bar-track{
+  background:#2b322a;color:#f5f3e9;border:2px solid #9ba296;
+  box-shadow:inset 0 4px 5px #111a12
+}
+html[data-theme="panel"] .bar-fill{background:linear-gradient(#ffc48b,#f57d32)}
+html[data-theme="panel"] .bar-letter{
+  background:linear-gradient(#90958b,#464f45);
+  border:2px solid #c2c6b8;border-radius:7px;color:#fff8ec;
+  box-shadow:inset 0 2px 2px #c7cabb,0 2px 0 #4e5b4a
+}
+html[data-theme="panel"] .bar-text,
+html[data-theme="panel"] .bar-votes{
+  color:#fefbf0;background:none;text-shadow:0 1px #090d09
+}
+html[data-theme="panel"] .rank-item,
+html[data-theme="panel"] .quick-rank-line,
+html[data-theme="panel"] .rank-name,
+html[data-theme="panel"] .rank-points{color:#202920}
+html[data-theme="panel"] .bank-tab,
+html[data-theme="panel"] .direction-item{
+  background:linear-gradient(#dbdccd,#a1a699 73%,#7b8377);
+  border:2px solid #e6e4d6;border-radius:9px;
+  box-shadow:inset 0 2px 2px #fff,inset 0 -3px 3px #63705c,0 4px 0 #4a5546;
+  color:#202a1e
+}
+html[data-theme="panel"] .bank-tab.active,
+html[data-theme="panel"] .direction-item.active{
+  background:linear-gradient(#ffd7a5,#ee9951);
+  border-color:#ffce98;box-shadow:inset 0 4px 5px #bf6d3a88,0 2px 0 #394638;
+}
+html[data-theme="panel"] .direction-item strong,
+html[data-theme="panel"] .direction-item small{color:#252a1f}
+html[data-theme="panel"] .gemini-count-hint{
+  color:#242419;background:#f3d29d;border-color:#e2b983
+}
+
+/* Lower hardware vent and laser-engraved serial mark. */
+html[data-theme="panel"] .footer{
+  position:relative;overflow:hidden;
+  margin-top:32px;padding:66px 10px 13px;
+  color:#ebeee3;font-weight:800;
+  border:3px solid #a0a69b;border-radius:10px;
+  background:
+    linear-gradient(150deg,rgba(255,255,255,.17),transparent 35%),
+    linear-gradient(#5e665d,#323a32);
+  box-shadow:inset 0 2px 2px #d5d6c7,inset 0 -4px 5px #192419,
+    0 4px 0 #252f24,0 9px 13px rgba(0,0,0,.36);
+  text-shadow:0 1px #172018
+}
+html[data-theme="panel"] .footer::before{
+  content:"";position:absolute;top:12px;left:50%;transform:translateX(-50%);
+  width:74%;max-width:320px;height:39px;
+  border:2px solid #777f73;border-radius:5px;
+  background:
+    radial-gradient(circle at center,#151b15 0 2.1px,#a0a99a 2.2px 2.9px,transparent 3.1px) 0 0/10px 10px,
+    linear-gradient(#465145,#252f26);
+  box-shadow:inset 0 4px 8px #0e160e,0 1px 1px #c4c9b9;
+  pointer-events:none
+}
+
+/* Prevent decorative metal casting from compromising reading or
+   crowding native controls on narrow mobile screens. */
+@media(max-width:580px){
+  html[data-theme="panel"] .container{
+    margin:0;padding:26px 11px max(46px,env(safe-area-inset-bottom));
+    border-width:3px;border-radius:20px;
+  }
+  html[data-theme="panel"] .topbar{
+    min-height:73px;padding:7px 8px 16px;margin-bottom:7px;gap:4px
+  }
+  html[data-theme="panel"] .brand-title{font-size:16px}
+  html[data-theme="panel"] .brand-home-hint{font-size:11px}
+  html[data-theme="panel"] .status-tag{min-height:42px;font-size:11px;padding:7px 7px 7px 15px}
+  html[data-theme="panel"] .topbar::after{font-size:8px}
+  html[data-theme="panel"] .hw-console-strip{margin:4px 3px 18px;padding:5px 7px;font-size:8px;gap:6px}
+  html[data-theme="panel"] .hw-console-meter{width:43px}
+  html[data-theme="panel"] .card{padding:20px 13px}
+  html[data-theme="panel"] .entry-card{padding:47px 13px 19px}
+  html[data-theme="panel"] .entry-card::before{
+    max-width:calc(100% - 86px);font-size:9px
+  }
+  html[data-theme="panel"] .form-grid{
+    display:grid;grid-template-columns:minmax(0,1fr);gap:12px
+  }
+  html[data-theme="panel"] .form-grid .field{
+    grid-template-columns:61px minmax(0,1fr);grid-template-rows:auto minmax(64px,auto);
+    gap:9px;padding:12px 13px;
+  }
+  html[data-theme="panel"] .form-grid .field::before{width:53px;height:53px}
+  html[data-theme="panel"] .form-grid .field::after{left:35px}
+  html[data-theme="panel"] .form-grid .field>select{min-height:64px;font-size:17px;padding:8px 10px}
+  html[data-theme="panel"] .entry-card>.btn.full[data-action="host"]{font-size:20px;min-height:70px}
+  html[data-theme="panel"] .theme-choice{padding:8px 5px;min-height:150px}
+  html[data-theme="panel"] .theme-choice strong{font-size:14px}
+  html[data-theme="panel"] .option{font-size:18px;min-height:132px}
+  html[data-theme="panel"] .voting-question .question-text{font-size:28px}
+}
+@media(max-width:390px){
+  html[data-theme="panel"] .topbar{padding-inline:5px}
+  html[data-theme="panel"] .brand-home{gap:5px}
+  html[data-theme="panel"] .brand-title{font-size:15px}
+  html[data-theme="panel"] .theme-grid{gap:6px}
+  html[data-theme="panel"] .theme-choice{padding:7px 3px}
+  html[data-theme="panel"] .theme-choice strong{font-size:13px}
+  html[data-theme="panel"] .hw-console-strip{font-size:7px}
+  html[data-theme="panel"] .field select{font-size:16px}
+}
+@media(prefers-reduced-motion:reduce){
+  html[data-theme="panel"] .btn,
+  html[data-theme="panel"] .option,
+  html[data-theme="panel"] .theme-choice,
+  html[data-theme="panel"] .role-choice{transition:none!important}
+}
+
+/* v13 finishing touches: hardware entry keys and final winner screen. */
+html[data-theme="panel"] .role-choice,
+html[data-theme="panel"] .role-choice:first-child,
+html[data-theme="panel"] .role-choice.role-host{
+  position:relative;
+  color:#1f261f;
+  border:3px solid #d8d9cc;border-radius:11px;
+  background:
+    linear-gradient(130deg,rgba(255,255,255,.37),transparent 40%,rgba(25,32,25,.14)),
+    linear-gradient(#d4d6c9,#aeb3a6 48%,#8d9587 80%,#737b70);
+  text-shadow:0 1px rgba(255,255,247,.65);
+  box-shadow:
+    inset 0 3px 3px #fcfcf0,
+    inset 0 -5px 5px #697365,
+    0 2px 0 #bfc4b4,
+    0 6px 0 #3e4a3c,
+    0 10px 16px rgba(2,8,3,.47)
+}
+html[data-theme="panel"] .role-choice strong{color:#151d16}
+html[data-theme="panel"] .role-choice small,
+html[data-theme="panel"] .role-choice.role-host small{
+  color:#353f34;text-shadow:0 1px rgba(255,255,248,.66)
+}
+html[data-theme="panel"] .role-choice .role-icon,
+html[data-theme="panel"] .role-choice.role-host .role-icon,
+html[data-theme="panel"] .role-choice:first-child .role-icon{
+  color:#f5f6ea;
+  border:3px solid #9da699;border-radius:8px;
+  background:linear-gradient(#696f65,#3c473b 65%,#1c261d);
+  box-shadow:inset 0 3px 2px #bec5b5,inset 0 -4px 5px #101a12,
+    0 3px 0 #424f3e,0 6px 9px #151c15a6;
+  text-shadow:none
+}
+html[data-theme="panel"] .role-choice.role-host .role-icon{
+  background:linear-gradient(#ffc184,#ff8837 60%,#b34511);
+  border-color:#f3bb8a;
+  box-shadow:inset 0 3px 3px #ffe7c9,inset 0 -4px 5px #75260b,
+    0 3px 0 #554239,0 6px 10px #10150da6
+}
+html[data-theme="panel"] .role-choice .role-arrow,
+html[data-theme="panel"] .role-choice.role-host .role-arrow{
+  color:#1f281f;text-shadow:0 1px rgba(255,255,255,.7)
+}
+html[data-theme="panel"] .role-choice:active{
+  transform:translateY(5px);
+  box-shadow:inset 0 6px 9px #545e5180,0 1px 0 #344033
+}
+html[data-theme="panel"] .question-card .page-title,
+html[data-theme="panel"] .question-card > div[style],
+html[data-theme="panel"] .question-card > p[style]{
+  color:#fffaf0!important;
+  text-shadow:0 1px 2px #050b05
+}
+html[data-theme="panel"] .question-card > .page-title{
+  color:#fffaf0!important
+}
