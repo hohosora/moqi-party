@@ -2241,3 +2241,32 @@ html[data-theme="minimal"] .footer{color:#41494b}
   html[data-theme="minimal"] .voting-question .question-text{font-size:28px}
   html[data-theme="minimal"] .one-step .option{font-size:18px}
 }
+
+/* v11 / 可讀性與硬體細節微調：保留視覺但強化橘鍵文字對比。 */
+html[data-theme="panel"] .btn:not(.secondary):not(.tertiary):not(.dark){
+  color:#191b19;text-shadow:0 1px 1px rgba(255,232,204,.6)
+}
+html[data-theme="panel"] .card.entry-card::before{
+  content:"●  CONTROL / HOST";
+  position:absolute;top:9px;left:23px;right:auto;bottom:auto;
+  z-index:3;pointer-events:none;
+  color:#ffad72;
+  font:900 10px ui-monospace,Consolas,monospace;
+  letter-spacing:.12em;background:none;
+}
+html[data-theme="panel"] .bar-text{
+  display:inline;max-width:max-content;
+  padding:2px 5px;background:rgba(246,246,240,.82);
+  color:#1c241e;border-radius:4px;text-shadow:none;
+}
+html[data-theme="panel"] .bar-votes{color:#fffdf6}
+html[data-theme="party"] .footer,html[data-theme="panel"] .footer,
+html[data-theme="minimal"] .footer{overflow-wrap:anywhere}
+@media(max-width:390px){
+  html[data-theme="party"] .theme-grid,
+  html[data-theme="panel"] .theme-grid{gap:5px}
+  html[data-theme="party"] .theme-choice,
+  html[data-theme="panel"] .theme-choice{padding:6px 4px}
+  html[data-theme="party"] .theme-choice strong,
+  html[data-theme="panel"] .theme-choice strong{font-size:13px}
+}
