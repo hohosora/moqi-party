@@ -1,0 +1,330 @@
+/* 2026-11-24 | Voting UI clarity pass.
+   Separate overrides preserve the three existing themes and all game logic. */
+
+/* The clock is a primary game control: keep it wide, readable and above the tally. */
+html[data-game-screen="voting"] .poll-status{
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  gap:12px;
+  margin:21px 0 14px;
+  min-width:0;
+}
+html[data-game-screen="voting"] #vote-count{
+  order:2;
+  box-sizing:border-box;
+  width:100%;
+  padding:9px 13px;
+  text-align:center;
+  font-size:clamp(16px,3.8vw,18px);
+  font-weight:900;
+  line-height:1.5;
+  border:1px solid rgba(255,255,255,.19);
+  border-radius:10px;
+  background:rgba(255,255,255,.07);
+}
+html[data-game-screen="voting"] #timer{
+  box-sizing:border-box;
+  order:1;
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  width:100%;
+  min-width:0;
+  min-height:120px;
+  max-width:none;
+  padding:19px 18px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:5px;
+  text-align:center;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+html[data-game-screen="voting"] #timer::before{
+  content:"";
+  display:block;
+  position:absolute;
+  inset:8px;
+  border:1px solid currentColor;
+  border-radius:inherit;
+  opacity:.24;
+  pointer-events:none;
+}
+html[data-game-screen="voting"] #timer .timer-caption{
+  display:block;
+  font-size:clamp(16px,3.2vw,18px);
+  font-weight:950;
+  line-height:1.3;
+  letter-spacing:.09em;
+}
+html[data-game-screen="voting"] #timer .timer-digits{
+  display:block;
+  font-size:clamp(42px,7vw,54px);
+  font-weight:1000;
+  line-height:1.1;
+  letter-spacing:-.025em;
+  font-variant-numeric:tabular-nums;
+}
+html[data-game-screen="voting"] #timer.urgent .timer-caption{
+  font-size:0;
+}
+html[data-game-screen="voting"] #timer.urgent .timer-caption::after{
+  content:"⚠ 最後 10 秒";
+  display:block;
+  font-size:clamp(17px,3.2vw,19px);
+  line-height:1.35;
+  font-weight:1000;
+  letter-spacing:.05em;
+}
+@keyframes mqs-urgent-clock{
+  0%,100%{filter:brightness(1)}
+  50%{filter:brightness(1.16)}
+}
+html[data-game-screen="voting"] #timer.urgent{
+  animation:mqs-urgent-clock 1.1s ease-in-out infinite;
+}
+@media(prefers-reduced-motion:reduce){
+  html[data-game-screen="voting"] #timer.urgent{animation:none}
+}
+
+/* Pixel: bold lemon-yellow screen, true black edging and red critical state. */
+html[data-theme="party"][data-game-screen="voting"] #timer{
+  color:#151018;
+  background:#efff19;
+  border:5px solid #0d0b14;
+  border-radius:0;
+  box-shadow:7px 7px 0 #090711,inset 0 4px 0 #fffebc;
+}
+html[data-theme="party"][data-game-screen="voting"] #timer.urgent{
+  color:#fff;
+  background:#b51437;
+  border-color:#0d0b14;
+  box-shadow:7px 7px 0 #090711,inset 0 4px 0 #ed718a;
+}
+
+/* Minimal: a bright neutral border distinguishes the timer from other panels. */
+html[data-theme="minimal"][data-game-screen="voting"] #timer{
+  color:#fffdf5;
+  background:linear-gradient(155deg,#343c40,#151b1e);
+  border:4px solid #f0dfb9;
+  border-radius:19px;
+  box-shadow:inset 0 3px 3px #65707555,0 7px 0 #101315,0 12px 20px #0005;
+}
+html[data-theme="minimal"][data-game-screen="voting"] #timer.urgent{
+  color:#fff;
+  background:linear-gradient(155deg,#ad3043,#6a1429);
+  border-color:#ffe1c4;
+  box-shadow:inset 0 3px 3px #f89a9a55,0 7px 0 #371018,0 12px 20px #0005;
+}
+
+/* Retro mechanical: two distinct instrument bays.
+   Self = saturated teal / cyan. Crowd prediction = amber / orange.
+   Backgrounds, rails, labels, status and selections all reinforce the task. */
+html[data-theme="panel"][data-game-screen="voting"] .vote-area.vote-step-choice{
+  border:4px solid #087c99;
+  border-left:10px solid #00c9ea;
+  border-top:7px solid #17b5ce;
+  color:#082e3a;
+  background:linear-gradient(154deg,#dcfbff 0%,#a6e2ed 55%,#78adba 100%);
+  box-shadow:inset 0 3px 3px #f2ffff,inset 0 -6px 6px #4d8998,
+    0 6px 0 #07495a,0 13px 18px #06141999;
+}
+html[data-theme="panel"][data-game-screen="voting"] .vote-area.vote-step-guess{
+  border:4px solid #a64a16;
+  border-left:10px solid #ff741b;
+  border-top:7px solid #e87020;
+  color:#442616;
+  background:linear-gradient(154deg,#fff1cf 0%,#ffc27b 57%,#de8847 100%);
+  box-shadow:inset 0 3px 3px #fff7e4,inset 0 -6px 6px #ab5d30,
+    0 6px 0 #653014,0 13px 18px #1e0e0899;
+}
+html[data-theme="panel"] .vote-step-choice .vote-label{
+  color:#073c4a;
+}
+html[data-theme="panel"] .vote-step-guess .vote-label{
+  color:#713111;
+}
+html[data-theme="panel"] .vote-step-choice .vote-tip{
+  color:#164956;
+}
+html[data-theme="panel"] .vote-step-guess .vote-tip{
+  color:#713b1a;
+}
+/* Neutral phase is deliberately dim, active phase uses strong contrast. */
+html[data-theme="panel"] .vote-area .answer-stepper span{
+  color:#f9eee0;
+  background:linear-gradient(#40383c,#24242c);
+  border:3px solid #8d7770;
+  text-shadow:none;
+  box-shadow:inset 0 3px 5px #111118,0 3px 0 #b9a99e;
+  font-size:clamp(15px,3.8vw,18px);
+  font-weight:1000;
+  min-height:55px;
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+html[data-theme="panel"] .vote-step-choice .answer-stepper span.current{
+  color:#042934;
+  background:linear-gradient(#e3ffff,#39d9ef 57%,#009cb8);
+  border-color:#005c74;
+  box-shadow:inset 0 3px 3px #f3ffff,inset 0 -3px 5px #08718e,
+    0 3px 0 #074555,0 0 0 2px #c9faff;
+}
+html[data-theme="panel"] .vote-step-guess .answer-stepper span.done{
+  color:#073a45;
+  background:linear-gradient(#d6faff,#70d9e6);
+  border-color:#257889;
+  box-shadow:inset 0 3px 4px #f2ffff,0 3px 0 #225765;
+}
+html[data-theme="panel"] .vote-step-guess .answer-stepper span.current{
+  color:#351a0b;
+  background:linear-gradient(#fff0bc,#ffad3f 55%,#fa6c13);
+  border-color:#9b3f10;
+  box-shadow:inset 0 3px 3px #fff5d8,inset 0 -3px 6px #bd5a11,
+    0 3px 0 #74320f,0 0 0 2px #ffe0a0;
+}
+/* The unselected answer panels inherit a hint of the current phase. */
+html[data-theme="panel"] .vote-step-choice .option:not(.selected){
+  color:#14333d;
+  background:linear-gradient(#f4fdff,#d2edf3 64%,#adcbd5);
+  border-color:#225b6a;
+}
+html[data-theme="panel"] .vote-step-guess .option:not(.guess-selected){
+  color:#402b1d;
+  background:linear-gradient(#fff9ec,#f4d7b1 64%,#dfb182);
+  border-color:#86502d;
+}
+html[data-theme="panel"] .vote-step-choice .option.selected{
+  color:#042d39;
+  background:linear-gradient(#d5ffff,#37d9eb 55%,#0296b5);
+  border-color:#075669;
+  box-shadow:inset 0 5px 9px #397f9877,inset 0 -2px 3px #e8ffff,
+    0 1px 0 #075669,0 5px 8px #06191a75;
+}
+html[data-theme="panel"] .vote-step-guess .option.guess-selected{
+  color:#351d0d;
+  background:linear-gradient(#fff2c5,#ffb44e 55%,#f07815);
+  border-color:#8d4012;
+  box-shadow:inset 0 5px 9px #a05c3077,inset 0 -2px 3px #fff6cf,
+    0 1px 0 #8d4012,0 5px 8px #29171075;
+}
+html[data-theme="panel"] .vote-step-choice .option.selected .option-letter{
+  color:#042f3b;background:#d8ffff;border-color:#007f9c;
+}
+html[data-theme="panel"] .vote-step-guess .option.guess-selected .option-letter{
+  color:#452410;background:#fff3bc;border-color:#a44915;
+}
+/* Selection is also marked with a check, not color alone. */
+html[data-theme="panel"] .vote-step-choice .option.selected::after,
+html[data-theme="panel"] .vote-step-guess .option.guess-selected::after{
+  content:"✓";
+  box-sizing:border-box;
+  display:grid;
+  place-items:center;
+  width:25px;
+  height:25px;
+  top:8px;
+  right:8px;
+  border-radius:4px;
+  font:1000 17px/1 system-ui,sans-serif;
+  box-shadow:0 2px 0 #2226;
+}
+html[data-theme="panel"] .vote-step-choice .option.selected::after{
+  color:#052f3b;background:#b9faff;border:2px solid #14798a;
+}
+html[data-theme="panel"] .vote-step-guess .option.guess-selected::after{
+  color:#4a240a;background:#fff0b0;border:2px solid #ae5413;
+}
+html[data-theme="panel"] .vote-step-choice .option:focus-visible{
+  outline:4px solid #005e79;outline-offset:3px;
+}
+html[data-theme="panel"] .vote-step-guess .option:focus-visible{
+  outline:4px solid #9b420e;outline-offset:3px;
+}
+/* The answer remembered from step 1 stays turquoise on the orange step. */
+html[data-theme="panel"] .vote-step-guess .self-selection{
+  color:#103740;
+  background:#e0f8fb;
+  border:3px solid #167f97;
+  box-shadow:inset 0 2px 4px #fff;
+}
+html[data-theme="panel"] .vote-step-guess .self-selection small{
+  color:#07566b;
+}
+html[data-theme="panel"] .vote-step-guess .self-selection strong{
+  color:#12373f;
+}
+/* Mechanical countdown display: brass frame, amber numerals, extra contrast. */
+html[data-theme="panel"][data-game-screen="voting"] #timer{
+  min-width:0;
+  min-height:120px;
+  padding:19px 18px;
+  color:#ffe6a1;
+  background:linear-gradient(#282b33,#0c1017);
+  border:5px solid #ffba52;
+  border-radius:7px;
+  box-shadow:inset 0 5px 9px #050608,inset 0 -2px 1px #786246,
+    0 6px 0 #3a251b,0 13px 18px #0c0b0d9c;
+}
+html[data-theme="panel"][data-game-screen="voting"] #timer .timer-caption{
+  color:#ffe2a4;
+  font-size:clamp(16px,3.2vw,18px);
+  font-weight:1000;
+}
+html[data-theme="panel"][data-game-screen="voting"] #timer .timer-digits{
+  color:#ffdf80;
+  font:1000 clamp(42px,7vw,54px)/1.1 ui-monospace,Consolas,monospace;
+  text-shadow:0 0 12px #c8781255;
+}
+html[data-theme="panel"][data-game-screen="voting"] #timer.urgent{
+  color:#fff5e8;
+  background:linear-gradient(#ae3b27,#631a16);
+  border-color:#ffcf8d;
+  box-shadow:inset 0 5px 9px #390c09,0 6px 0 #3e1916,
+    0 13px 18px #0c0b0d9c;
+}
+html[data-theme="panel"][data-game-screen="voting"] #timer.urgent .timer-caption,
+html[data-theme="panel"][data-game-screen="voting"] #timer.urgent .timer-digits{
+  color:#fff7ea;
+}
+
+/* Compact phones: full-width clock with restrained height and no overflow. */
+@media(max-width:580px){
+  html[data-game-screen="voting"] .poll-status{
+    gap:9px;
+    margin:15px 0 13px;
+  }
+  html[data-game-screen="voting"] #timer,
+  html[data-theme="panel"][data-game-screen="voting"] #timer{
+    min-width:0;
+    width:100%;
+    min-height:106px;
+    padding:13px 11px;
+  }
+  html[data-game-screen="voting"] #timer .timer-digits,
+  html[data-theme="panel"][data-game-screen="voting"] #timer .timer-digits{
+    font-size:clamp(38px,10.3vw,50px);
+  }
+  html[data-game-screen="voting"] #vote-count{
+    padding:7px 10px;
+    font-size:16px;
+  }
+  html[data-theme="panel"] .vote-area .answer-stepper span{
+    font-size:clamp(14px,4vw,16px);
+    min-height:54px;
+    padding:7px 5px;
+  }
+}
+@media(max-width:340px){
+  html[data-theme="panel"] .vote-area.vote-step-choice,
+  html[data-theme="panel"] .vote-area.vote-step-guess{
+    border-left-width:7px;
+  }
+  html[data-game-screen="voting"] #timer .timer-digits,
+  html[data-theme="panel"][data-game-screen="voting"] #timer .timer-digits{
+    font-size:37px;
+  }
+}
