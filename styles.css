@@ -1178,3 +1178,26 @@ html[data-theme="minimal"] input[name="minimalHue"]:focus-visible{
   html[data-theme="minimal"] .btn,html[data-theme="minimal"] .option,
   html[data-theme="minimal"] .role-choice{transition:none!important}
 }
+
+/* 三主題選擇卡中的極簡縮圖，無論目前正在使用哪個主題，都如實展示新柔霧風格。 */
+.theme-swatch-minimal{
+  background:linear-gradient(140deg,#f6f7f5,#dadedd);
+  border:1px solid rgba(255,255,255,.93);
+  box-shadow:inset 3px 3px 5px #c9cecb,inset -3px -3px 6px #fff;
+}
+.theme-swatch-minimal i{
+  border-radius:14px;background:#e8bba2;
+  box-shadow:-2px -2px 4px #fff,2px 2px 5px #b2b7b3;
+}
+.theme-swatch-minimal b{
+  background:#e6e9e7;
+  box-shadow:inset 2px 2px 4px #aeb5b1,inset -2px -2px 4px #fff;
+}
+.theme-swatch-minimal em{
+  background:#fafafa;border-radius:9px;
+  box-shadow:2px 2px 5px #c0c5c3,-2px -2px 5px #fff;
+}
+.theme-swatch-minimal span{
+  background:#f0d5c7;border-radius:9px;
+  box-shadow:2px 2px 5px #bbc0bd;
+}
