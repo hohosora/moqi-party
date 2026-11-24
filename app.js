@@ -107,6 +107,50 @@
     {q:"如果下次還能一起玩，你最想試哪種主題？",a:["奇怪但合理的二選一","生活日常默契測驗","團隊想像力挑戰","沒有標準答案的趣味辯論"],talk:"邀請大家票選下次聚會最想玩的方向。",category:"interaction",scenes:["friends","family","church","company","school","community"]},
   ];
   QUESTIONS.push(...CURATED_EXTRA_QUESTIONS);
+
+  // 原始 28 題一字未刪，僅額外標註情境與類型供「快速開局」抽題。
+  const ORIGINAL_QUESTION_META = [
+    {category:"humor",scenes:["all"]},
+    {category:"humor",scenes:["all"]},
+    {category:"everyday",scenes:["all"]},
+    {category:"humor",scenes:["all"]},
+    {category:"personality",scenes:["all"]},
+    {category:"personality",scenes:["all"]},
+    {category:"everyday",scenes:["all"]},
+    {category:"humor",scenes:["all"]},
+    {category:"interaction",scenes:["friends","church","community"]},
+    {category:"personality",scenes:["all"]},
+    {category:"everyday",scenes:["all"]},
+    {category:"humor",scenes:["all"]},
+    {category:"humor",scenes:["all"]},
+    {category:"humor",scenes:["all"]},
+    {category:"interaction",scenes:["company","school","church"]},
+    {category:"humor",scenes:["all"]},
+    {category:"interaction",scenes:["friends","family"]},
+    {category:"everyday",scenes:["all"]},
+    {category:"everyday",scenes:["all"]},
+    {category:"everyday",scenes:["all"]},
+    {category:"everyday",scenes:["all"]},
+    {category:"personality",scenes:["all"]},
+    {category:"interaction",scenes:["church","company","school","community"]},
+    {category:"personality",scenes:["all"]},
+    {category:"personality",scenes:["all"]},
+    {category:"humor",scenes:["all"]},
+    {category:"interaction",scenes:["friends","church","school"]},
+    {category:"humor",scenes:["all"]},
+  ];
+  const QUICK_SCENES = {
+    general:{name:'🎲 一般聚會',desc:'荒謬、生活、個性與團體互動平均搭配'},
+    friends:{name:'🎉 朋友／生日派對',desc:'趣味驚喜、朋友默契與輕鬆互動'},
+    church:{name:'⛪ 教會／小組聚會',desc:'讓第一次參加的新朋友也能自在交流，不考宗教知識'},
+    company:{name:'🏢 公司／團隊活動',desc:'跨部門交流、合作話題，不碰薪資與考績'},
+    school:{name:'🎓 校園／社團活動',desc:'迎新、同儕生活與彼此認識'},
+    family:{name:'🏠 家庭／親友聚會',desc:'跨年齡、生活共鳴與溫馨趣味'},
+    community:{name:'🤝 社區／公益活動',desc:'不同背景也能參與的友善話題'}
+  };
+  const QUICK_CATEGORIES=['humor','everyday','personality','interaction'];
+  const QUICK_RECENT_KEY='mqs_quick_recent_v1';
+  const QUICK_SIZE=8;
   const BOT_NAMES = ['泡芙','小宇','阿哲','波比','薯條','小安','布丁','阿光','可可','花花','栗子','小海'];
   const EMOJIS = ['🦊','🐸','🐼','🐱','🐥','🦁','🐨','🐰','🐯','🦄','🐻','🐵','🐧','🦦','🐙','🦖'];
   const $app = document.getElementById('app');
@@ -116,7 +160,7 @@
     codeInput:new URLSearchParams(location.search).get('room')?.toUpperCase() || '',
     rounds:8, seconds:30, busy:false, error:'', toast:'',
     unsubs:[], voteUnsub:null, watchedRound:null, firebase:null, autoRevealing:false,
-    page:new URLSearchParams(location.search).has('room')?'join':'home', voteStep:'choice', bankMode:localStorage.getItem('mqs_bank_mode')||'mixed', managerTab:'custom',
+    page:new URLSearchParams(location.search).has('room')?'join':'home', hostMode:'custom', quickScene:'general', quickQuestions:[], voteStep:'choice', bankMode:localStorage.getItem('mqs_bank_mode')||'mixed', managerTab:'custom',
     customEditId:null, customDraft:null, geminiDirection:'trends', geminiScenePreset:'friends', geminiContext:'', geminiCount:8, aiText:'',
     aiPreview:[], aiPreviewSkipped:0, managerNotice:'', managerError:'',
     heroImage:'', photoBusy:false, voteSubmitState:'idle', voteSyncFromCache:false, lastVisibleQuestionKey:null,
@@ -277,7 +321,7 @@
   const notify = msg => {state.toast=msg;render();setTimeout(()=>{if(state.toast===msg){state.toast='';render();}},2900);};
   function shuffle(xs){let a=[...xs];for(let i=a.length-1;i>0;i--){let k=Math.floor(Math.random()*(i+1));[a[i],a[k]]=[a[k],a[i]];}return a;}
   function sampleQuestions(n){return shuffle(QUESTIONS.map((_,i)=>i)).slice(0,n);}
-  // ------ 三合一題庫：經典 28 題永久保留，新增題庫僅保存在主持人這台裝置 ------
+  // ------ 三合一題庫：內建 100 題（含最早的 28 題）永久保留；個人題庫留在裝置。
   const BANK_KEY='mqs_personal_bank_v2';
   const BANK_LIMIT=100;
   const DIRECTIONS={
@@ -355,6 +399,51 @@
     return {q,a,talk};
   }
   function allExistingKeys(){return new Set([...QUESTIONS,...bank.custom,...bank.ai].map(x=>normalKey(x.q)));}
+
+  function recentQuickKeys(){
+    try{const keys=JSON.parse(localStorage.getItem(QUICK_RECENT_KEY)||'[]');return Array.isArray(keys)?keys.filter(x=>typeof x==='string').slice(-40):[];}
+    catch{return [];}
+  }
+  function saveQuickHistory(questions){
+    if(state.hostMode!=='quick')return;
+    const keys=questions.map(q=>normalKey(q.q));
+    try{localStorage.setItem(QUICK_RECENT_KEY,JSON.stringify([...recentQuickKeys().filter(k=>!keys.includes(k)),...keys].slice(-40)));}
+    catch{/* 私密模式或儲存空間不足時仍能正常開局。 */}
+  }
+  function quickQuestionMeta(index){
+    return index<ORIGINAL_QUESTION_META.length?ORIGINAL_QUESTION_META[index]:CURATED_EXTRA_QUESTIONS[index-ORIGINAL_QUESTION_META.length];
+  }
+  function makeQuickQuestions(scene='general',count=QUICK_SIZE,avoid=[]){
+    const current=Object.hasOwn(QUICK_SCENES,scene)?scene:'general';
+    const recent=new Set([...recentQuickKeys(),...avoid.map(q=>normalKey(q.q))]);
+    const pool=QUESTIONS.map((q,i)=>({...q,_meta:quickQuestionMeta(i)}));
+    const chosen=[],used=new Set();
+    const categories=QUICK_CATEGORIES;
+    for(let step=0;step<count;step++){
+      const category=categories[step%categories.length];
+      const preferredSpecific=current!=='general'&&step<categories.length;
+      const candidates=shuffle(pool.filter(q=>q._meta.category===category&&!used.has(normalKey(q.q))));
+      const relevance=q=>q._meta.scenes.includes(current)?'specific':q._meta.scenes.includes('all')?'general':'other';
+      const groups=preferredSpecific?['specific','general','other']:['general','specific','other'];
+      // 降低最近 40 題重複出現的機率；只有題庫不足時才回收舊題。
+      let selected=null;
+      for(const freshness of [true,false]){
+        for(const group of groups){
+          selected=candidates.find(q=>(!recent.has(normalKey(q.q)))===freshness&&relevance(q)===group);
+          if(selected)break;
+        }
+        if(selected)break;
+      }
+      if(!selected)selected=shuffle(pool.filter(q=>!used.has(normalKey(q.q))))[0];
+      if(!selected)throw new Error('內建題庫不足，無法準備快速開局。');
+      used.add(normalKey(selected.q));chosen.push(questionClean(selected));
+    }
+    return chosen;
+  }
+  function prepareQuickQuestions(){
+    if(state.quickQuestions.length!==QUICK_SIZE)state.quickQuestions=makeQuickQuestions(state.quickScene);
+    return state.quickQuestions;
+  }
   function selectedQuestions(){
     const mode=state.bankMode;
     const pool=mode==='classic'?QUESTIONS:mode==='custom'?bank.custom:mode==='ai'?bank.ai:[...QUESTIONS,...bank.custom,...bank.ai];
@@ -362,6 +451,7 @@
     return pool.filter(item=>{const key=normalKey(item.q);if(!key||keys.has(key))return false;keys.add(key);return true;});
   }
   function buildRoomQuestions(){
+    if(state.hostMode==='quick')return prepareQuickQuestions().map(item=>questionClean(item));
     const pool=selectedQuestions();
     if(pool.length<state.rounds){
       throw new Error(`目前「${bankModeName()}」只有 ${pool.length} 題，少於本次設定的 ${state.rounds} 題。請新增題目、減少遊戲題數或改用混合題庫。`);
@@ -382,7 +472,7 @@
     }
     return shuffle(result);
   }
-  function bankModeName(){return ({classic:'經典歷史題庫',custom:'主持人自訂題庫',ai:'Gemini 生成題庫',mixed:'三種題庫混合'})[state.bankMode]||'三種題庫混合';}
+  function bankModeName(){return ({classic:'內建精選題庫',custom:'主持人自訂題庫',ai:'Gemini 生成題庫',mixed:'三種題庫混合'})[state.bankMode]||'三種題庫混合';}
   function geminiCountOptions(){
     const needed=state.rounds;
     const extra=Math.min(20,needed+4);
@@ -442,7 +532,7 @@
   }
   function renderManager(){
     const tab=state.managerTab;
-    const menu=`<div class="bank-tabs"><button data-action="bank-tab" data-tab="custom" class="bank-tab ${tab==='custom'?'active':''}">✏️ 主持人自訂 <span>${bank.custom.length}</span></button><button data-action="bank-tab" data-tab="ai" class="bank-tab ${tab==='ai'?'active':''}">✨ Gemini 生成 <span>${bank.ai.length}</span></button><button data-action="bank-tab" data-tab="classic" class="bank-tab ${tab==='classic'?'active':''}">📚 經典歷史 <span>28</span></button></div>`;
+    const menu=`<div class="bank-tabs"><button data-action="bank-tab" data-tab="custom" class="bank-tab ${tab==='custom'?'active':''}">✏️ 主持人自訂 <span>${bank.custom.length}</span></button><button data-action="bank-tab" data-tab="ai" class="bank-tab ${tab==='ai'?'active':''}">✨ Gemini 生成 <span>${bank.ai.length}</span></button><button data-action="bank-tab" data-tab="classic" class="bank-tab ${tab==='classic'?'active':''}">📚 內建精選 <span>${QUESTIONS.length}</span></button></div>`;
     let body='';
     if(tab==='custom'){
       const original=bank.custom.find(q=>q.id===state.customEditId);
@@ -451,7 +541,7 @@
     }else if(tab==='ai'){
       body=`<div class="card"><h2 class="mini-heading">三步驟，請 Gemini 幫你出題</h2><p class="fineprint">不需 API、不需額外帳號串接。主持人使用自己的 Gemini 網頁，把生成的結果複製回這裡即可。</p><div class="field"><span>① 選擇出題方向</span><div class="direction-options">${Object.entries(DIRECTIONS).map(([k,v])=>`<label class="direction-item ${state.geminiDirection===k?'picked':''}"><input type="radio" name="geminiDirection" value="${k}" ${state.geminiDirection===k?'checked':''}><span><strong>${v.name}</strong><small>${v.desc}</small></span></label>`).join('')}</div></div>${geminiSceneField()}<label class="field space-top"><span>生成題數（依首頁設定）</span><div class="gemini-count-hint">🎯 首頁設定：<strong>${state.rounds} 題</strong>｜Gemini 已自動對應生成數量，也可以多備一些題目供每場隨機抽選。</div><select name="geminiCount">${geminiCountOptions().map(option=>`<option value="${option.count}" ${state.geminiCount===option.count?'selected':''}>${option.label}</option>`).join('')}</select></label><div class="btn-row space-top"><button class="btn secondary" data-action="copy-prompt" ${state.geminiDirection==='scene'&&chosenGeminiScene().id==='other'&&!state.geminiContext.trim()?'disabled':''}>📋 ② 複製出題指令</button><a class="btn dark" href="https://gemini.google.com/app" target="_blank" rel="noopener noreferrer">↗ 開啟 Gemini 網頁</a></div><p class="fineprint">到 Gemini 貼上指令、送出，再複製生成的整段 JSON。這裡不會自動讀取你的 Gemini 對話。</p><details class="prompt-details"><summary>查看這次要給 Gemini 的指令</summary><pre id="geminiPromptPreview">${esc(geminiPrompt())}</pre></details><div class="divider"></div><label class="field"><span>③ 把 Gemini 產生的 JSON 貼在下方</span><textarea id="aiJson" name="aiJson" rows="8" placeholder='貼入 Gemini 回傳的 JSON，例如：[{"q":"...","a":["...","...","...","..."],"talk":"..."}]'>${esc(state.aiText)}</textarea></label><button class="btn full space-top" data-action="preview-ai">🔎 檢查題目與預覽</button>${state.aiPreview.length?`<div class="preview-panel"><div class="chip mint">✓ ${state.aiPreview.length} 題通過格式檢查${state.aiPreviewSkipped?'，另跳過 '+state.aiPreviewSkipped+' 題重複內容':''}</div>${state.aiPreview.map((q,i)=>`<div class="preview-item"><b>${i+1}. ${esc(q.q)}</b><small>${q.a.map((x,j)=>'ABCD'[j]+' '+esc(x)).join('　·　')}</small><small>🎤 ${esc(q.talk)}</small></div>`).join('')}<button class="btn secondary full space-top" data-action="confirm-ai">✅ 確認加入 Gemini 題庫</button></div>`:''}</div><section class="card section-gap"><h2 class="mini-heading">已收藏的 Gemini 題目（${bank.ai.length} 題）</h2>${bankRows(bank.ai,'ai')}</section>`;
     }else{
-      body=`<div class="card"><h2 class="mini-heading">經典 28 題，永久保留</h2><p class="fineprint">這是原始版本的幽默題庫，不會被 Gemini 匯入或主持人編輯覆蓋。已開局的題目也不會中途變動。</p>${bankRows(QUESTIONS,'classic')}</div>`;
+      body=`<div class="card"><h2 class="mini-heading">內建精選 ${QUESTIONS.length} 題，永久保留</h2><p class="fineprint">包含原始 28 題與新增的 72 題，均經過趣味性、普遍易答與友善互動的內容檢視；不會被 Gemini 匯入或主持人編輯覆蓋。已開局的題目也不會中途變動。</p>${bankRows(QUESTIONS,'classic')}</div>`;
     }
     return surface(`<div class="manager-heading"><button class="btn tertiary small-btn" data-action="manager-back">← 返回建立房間</button><div class="eyebrow">主持人專用工作區（本機題庫）</div><h1 class="page-title">🎲 題庫管理中心</h1><p class="subhead">自訂、Gemini、經典三種題庫自由搭配。<br>新題目保存在<span class="accent-text">這台裝置的瀏覽器</span>，不會直接修改 GitHub 原始檔。</p></div>${state.managerError?`<div class="notice" role="alert">${esc(state.managerError)}</div>`:''}${state.managerNotice?`<div class="chip mint manager-notice">✓ ${esc(state.managerNotice)}</div>`:''}${menu}${body}<div class="card soft section-gap"><h2 class="mini-heading">💾 備份與換裝置</h2><p class="fineprint">自訂／AI 題庫僅儲存在本機瀏覽器。清除瀏覽資料或換手機可能遺失，建議定期下載備份。還原時會自動略過重複題目。</p><div class="btn-row"><button class="btn dark" data-action="export-bank">⬇ 下載題庫備份</button><label class="btn tertiary file-restore">⬆ 匯入備份檔<input type="file" id="restoreBank" accept=".json,application/json" hidden></label></div></div>`);
   }
@@ -559,11 +649,37 @@
       <section class="card entry-card"><label class="field"><span>① 你的遊戲暱稱</span><input name="nickname" maxlength="14" autocomplete="nickname" placeholder="例如：火鍋教主" value="${esc(state.nickname)}"></label><label class="field space-top"><span>② 六碼房間代碼</span><input name="codeInput" maxlength="6" inputmode="text" autocapitalize="characters" spellcheck="false" placeholder="例如：AB3P8K" value="${esc(state.codeInput)}"></label>${hasInvite?'<p class="fineprint mint-text">✓ 已從邀請連結帶入房號</p>':''}<button class="btn full space-top" data-action="join">🎉 加入遊戲</button><p class="fineprint">玩家不需要設定題庫、照片或答題秒數，這些都由主持人準備。</p></section>
     `);
   }
+
+  function renderHostChoice(){
+    return surface(`<div class="entry-heading"><button class="btn tertiary small-btn" data-action="open-home">← 回首頁</button><div class="eyebrow">主持人入口</div><h1 class="page-title">🎤 想怎麼開始主持？</h1><p class="subhead">第一次也能快速上手；熟悉操作後，再選完整自訂設定。</p></div>
+      <section class="host-mode-grid" aria-label="選擇主持方式">
+        <button type="button" class="host-mode-card host-mode-quick" data-action="choose-host-quick"><span class="host-mode-icon" aria-hidden="true">🚀</span><strong>快速開局</strong><small>推薦第一次主持</small><span>選活動場合，系統從 100 題精選題庫自動搭配 8 題。</span><b>簡單設定，直接開始 →</b></button>
+        <button type="button" class="host-mode-card host-mode-custom" data-action="choose-host-custom"><span class="host-mode-icon" aria-hidden="true">⚙️</span><strong>自訂主持</strong><small>完整設定自由掌控</small><span>使用原有題數、計時、三款主題、題庫管理及 Gemini 出題功能。</span><b>進入原本主持介面 →</b></button>
+      </section>
+      <p class="host-mode-footnote">兩種模式都使用相同的多人遊戲、計分規則與排行榜；快速開局不需要 Gemini，也不會取用私人題庫。</p>`);
+  }
+  function renderQuickHost(){
+    const qs=prepareQuickQuestions();
+    const scene=QUICK_SCENES[state.quickScene]||QUICK_SCENES.general;
+    return surface(`<div class="entry-heading"><button class="btn tertiary small-btn" data-action="host-choice-back">← 返回主持方式</button><div class="eyebrow">新手友善 · 不用準備題庫</div><h1 class="page-title">🚀 快速開局</h1><p class="subhead">填暱稱、選活動場合，剩下交給系統；不必開啟 Gemini。</p></div>
+      <section class="card quick-host-card">
+        <label class="field"><span>① 主持人暱稱</span><input name="nickname" maxlength="14" autocomplete="nickname" placeholder="例如：微笑隊長" value="${esc(state.nickname)}"></label>
+        <label class="field space-top"><span>② 這次是什麼場合？</span><select name="quickScene">${Object.entries(QUICK_SCENES).map(([id,item])=>`<option value="${id}" ${id===state.quickScene?'selected':''}>${esc(item.name)}</option>`).join('')}</select></label>
+        <p class="quick-scene-note">✓ ${esc(scene.desc)}</p>
+        <div class="quick-host-summary" aria-label="系統預設遊戲設定"><span>🎲 <strong>8 題</strong> 混合類型</span><span>⏱ <strong>每題 30 秒</strong></span><span>📚 <strong>內建 100 題</strong> 自動配題</span></div>
+        <details class="quick-preview"><summary>👀 想先確認題目？展開預覽（${qs.length} 題）</summary><ol>${qs.map(q=>`<li>${esc(q.q)}</li>`).join('')}</ol></details>
+        <button class="btn tertiary full space-top" data-action="quick-reshuffle">🔀 換一組題目</button>
+        <div class="divider"></div>
+        <button class="btn full" data-action="host">🚀 建立多人房間</button>
+        <button class="btn tertiary full space-top" data-action="demo">🎭 先玩示範局</button>
+        <p class="fineprint">新手提示會隨遊戲進度出現，幫你記得何時邀請、開始與開獎。想調整題庫、風格或時間？返回改用「自訂主持」。</p>
+      </section>`);
+  }
   function renderHost(){
     return surface(`<div class="entry-heading"><button class="btn tertiary small-btn" data-action="open-home">← 回到首頁</button><div class="eyebrow">主持人入口・設定好就能開始</div><h1 class="page-title">🎤 建立一場默契局</h1><p class="subhead">選好題數與時間，分享房號，就能讓大家加入。</p></div>
       <section class="card entry-card"><label class="field"><span>主持人暱稱</span><input name="nickname" maxlength="14" autocomplete="nickname" placeholder="例如：火鍋教主" value="${esc(state.nickname)}"></label>
         <div class="form-grid space-top"><label class="field"><span>遊戲題數</span><select name="rounds"><option value="6" ${state.rounds===6?'selected':''}>6 題｜快速暖場</option><option value="8" ${state.rounds===8?'selected':''}>8 題｜推薦</option><option value="10" ${state.rounds===10?'selected':''}>10 題｜歡樂加倍</option><option value="12" ${state.rounds===12?'selected':''}>12 題｜完整挑戰</option></select></label><label class="field"><span>每題作答時間</span><select name="seconds"><option value="15" ${state.seconds===15?'selected':''}>15 秒｜快速挑戰</option><option value="30" ${state.seconds===30?'selected':''}>30 秒（推薦）</option><option value="45" ${state.seconds===45?'selected':''}>45 秒｜輕鬆作答</option></select></label></div>
-        <label class="field space-top"><span>本場題庫</span><select name="bankMode"><option value="mixed" ${state.bankMode==='mixed'?'selected':''}>🎲 三種混合｜笑點不重複</option><option value="classic" ${state.bankMode==='classic'?'selected':''}>📚 經典歷史｜原始 28 題</option><option value="custom" ${state.bankMode==='custom'?'selected':''}>✏️ 主持人自訂｜${bank.custom.length} 題</option><option value="ai" ${state.bankMode==='ai'?'selected':''}>✨ Gemini 生成｜${bank.ai.length} 題</option></select></label>
+        <label class="field space-top"><span>本場題庫</span><select name="bankMode"><option value="mixed" ${state.bankMode==='mixed'?'selected':''}>🎲 三種混合｜笑點不重複</option><option value="classic" ${state.bankMode==='classic'?'selected':''}>📚 內建精選｜${QUESTIONS.length} 題</option><option value="custom" ${state.bankMode==='custom'?'selected':''}>✏️ 主持人自訂｜${bank.custom.length} 題</option><option value="ai" ${state.bankMode==='ai'?'selected':''}>✨ Gemini 生成｜${bank.ai.length} 題</option></select></label>
         <div class="host-bank-help"><span>這套題庫目前可用 ${selectedQuestions().length} 題</span><button class="btn dark small-btn" data-action="manage">⚙️ 管理題庫</button></div>
         ${themePicker()}
         <button class="btn full space-top" data-action="host">🚀 建立多人房間</button><button class="btn tertiary full space-top" data-action="demo">🎭 先玩示範局</button>
@@ -576,7 +692,7 @@
   function playerPills(){return state.players.map(p=>`<div class="avatar-pill"><span class="avatar-circle">${esc(p.emoji||emojiFor(p.uid))}</span>${esc(p.name)}${p.uid===state.room?.hostUid?'<span class="host-badge">房主</span>':''}${p.uid===state.uid?'<span class="host-badge">你</span>':''}</div>`).join('');}
   function renderLobby(){
     const n=state.players.length, host=isHost();
-    return surface(`${title(state.mode==='demo'?'歡迎來到示範局！':'人都到齊了嗎？',state.mode==='demo'?'12 位虛擬玩家已到場。先試試荒謬投票和排行榜，正式活動再開多人房間。':'分享房間網址，讓大家用手機填入暱稱一起加入。')}<div class="card section-gap">${state.mode==='demo'?`<div class="info-box">🎭 <strong>這是單人示範模式</strong>，不能邀請朋友加入；正式版請先設定 Firebase，再建立可共用的房間。</div>`:`<div class="lobby-code"><div><div class="eyebrow">房間代碼</div><div class="code-digits">${esc(state.roomCode)}</div></div><button class="btn dark small-btn" data-action="copy">🔗 複製邀請</button></div><p class="share-link space-top">${esc(inviteUrl())}</p>`}<div class="split space-top"><h2 class="mini-heading tight">👋 已到場 ${n} 人</h2><span class="chip ${n>=10?'mint':'yellow'}">建議 10–20 人</span></div><div class="avatars space-top">${playerPills()||'<p class="empty">正在等待大家加入…</p>'}</div>${host?`${themePicker(true)}${heroControls(true)}`:`<p class="room-theme-label">🎨 本房間風格：${esc(THEME_NAMES[normalizeTheme(state.room.theme)])}</p>`}<div class="divider"></div><div class="split"><span class="muted">${state.room.totalRounds} 題 × 每題 ${state.room.seconds} 秒</span><span class="chip">${state.mode==='demo'?'🎭 示範模式':'🌐 即時連線'}</span></div><div class="space-top">${host?`<button class="btn full" data-action="start" ${n<2?'disabled':''}>🔥 開始荒謬挑戰（${n} 人）</button><p class="fineprint">主持人也能參賽。開始後不接受新玩家加入；玩家中途離開會保留原有分數。</p>`:`<div class="info-box">⏳ 房主正在準備中！先看看今天會與誰展開默契大戰。</div>`}</div></div><div class="space-top"><button class="btn tertiary full" data-action="leave">← 回首頁</button></div>`, `<span class="status-tag">${esc(state.roomCode)}</span>`);
+    return surface(`${title(state.mode==='demo'?'歡迎來到示範局！':'人都到齊了嗎？',state.mode==='demo'?'12 位虛擬玩家已到場。先試試荒謬投票和排行榜，正式活動再開多人房間。':'分享房間網址，讓大家用手機填入暱稱一起加入。')}<div class="card section-gap">${state.mode==='demo'?`<div class="info-box">🎭 <strong>這是單人示範模式</strong>，不能邀請朋友加入；正式版請先設定 Firebase，再建立可共用的房間。</div>`:`<div class="lobby-code"><div><div class="eyebrow">房間代碼</div><div class="code-digits">${esc(state.roomCode)}</div></div><button class="btn dark small-btn" data-action="copy">🔗 複製邀請</button></div><p class="share-link space-top">${esc(inviteUrl())}</p>`}<div class="split space-top"><h2 class="mini-heading tight">👋 已到場 ${n} 人</h2><span class="chip ${n>=10?'mint':'yellow'}">建議 10–20 人</span></div><div class="avatars space-top">${playerPills()||'<p class="empty">正在等待大家加入…</p>'}</div>${host?`${themePicker(true)}${heroControls(true)}`:`<p class="room-theme-label">🎨 本房間風格：${esc(THEME_NAMES[normalizeTheme(state.room.theme)])}</p>`}<div class="divider"></div><div class="split"><span class="muted">${state.room.totalRounds} 題 × 每題 ${state.room.seconds} 秒</span><span class="chip">${state.mode==='demo'?'🎭 示範模式':'🌐 即時連線'}</span></div><div class="space-top">${host?`${state.room.quickMode?'<p class="quick-host-tip">🎤 主持小提醒：先把邀請連結傳給大家，確認人數到齊，再按開始。遊戲會自動計時，開獎後記得邀請自願分享。</p>':''}<button class="btn full" data-action="start" ${n<2?'disabled':''}>🔥 開始荒謬挑戰（${n} 人）</button><p class="fineprint">主持人也能參賽。開始後不接受新玩家加入；玩家中途離開會保留原有分數。</p>`:`<div class="info-box">⏳ 房主正在準備中！先看看今天會與誰展開默契大戰。</div>`}</div></div><div class="space-top"><button class="btn tertiary full" data-action="leave">← 回首頁</button></div>`, `<span class="status-tag">${esc(state.roomCode)}</span>`);
   }
   function choiceButtons(field,selected,q){return `<div class="option-grid">${q.a.map((a,i)=>`<button type="button" class="option ${selected===i?(field==='choice'?'selected':'guess-selected'):''}" data-${field}="${i}" aria-pressed="${selected===i}"><span class="option-letter">${'ABCD'[i]}</span><span>${esc(a)}</span></button>`).join('')}</div>`;}
   function roundHeader(){return `<div class="round-header"><span class="chip yellow">第 ${state.room.roundIndex+1}／${state.room.totalRounds} 題</span><span class="rank-pill">🏅 第 ${myRank()||'–'} 名 · ${myScore()} 分</span></div><div class="progress" aria-label="題目進度"><div style="width:${Math.round(100*(state.room.roundIndex+1)/state.room.totalRounds)}%"></div></div>`;}
@@ -640,7 +756,7 @@
       <section class="talk-first section-gap"><span class="talk-eyebrow">🎤 最重要的 30–60 秒</span><h2>先抬頭聊聊吧！</h2><p>${esc(q.talk)}</p><small>主持人可以邀請 1–2 位自願分享，沒有標準答案，也不用強迫任何人表演。</small></section>
       <div class="score-highlight section-gap slim-score"><span class="eyebrow">本題得分</span><div class="split"><div><div class="score-big">+${scoreText}</div>${scoreBreakdown(g,v,q)}</div><span class="score-emote">${g?.total>=100?'😎':'🤪'}</span></div></div>
       ${renderQuickRanking()}
-      <div class="section-gap">${isHost()?`<button class="btn full" data-action="next">${state.room.roundIndex+1>=state.room.totalRounds?'🏆 公布最終排行榜':'➡️ 聊完了，進下一題'}</button><p class="fineprint">請先留一點時間讓大家互相分享，再繼續下一題。</p>`:`<div class="info-box">👂 等主持人帶大家聊完，就會一起進下一題。</div>`}</div>
+      <div class="section-gap">${isHost()?`${state.room.quickMode?'<p class="quick-host-tip">🎤 主持小提醒：先請 1–2 位願意的人聊聊選擇原因，再進下一題；不需要每個人都發言。</p>':''}<button class="btn full" data-action="next">${state.room.roundIndex+1>=state.room.totalRounds?'🏆 公布最終排行榜':'➡️ 聊完了，進下一題'}</button><p class="fineprint">請先留一點時間讓大家互相分享，再繼續下一題。</p>`:`<div class="info-box">👂 等主持人帶大家聊完，就會一起進下一題。</div>`}</div>
     `, `<span class="status-tag">${esc(state.roomCode)}</span>`);
   }
   function renderFinished(){
@@ -658,7 +774,7 @@
     document.documentElement.style.setProperty('--m-hue',String(activeMinimalHue()));
     const metaThemeColor=document.querySelector('meta[name="theme-color"]');
     if(metaThemeColor)metaThemeColor.setAttribute('content',activeTheme()==='panel'?'#f76a12':'#121028');
-    if(!state.mode || !state.room) {$app.innerHTML=state.page==='manager'?renderManager():state.page==='host'?renderHost():state.page==='join'?renderJoin():renderHome();return;}
+    if(!state.mode || !state.room) {$app.innerHTML=state.page==='manager'?renderManager():state.page==='host'?renderHost():state.page==='quick-host'?renderQuickHost():state.page==='host-choice'?renderHostChoice():state.page==='join'?renderJoin():renderHome();return;}
     // 每次新題啟動時，先顯示題目，不沿用上一題或等候室留在頁面底部的位置。
     // 以「房間＋題號」辨識，只捲動一次；同一題收到其他玩家的票數時不干擾目前閱讀位置。
     const questionKey=state.room.phase==='voting'? `${state.mode}:${state.roomCode}:${state.room.roundIndex}` :null;
@@ -718,7 +834,8 @@
     const preparedQuestions=buildRoomQuestions();
     clearListeners();state.mode='demo';state.uid='demo-me';state.roomCode='DEMO88';
     state.players=[{uid:state.uid,name,emoji:'😎',joinedAt:0},...BOT_NAMES.map((name,i)=>({uid:'bot'+i,name,emoji:EMOJIS[i],joinedAt:i+1}))];
-    state.room={hostUid:state.uid,phase:'lobby',roundIndex:-1,totalRounds:state.rounds,seconds:state.seconds,questions:preparedQuestions,scores:{},streaks:{},usedDoubles:{},lastResult:null,deadline:null,heroImage:state.heroImage,theme:state.themeChoice,minimalHue:state.minimalHue};
+    state.room={hostUid:state.uid,phase:'lobby',roundIndex:-1,totalRounds:state.rounds,seconds:state.seconds,questions:preparedQuestions,scores:{},streaks:{},usedDoubles:{},lastResult:null,deadline:null,heroImage:state.heroImage,theme:state.themeChoice,minimalHue:state.minimalHue,quickMode:state.hostMode==='quick',quickScene:state.hostMode==='quick'?state.quickScene:null};
+    saveQuickHistory(preparedQuestions);
     state.votes=[];state.choice=null;state.guess=null;state.double=false;state.voteStep='choice';state.voteSubmitState='idle';history.replaceState(null,'',location.pathname);render();
   }
   function validateName(){const s=state.nickname.trim().slice(0,14);if(!s){state.error='先填入暱稱，這樣排行榜才知道誰是誰。';render();return null;}state.nickname=s;localStorage.setItem('mqs_name',s);state.error='';return s;}
@@ -766,9 +883,10 @@
     let code='';
     for(let i=0;i<6;i++){const candidate=randomCode();const snap=await L.getDoc(roomRef(candidate));if(!snap.exists()){code=candidate;break;}}
     if(!code)throw new Error('房間代碼產生失敗，請再試一次。');
-    const data={hostUid:state.uid,phase:'lobby',roundIndex:-1,totalRounds:state.rounds,seconds:state.seconds,questions:preparedQuestions,scores:{},streaks:{},usedDoubles:{},lastResult:null,deadline:null,createdAt:Date.now(),heroImage:state.heroImage,theme:state.themeChoice,minimalHue:state.minimalHue};
+    const data={hostUid:state.uid,phase:'lobby',roundIndex:-1,totalRounds:state.rounds,seconds:state.seconds,questions:preparedQuestions,scores:{},streaks:{},usedDoubles:{},lastResult:null,deadline:null,createdAt:Date.now(),heroImage:state.heroImage,theme:state.themeChoice,minimalHue:state.minimalHue,quickMode:state.hostMode==='quick',quickScene:state.hostMode==='quick'?state.quickScene:null};
     await L.setDoc(roomRef(code),data);
     await L.setDoc(playerRef(code,state.uid),{uid:state.uid,name,emoji:emojiFor(state.uid),joinedAt:Date.now()});
+    saveQuickHistory(preparedQuestions);
     state.mode='online';state.roomCode=code;state.room=data;state.player=state.uid;history.replaceState(null,'',`?room=${code}`);
     subscribeOnline(code);
   }
@@ -931,6 +1049,7 @@
     if(e.target.name==='seconds')state.seconds=Number(e.target.value);
     if(e.target.id==='double')state.double=e.target.checked;
     if(e.target.name==='bankMode'){state.bankMode=e.target.value;localStorage.setItem('mqs_bank_mode',state.bankMode);render();}
+    if(e.target.name==='quickScene'&&Object.hasOwn(QUICK_SCENES,e.target.value)){state.quickScene=e.target.value;state.quickQuestions=[];render();}
     if(e.target.name==='geminiDirection'){state.geminiDirection=e.target.value;state.aiPreview=[];render();}
     if(e.target.name==='geminiScenePreset'){if(!GEMINI_SCENES.some(x=>x.id===e.target.value))return;state.geminiScenePreset=e.target.value;state.aiPreview=[];state.managerError='';render();}
     if(e.target.name==='geminiCount'){state.geminiCount=Number(e.target.value);render();}
@@ -954,7 +1073,17 @@
     }
     if(action==='leave'){leave();return;}
     if(action==='open-home'){state.page='home';state.error='';render();window.scrollTo(0,0);return;}
-    if(action==='open-host'){state.page='host';state.error='';render();window.scrollTo(0,0);return;}
+    if(action==='open-host'){state.page='host-choice';state.error='';render();window.scrollTo(0,0);return;}
+    if(action==='host-choice-back'){state.page='host-choice';state.error='';render();window.scrollTo(0,0);return;}
+    if(action==='choose-host-custom'){state.hostMode='custom';state.page='host';state.error='';render();window.scrollTo(0,0);return;}
+    if(action==='choose-host-quick'){
+      state.hostMode='quick';state.page='quick-host';state.error='';state.rounds=QUICK_SIZE;state.seconds=30;state.quickQuestions=[];
+      render();window.scrollTo(0,0);return;
+    }
+    if(action==='quick-reshuffle'&&state.hostMode==='quick'){
+      const previous=state.quickQuestions;state.quickQuestions=makeQuickQuestions(state.quickScene,QUICK_SIZE,previous);
+      render();return;
+    }
     if(action==='open-join'){state.page='join';state.error='';render();window.scrollTo(0,0);return;}
     if(action==='edit-choice'&&!myVote()){state.voteStep='choice';render();window.scrollTo(0,0);return;}
     if(action==='reset-hero'){
@@ -994,6 +1123,6 @@
   });
   window.addEventListener('unhandledrejection',e=>{console.error('Unhandled game error:',e.reason);});
   window.setInterval(currentTimeTick,1000);
-  window.__GAME_TEST__={QUESTIONS,evaluateRound,sampleQuestions,questionClean,parseAiQuestions,buildRoomQuestions,safeHero,compressHero,getBank:()=>bank,getRoom:()=>state.room,getHero:()=>state.heroImage};
+  window.__GAME_TEST__={QUESTIONS,evaluateRound,sampleQuestions,questionClean,parseAiQuestions,buildRoomQuestions,makeQuickQuestions,quickQuestionMeta,QUICK_SCENES,QUICK_CATEGORIES,safeHero,compressHero,getBank:()=>bank,getRoom:()=>state.room,getHero:()=>state.heroImage};
   render();
 })();
