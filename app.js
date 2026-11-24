@@ -47,7 +47,7 @@
     themeChoice:normalizeTheme(localStorage.getItem('mqs_visual_theme_v1')),
     minimalHue:normalizeMinimalHue(localStorage.getItem('mqs_minimal_hue_v1'))
   };
-  // 只切換視覺樣式，不改答題流程。舊房間或未知主題自動使用經典派對風。
+  // 只切換視覺樣式，不改答題流程。舊房間或未知主題沿用既有 party 代碼，外觀顯示為經典像素風。
   const THEME_NAMES={party:'經典像素風',panel:'立體寫實風',minimal:'極簡設計風'};
   function normalizeTheme(value){return value==='panel'||value==='minimal'?value:'party';}
   function activeTheme(){return state.room?normalizeTheme(state.room.theme):(state.page==='host'||state.page==='manager'?state.themeChoice:'party');}
