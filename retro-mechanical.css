@@ -807,7 +807,7 @@ html[data-theme="panel"] .host-vote-tools .fineprint{color:#3a3031}
 /* 10: Results panel / vote meters / warm-orange score module. */
 html[data-theme="panel"] .result-bar{
   box-sizing:border-box;min-width:0;
-  display:grid;grid-template-columns:39px minmax(0,1fr) 48px;
+  position:relative;display:grid;grid-template-columns:39px minmax(0,1fr) 48px;
   gap:9px;align-items:center;padding:11px;margin:11px 0;
   color:#272228;background:linear-gradient(#e8dac7,#cdb8a4);
   border:3px solid #3d2e2f;border-radius:4px;
@@ -1245,4 +1245,211 @@ html[data-theme="panel"] .footer::before{
 @media(max-width:390px){
   html[data-theme="panel"] .bank-tab{font-size:13px}
   html[data-theme="panel"] .status-tag{font-size:12px}
+}
+
+/* ────────────────────────────────────────────────────────────────
+   v2.1 / RETRO CIRCUIT DETAIL PASS · 2026/11/24
+   Visible motherboard components, routed pipes, 3 toggle keys,
+   terminal pins and warning LEDs. Decorations NEVER cover text:
+   all new hardware layers are aria-hidden + pointer-events:none.
+   ──────────────────────────────────────────────────────────────── */
+
+/* The new shared markup is inert and hidden in the other two themes. */
+.retro-pcb-backplane,.retro-circuit-deck{display:none}
+html[data-theme="panel"] .container > .retro-pcb-backplane{
+  display:block;position:absolute;inset:0;z-index:0;
+  overflow:hidden;pointer-events:none;
+}
+html[data-theme="panel"] .retro-pcb-channel{
+  position:absolute;display:block;top:139px;bottom:122px;width:30px;
+  opacity:.79;pointer-events:none;
+  background:
+    linear-gradient(#f89c2c,#f89c2c) 5px 0/3px 100% no-repeat,
+    linear-gradient(#a9592d,#a9592d) 12px 0/2px 100% no-repeat,
+    linear-gradient(#ffb44d,#ffb44d) 19px 0/3px 100% no-repeat,
+    repeating-linear-gradient(0deg,transparent 0 63px,#cb6c28 63px 66px,transparent 66px 123px),
+    radial-gradient(circle at center,#ffb451 0 2px,#423137 2.5px 5px,transparent 5.5px) 0 0/30px 83px repeat-y;
+  filter:drop-shadow(1px 1px 1px #0d0d119c);
+}
+html[data-theme="panel"] .retro-pcb-channel.left{left:4px}
+html[data-theme="panel"] .retro-pcb-channel.right{right:3px;transform:scaleX(-1)}
+html[data-theme="panel"] .retro-pcb-chip{
+  position:absolute;display:block;width:32px;height:54px;
+  border:3px solid #99715a;border-radius:2px;
+  background:
+    repeating-linear-gradient(0deg,#211d22 0 6px,#5f4a43 6px 8px,#211d22 8px 14px),
+    #242229;
+  box-shadow:inset 0 3px 5px #101015,0 3px 0 #171319;
+  pointer-events:none;
+}
+html[data-theme="panel"] .retro-pcb-chip.upper{top:204px;right:0}
+html[data-theme="panel"] .retro-pcb-chip.lower{bottom:251px;left:0}
+
+/* The compact switch / wire / chip / LED bus sits UNDER the header,
+   above content, not on top of any field or heading. */
+html[data-theme="panel"] .topbar{margin-bottom:16px}
+html[data-theme="panel"] .container > .retro-circuit-deck{
+  display:flex;align-items:center;gap:12px;box-sizing:border-box;
+  position:relative;z-index:1;pointer-events:none;user-select:none;
+  width:100%;min-width:0;height:56px;margin:0 0 26px;padding:6px 12px;
+  overflow:hidden;border:3px solid #8c6957;border-radius:3px;
+  background:
+    repeating-linear-gradient(90deg,transparent 0 7px,#f58d2933 7px 8px,transparent 8px 15px),
+    linear-gradient(170deg,#53464a,#2f2b34 55%,#1d1d24);
+  box-shadow:inset 0 4px 6px #17151b,inset 0 -2px 1px #826454,
+    0 3px 0 #dac0a3,0 7px 0 #211a20,0 11px 14px #09080b60;
+}
+html[data-theme="panel"] .retro-deck-switches{
+  flex:none;display:flex;align-items:center;gap:7px;
+  height:39px;padding:5px 7px;
+  border:2px solid #b1917d;border-radius:2px;
+  background:linear-gradient(#6b5651,#45353c);
+  box-shadow:inset 0 3px 4px #1f1b22,0 1px 0 #d4b397;
+}
+html[data-theme="panel"] .retro-deck-switches i{
+  display:block;position:relative;width:15px;height:26px;
+  border:2px solid #17141a;border-radius:2px;
+  background:linear-gradient(#1a1a1e,#46363b);
+  box-shadow:inset 0 3px 3px #0b0b0f,0 1px #a98770;
+}
+html[data-theme="panel"] .retro-deck-switches i::before{
+  content:"";position:absolute;left:1px;right:1px;top:2px;height:11px;
+  border:1px solid #f7d5a9;border-radius:1px;
+  background:linear-gradient(#e8cfad,#a8907e);
+  box-shadow:inset 0 2px #fff1cd,0 2px 2px #08080c80;
+}
+html[data-theme="panel"] .retro-deck-switches i:nth-child(2)::before{
+  top:auto;bottom:2px;background:linear-gradient(#f8b35c,#d56e26);border-color:#dc923f;
+}
+html[data-theme="panel"] .retro-deck-switches i:nth-child(3)::before{
+  background:linear-gradient(#e6d4bb,#b19c88);
+}
+html[data-theme="panel"] .retro-deck-pipes{
+  flex:1 1 auto;min-width:18px;align-self:center;
+  display:flex;flex-direction:column;justify-content:center;
+  gap:5px;height:39px;position:relative;
+}
+html[data-theme="panel"] .retro-deck-pipes i{
+  display:block;position:relative;flex:0 0 5px;height:5px;
+  min-width:0;border:1px solid #402c2a;border-radius:4px;
+  background:linear-gradient(#f8b562,#d36b27 45%,#753b2b 80%,#d48139);
+  box-shadow:0 2px 2px #0b0c0e88,inset 0 1px #ffe0a1;
+}
+html[data-theme="panel"] .retro-deck-pipes i:nth-child(2){width:92%;margin-left:8%}
+html[data-theme="panel"] .retro-deck-pipes i:nth-child(3){width:81%;margin-left:1%;background:linear-gradient(#cfb5a3,#8f7770 52%,#5b4d50)}
+html[data-theme="panel"] .retro-deck-pipes i:nth-child(4){width:92%;margin-left:8%}
+html[data-theme="panel"] .retro-deck-pipes i::after{
+  content:"";position:absolute;right:0;top:-4px;width:8px;height:11px;
+  border:2px solid #d0a273;background:#3d3033;border-radius:1px;
+  box-shadow:inset 0 1px #f1d1a0;
+}
+html[data-theme="panel"] .retro-deck-chip{
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:center;gap:2px;
+  flex:none;width:48px;height:36px;padding:5px 6px;
+  border:3px solid #8e7266;border-radius:2px;
+  background:linear-gradient(#393239,#1c1d23);
+  box-shadow:inset 0 3px 5px #0a0b10,0 2px 0 #c7a88e;
+}
+html[data-theme="panel"] .retro-deck-chip b,
+html[data-theme="panel"] .retro-deck-chip i{
+  display:block;width:6px;height:13px;margin:auto;
+  background:linear-gradient(#f5b45e,#bf6e2c);
+  border:1px solid #7d4c31;border-radius:1px;
+  box-shadow:0 0 3px #e8842a55;
+}
+html[data-theme="panel"] .retro-deck-chip b{height:22px;background:linear-gradient(#ded2bb,#99847a);border-color:#3e3436}
+html[data-theme="panel"] .retro-deck-leds{
+  flex:none;display:flex;align-items:center;gap:7px;padding:7px;
+  border:2px solid #9e806b;background:#342d31;border-radius:2px;
+  box-shadow:inset 0 3px 4px #17151b,0 1px 0 #c4a188;
+}
+html[data-theme="panel"] .retro-deck-leds i{
+  width:11px;height:11px;display:block;border-radius:50%;
+  border:2px solid #1c1a20;background:#ffae3b;
+  box-shadow:inset 0 1px #fff6b8,0 0 7px #ff8a24;
+}
+html[data-theme="panel"] .retro-deck-leds i:nth-child(2){
+  background:#e4c489;box-shadow:inset 0 1px #fff6c6,0 0 3px #f4cf777e;
+}
+html[data-theme="panel"] .retro-deck-leds i:nth-child(3){
+  background:#705657;box-shadow:inset 0 1px #ad8d88;
+}
+
+/* Extra fine PCB traces anchored to MODULE EDGES, not the reading area.
+   Center of cards remains matte cream with unchanged text contrast. */
+html[data-theme="panel"] .card:not(.soft){
+  background:
+    linear-gradient(90deg,transparent 0 95%,rgba(134,85,60,.12) 95% 96%,transparent 96%),
+    linear-gradient(0deg,transparent 0 96%,rgba(130,85,58,.11) 96% 97%,transparent 97%),
+    repeating-linear-gradient(0deg,rgba(73,53,47,.026) 0 1px,transparent 1px 7px),
+    linear-gradient(140deg,#e9d9c8,#d2bbac 62%,#c4a99b);
+}
+html[data-theme="panel"] .card:not(.soft)::after{
+  content:"";display:block;position:absolute;z-index:3;pointer-events:none;
+  right:16px;top:auto;bottom:3px;width:74px;height:7px;border-radius:0;
+  background:
+    repeating-linear-gradient(90deg,#34252b 0 4px,#c78a47 4px 7px,#34252b 7px 10px);
+  box-shadow:inset 0 2px 1px #f4c78b;
+  opacity:.85;
+}
+html[data-theme="panel"] .question-card::after{
+  content:"";display:block;position:absolute;right:12px;bottom:5px;
+  width:76px;height:7px;pointer-events:none;border-radius:0;
+  background:repeating-linear-gradient(90deg,#9e6a43 0 4px,#eb912a 4px 7px,#6c4738 7px 10px);
+  box-shadow:0 0 3px #ff992b44;
+}
+html[data-theme="panel"] .simple-home-hero + .role-choices .role-choice::after{
+  content:"";position:absolute;top:7px;right:8px;
+  width:7px;height:7px;border:2px solid #3a292a;border-radius:50%;
+  background:#ffb337;box-shadow:0 0 5px #ffa02c;
+  pointer-events:none;
+}
+html[data-theme="panel"] .simple-home-hero + .role-choices .role-choice.role-host::after{
+  background:#fff0a1;box-shadow:0 0 7px #ffcd68;
+}
+html[data-theme="panel"] .one-step .option::before{
+  content:"";position:absolute;bottom:6px;right:7px;
+  width:37px;height:5px;border:0;border-radius:0;
+  background:repeating-linear-gradient(90deg,#8c623c 0 3px,#e5b173 3px 5px,#49342f 5px 8px);
+  box-shadow:inset 0 1px 1px #ffe2aa;
+  pointer-events:none;opacity:.7;
+}
+html[data-theme="panel"] .one-step .option.selected::before,
+html[data-theme="panel"] .one-step .option.guess-selected::before{
+  background:repeating-linear-gradient(90deg,#9c471a 0 3px,#fff1a1 3px 5px,#663720 5px 8px);
+}
+html[data-theme="panel"] .result-bar::before{
+  content:"";position:absolute;right:5px;bottom:4px;
+  width:19px;height:3px;pointer-events:none;
+  background:repeating-linear-gradient(90deg,#8b6957 0 3px,transparent 3px 6px);
+}
+
+/* Responsive components shrink before they can collide with text. */
+@media(max-width:640px){
+  html[data-theme="panel"] .container > .retro-circuit-deck{
+    height:44px;gap:6px;margin-bottom:21px;padding:4px 7px;
+  }
+  html[data-theme="panel"] .retro-deck-switches{
+    gap:4px;height:31px;padding:3px 5px;
+  }
+  html[data-theme="panel"] .retro-deck-switches i{width:12px;height:22px}
+  html[data-theme="panel"] .retro-deck-switches i::before{height:9px}
+  html[data-theme="panel"] .retro-deck-pipes{height:30px;gap:3px}
+  html[data-theme="panel"] .retro-deck-pipes i{flex-basis:4px;height:4px}
+  html[data-theme="panel"] .retro-deck-chip{width:37px;height:30px;gap:2px;padding:3px}
+  html[data-theme="panel"] .retro-deck-chip b,
+  html[data-theme="panel"] .retro-deck-chip i{width:4px;height:11px}
+  html[data-theme="panel"] .retro-deck-chip b{height:18px}
+  html[data-theme="panel"] .retro-deck-leds{gap:4px;padding:5px}
+  html[data-theme="panel"] .retro-deck-leds i{width:9px;height:9px}
+  html[data-theme="panel"] .retro-pcb-channel{width:20px;opacity:.55}
+  html[data-theme="panel"] .retro-pcb-chip{width:21px;height:42px}
+}
+@media(max-width:375px){
+  html[data-theme="panel"] .container > .retro-circuit-deck{
+    height:41px;gap:5px;
+  }
+  html[data-theme="panel"] .retro-deck-chip{display:none}
+  html[data-theme="panel"] .retro-deck-leds{gap:3px}
+  html[data-theme="panel"] .retro-deck-pipes{min-width:8px}
 }
