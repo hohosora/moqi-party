@@ -2646,7 +2646,7 @@ html[data-theme="panel"] .entry-card{
 html[data-theme="panel"] .entry-card::before,
 html[data-theme="panel"] .card.entry-card::before{
   content:"●  HOST CONTROLS / MODULE 01";
-  position:absolute;top:9px;left:14px;right:auto;bottom:auto;inset:auto;
+  position:absolute;inset:auto;top:9px;left:14px;right:auto;bottom:auto;
   z-index:4;pointer-events:none;width:max-content;max-width:calc(100% - 80px);
   background:linear-gradient(#202720,#101711);
   padding:6px 10px;border-radius:5px;border:1px solid #d0d1c6;
@@ -3178,4 +3178,61 @@ html[data-theme="panel"] .footer::before{
   html[data-theme="panel"] .option,
   html[data-theme="panel"] .theme-choice,
   html[data-theme="panel"] .role-choice{transition:none!important}
+}
+
+/* v13 finishing touches: hardware entry keys and final winner screen. */
+html[data-theme="panel"] .role-choice,
+html[data-theme="panel"] .role-choice:first-child,
+html[data-theme="panel"] .role-choice.role-host{
+  position:relative;
+  color:#1f261f;
+  border:3px solid #d8d9cc;border-radius:11px;
+  background:
+    linear-gradient(130deg,rgba(255,255,255,.37),transparent 40%,rgba(25,32,25,.14)),
+    linear-gradient(#d4d6c9,#aeb3a6 48%,#8d9587 80%,#737b70);
+  text-shadow:0 1px rgba(255,255,247,.65);
+  box-shadow:
+    inset 0 3px 3px #fcfcf0,
+    inset 0 -5px 5px #697365,
+    0 2px 0 #bfc4b4,
+    0 6px 0 #3e4a3c,
+    0 10px 16px rgba(2,8,3,.47)
+}
+html[data-theme="panel"] .role-choice strong{color:#151d16}
+html[data-theme="panel"] .role-choice small,
+html[data-theme="panel"] .role-choice.role-host small{
+  color:#353f34;text-shadow:0 1px rgba(255,255,248,.66)
+}
+html[data-theme="panel"] .role-choice .role-icon,
+html[data-theme="panel"] .role-choice.role-host .role-icon,
+html[data-theme="panel"] .role-choice:first-child .role-icon{
+  color:#f5f6ea;
+  border:3px solid #9da699;border-radius:8px;
+  background:linear-gradient(#696f65,#3c473b 65%,#1c261d);
+  box-shadow:inset 0 3px 2px #bec5b5,inset 0 -4px 5px #101a12,
+    0 3px 0 #424f3e,0 6px 9px #151c15a6;
+  text-shadow:none
+}
+html[data-theme="panel"] .role-choice.role-host .role-icon{
+  background:linear-gradient(#ffc184,#ff8837 60%,#b34511);
+  border-color:#f3bb8a;
+  box-shadow:inset 0 3px 3px #ffe7c9,inset 0 -4px 5px #75260b,
+    0 3px 0 #554239,0 6px 10px #10150da6
+}
+html[data-theme="panel"] .role-choice .role-arrow,
+html[data-theme="panel"] .role-choice.role-host .role-arrow{
+  color:#1f281f;text-shadow:0 1px rgba(255,255,255,.7)
+}
+html[data-theme="panel"] .role-choice:active{
+  transform:translateY(5px);
+  box-shadow:inset 0 6px 9px #545e5180,0 1px 0 #344033
+}
+html[data-theme="panel"] .question-card .page-title,
+html[data-theme="panel"] .question-card > div[style],
+html[data-theme="panel"] .question-card > p[style]{
+  color:#fffaf0!important;
+  text-shadow:0 1px 2px #050b05
+}
+html[data-theme="panel"] .question-card > .page-title{
+  color:#fffaf0!important
 }
