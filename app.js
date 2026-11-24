@@ -482,6 +482,8 @@
     document.documentElement.setAttribute('data-theme',activeTheme());
     document.documentElement.setAttribute('data-game-screen',state.room?.phase||state.page||'home');
     document.documentElement.style.setProperty('--m-hue',String(activeMinimalHue()));
+    const metaThemeColor=document.querySelector('meta[name="theme-color"]');
+    if(metaThemeColor)metaThemeColor.setAttribute('content',activeTheme()==='panel'?'#4c6568':'#121028');
     if(!state.mode || !state.room) {$app.innerHTML=state.page==='manager'?renderManager():state.page==='host'?renderHost():state.page==='join'?renderJoin():renderHome();return;}
     // 每次新題啟動時，先顯示題目，不沿用上一題或等候室留在頁面底部的位置。
     // 以「房間＋題號」辨識，只捲動一次；同一題收到其他玩家的票數時不干擾目前閱讀位置。
