@@ -264,7 +264,7 @@ html[data-theme="panel"] select option:checked{
 }
 html[data-theme="panel"] input::placeholder,
 html[data-theme="panel"] textarea::placeholder{
-  color:#697b79;-webkit-text-fill-color:#697b79;opacity:1;
+  color:#60716f;-webkit-text-fill-color:#60716f;opacity:1;
 }
 html[data-theme="panel"] .field input:focus-visible,
 html[data-theme="panel"] .field textarea:focus-visible,
