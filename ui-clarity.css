@@ -328,3 +328,8 @@ html[data-theme="panel"][data-game-screen="voting"] #timer.urgent .timer-digits{
     font-size:37px;
   }
 }
+
+/* Ensure the urgent label stays visible in every theme. */
+html[data-theme="panel"][data-game-screen="voting"] #timer.urgent .timer-caption,
+html[data-theme="party"][data-game-screen="voting"] #timer.urgent .timer-caption,
+html[data-theme="minimal"][data-game-screen="voting"] #timer.urgent .timer-caption{font-size:0}
