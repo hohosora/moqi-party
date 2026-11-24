@@ -424,11 +424,11 @@
       const preferredSpecific=current!=='general'&&step<categories.length;
       const candidates=shuffle(pool.filter(q=>q._meta.category===category&&!used.has(normalKey(q.q))));
       const relevance=q=>q._meta.scenes.includes(current)?'specific':q._meta.scenes.includes('all')?'general':'other';
-      const groups=preferredSpecific?['specific','general','other']:['general','specific','other'];
-      // 降低最近 40 題重複出現的機率；只有題庫不足時才回收舊題。
+      const groups=preferredSpecific?['specific','general']:['general','specific'];
+      // 僅在符合情境／通用題裡優先挑近期未出現的題；不能因去重而混進不相關的場合題。
       let selected=null;
-      for(const group of groups){
-        for(const freshness of [true,false]){
+      for(const freshness of [true,false]){
+        for(const group of groups){
           selected=candidates.find(q=>(!recent.has(normalKey(q.q)))===freshness&&relevance(q)===group);
           if(selected)break;
         }
