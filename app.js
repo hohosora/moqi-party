@@ -125,7 +125,7 @@
   }
   function heroVisual(src,klass=''){
     const photo=safeHero(src);
-    return `<div class="hero-face shine ${photo?'photo-face':'dog-face'} ${klass}">${photo?`<img class="hero-photo" src="${esc(src)}" alt="主持人選擇的活動主視覺照片">`:'<img class="mascot-dog" src="assets/white-dog-hd.svg" width="112" height="104" alt="戴墨鏡的白狗吉祥物" decoding="async">'}</div>`;
+    return `<div class="hero-face shine ${photo?'photo-face':'dog-face'} ${klass}">${photo?`<img class="hero-photo" src="${esc(src)}" alt="主持人選擇的活動主視覺照片">`:'<img class="mascot-dog" src="assets/white-dog-pixel-hd.svg" width="112" height="104" alt="戴墨鏡的白狗吉祥物" decoding="async">'}</div>`;
   }
   function heroControls(inRoom=false){
     const current=inRoom?state.room?.heroImage:state.heroImage;
@@ -385,7 +385,7 @@
   // 首頁只做角色分流；進階設定全部放進主持人頁面。
   function renderHome(){
     return surface(`
-      <section class="grid-hero simple-home-hero"><div><div class="eyebrow">一起笑，才是真的有默契</div><h1 class="hero-title">默契<span>失控局！</span></h1><p class="subhead">選自己的答案，猜大家會怎麼選。<br><b>用笑點開場，用故事認識彼此。</b></p></div><div class="hero-graphic ${safeHero(state.heroImage)?'has-photo':''}"><div class="splat"></div>${heroVisual(state.heroImage)}<i class="star a">✳</i><i class="star b">✦</i></div></section>
+      <section class="grid-hero simple-home-hero"><div><div class="eyebrow">一起笑，才是真的有默契</div><h1 class="hero-title">默契<span>失控局！</span></h1><p class="subhead">選自己的答案，猜大家會怎麼選。<br><b>用笑點開場，用故事認識彼此。</b></p></div><div class="hero-graphic ${safeHero(state.heroImage)?'has-photo':''}"><div class="splat"></div>${heroVisual(state.heroImage)}${safeHero(state.heroImage)?'<i class="star a">✳</i>':''}<i class="star b">✦</i></div></section>
       <section class="role-choices section-gap" aria-label="選擇你的身分">
         <button class="role-choice" data-action="open-join"><span class="role-icon">🙋</span><span><strong>我要加入遊戲</strong><small>有房號或朋友的邀請連結</small></span><span class="role-arrow" aria-hidden="true">→</span></button>
         <button class="role-choice role-host" data-action="open-host"><span class="role-icon">🎤</span><span><strong>我是主持人</strong><small>選題目、設時間，開一場新的局</small></span><span class="role-arrow" aria-hidden="true">→</span></button>
@@ -480,6 +480,7 @@
   function render(){
     // 房間主題由主持人建立時寫入 Firestore，玩家不需自行設定。
     document.documentElement.setAttribute('data-theme',activeTheme());
+    document.documentElement.setAttribute('data-game-screen',state.room?.phase||state.page||'home');
     document.documentElement.style.setProperty('--m-hue',String(activeMinimalHue()));
     if(!state.mode || !state.room) {$app.innerHTML=state.page==='manager'?renderManager():state.page==='host'?renderHost():state.page==='join'?renderJoin():renderHome();return;}
     // 每次新題啟動時，先顯示題目，不沿用上一題或等候室留在頁面底部的位置。
