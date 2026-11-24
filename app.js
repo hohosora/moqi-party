@@ -125,7 +125,7 @@
   }
   function heroVisual(src,klass=''){
     const photo=safeHero(src);
-    return `<div class="hero-face shine ${photo?'photo-face':'dog-face'} ${klass}">${photo?`<img class="hero-photo" src="${esc(src)}" alt="主持人選擇的活動主視覺照片">`:'<img class="mascot-dog" src="assets/white-dog.webp" width="112" height="104" alt="戴墨鏡的白狗吉祥物" decoding="async">'}</div>`;
+    return `<div class="hero-face shine ${photo?'photo-face':'dog-face'} ${klass}">${photo?`<img class="hero-photo" src="${esc(src)}" alt="主持人選擇的活動主視覺照片">`:'<img class="mascot-dog" src="assets/white-dog-hd.svg" width="112" height="104" alt="戴墨鏡的白狗吉祥物" decoding="async">'}</div>`;
   }
   function heroControls(inRoom=false){
     const current=inRoom?state.room?.heroImage:state.heroImage;
@@ -391,7 +391,7 @@
         <button class="role-choice role-host" data-action="open-host"><span class="role-icon">🎤</span><span><strong>我是主持人</strong><small>選題目、設時間，開一場新的局</small></span><span class="role-arrow" aria-hidden="true">→</span></button>
       </section>
       <p class="landing-note">不用下載 App｜適合 10–20 人一起玩｜繁體中文</p>
-      <details class="how-to-play"><summary>第一次玩？30 秒看懂玩法</summary><ol><li>選出你自己的答案。</li><li>猜全場最多人選哪個。</li><li>開獎後分享最意外的發現，累積分數拚排行榜。</li></ol></details>
+      <details class="how-to-play"><summary>第一次玩？30 秒看懂玩法</summary><ol><li>選出你自己的答案。</li><li>猜全場最多人選哪個。</li><li>🃏 每人每場有一次「雙倍王牌」：在「猜大家」時勾選，猜中多數可得 200 分（原本 100 分）；猜錯也會用掉，其他加分不加倍。</li><li>開獎後分享最意外的發現，累積分數拚排行榜。</li></ol></details>
     `);
   }
   function renderJoin(){
