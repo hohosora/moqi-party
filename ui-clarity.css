@@ -665,6 +665,7 @@ html[data-theme="party"] .info-box strong,
 html[data-theme="minimal"] .info-box strong,
 html[data-theme="panel"] .info-box strong,
 html[data-theme="party"] .hero-controls b,
+html[data-theme="panel"] .hero-controls b,
 html[data-theme="minimal"] .hero-controls b{
   color:var(--ui-pale-strong);
   text-shadow:none;
