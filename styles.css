@@ -465,3 +465,333 @@ html[data-theme="minimal"] .footer{color:#d3d3d0}
   html[data-theme="panel"] .btn,html[data-theme="panel"] .option,html[data-theme="minimal"] .btn,
   html[data-theme="minimal"] .option, .theme-choice{transition:none!important}
 }
+
+/* v9｜立體按鍵風 2.0：依霧面灰色實體控制器重新設計材質與按壓感。
+   只套用 panel。保留原本版面、實際控制元件與友善閱讀字級。
+   格柵、螺絲、橘色 LED 與凹槽皆以 CSS 繪製，不另載入圖片。 */
+html[data-theme="panel"]{
+  --bg:#82837e;--bg2:#a29f99;--card:#bdbbb5;--card2:#d4d1ca;
+  --text:#222523;--muted:#4b4d49;--yellow:#f87329;--pink:#f99b55;
+  --mint:#dfe95c;--purple:#565855;--line:rgba(30,33,30,.32);
+  --shadow:inset 0 2px 1px rgba(255,255,255,.75),inset 0 -3px 2px rgba(35,37,35,.2),0 6px 10px rgba(20,22,22,.25)
+}
+html[data-theme="panel"] body{
+  color:#222523;
+  background:radial-gradient(ellipse at 50% 0%,#adaaa5 0%,#737673 46%,#474a49 100%);
+}
+html[data-theme="panel"] .container{
+  position:relative;
+  margin-top:12px;margin-bottom:16px;
+  border:3px solid #4a4b48;border-radius:30px;
+  background:
+    repeating-linear-gradient(0deg,rgba(255,255,255,.016) 0px,rgba(255,255,255,.016) 1px,transparent 1px,transparent 4px),
+    linear-gradient(115deg,rgba(255,255,255,.22) 0%,transparent 29%,rgba(17,20,18,.055) 70%,rgba(255,255,255,.07) 100%),
+    linear-gradient(165deg,#aaa7a2,#888a86 48%,#777b77 100%);
+  box-shadow:inset 0 0 0 2px #b7b5af,inset 0 5px 9px rgba(255,255,255,.4),
+    inset 0 -7px 11px rgba(32,34,34,.38),0 7px 0 #252827,0 14px 26px rgba(0,0,0,.35);
+  padding-top:29px
+}
+html[data-theme="panel"] .container::before{
+  content:"";position:absolute;z-index:0;top:9px;left:50%;transform:translateX(-50%);
+  width:132px;height:10px;pointer-events:none;opacity:.95;
+  background:radial-gradient(circle,#30332f 0 1.8px,#b9b8b2 2px 2.9px,transparent 3.2px);
+  background-size:13px 10px;
+}
+html[data-theme="panel"] .topbar{
+  position:relative;padding:5px 2px 14px;margin-bottom:23px;
+  border-bottom:1px solid rgba(247,245,238,.46);
+  box-shadow:0 1px 0 rgba(31,32,31,.22)
+}
+html[data-theme="panel"] .brand-home{color:#242623;text-shadow:0 1px rgba(255,255,255,.45)}
+html[data-theme="panel"] .brand-title{font-weight:900}
+html[data-theme="panel"] .brand-home-hint{color:#66331e}
+html[data-theme="panel"] .brand-mark{
+  border:2px solid #edc5a3;border-radius:12px;
+  background:linear-gradient(153deg,#ffba73 0%,#fc8733 48%,#c44c17 100%);
+  color:#302723;
+  box-shadow:inset 0 2px 1px #ffe9c8,inset 0 -3px 2px rgba(100,40,18,.55),
+    0 3px 0 #594b43,0 6px 9px rgba(16,18,17,.32)
+}
+html[data-theme="panel"] .hero-title{color:#252525;text-shadow:0 2px 1px rgba(255,255,255,.35)}
+html[data-theme="panel"] .hero-title span{color:#bd4e19;text-shadow:0 1px #f4bd89}
+html[data-theme="panel"] .eyebrow{color:#653723}
+html[data-theme="panel"] .splat{
+  width:193px;height:193px;border-radius:50%;transform:rotate(0);
+  border:8px solid #b7b5ae;
+  background:radial-gradient(circle at 36% 26%,#ffad58 0%,#ef7426 50%,#af4e1d 75%,#342f2c 78%,#d7d2c9 82%,#6a6a65 96%);
+  box-shadow:inset 0 4px 6px #ffd18b,inset 0 -8px 12px rgba(41,29,20,.65),0 0 0 3px #565954,0 9px 15px rgba(25,26,25,.37)
+}
+html[data-theme="panel"] .hero-face:not(.photo-face){filter:drop-shadow(0 6px 3px #47342a)}
+html[data-theme="panel"] .hero-photo{border:6px solid #d9d4cc;box-shadow:inset 0 2px 5px #171a18,0 5px 0 #5f605d,0 9px 14px #51514f}
+html[data-theme="panel"] .star{color:#f8a340;text-shadow:0 2px #5a4530}
+/* 機身嵌入式金屬面板；四角螺絲只是裝飾，不會覆蓋點擊。 */
+html[data-theme="panel"] .card{
+  position:relative;isolation:isolate;
+  border:3px solid #dbd8d0;border-radius:20px;
+  color:#202321;
+  background:
+    linear-gradient(130deg,rgba(255,255,255,.36),transparent 38%,rgba(26,28,26,.08) 100%),
+    linear-gradient(160deg,#c8c5bf 0%,#acaaa4 100%);
+  box-shadow:inset 0 2px 2px rgba(255,255,255,.88),
+    inset 0 -3px 4px rgba(52,54,51,.28),
+    0 2px 0 #6b6f6c,0 6px 9px rgba(31,33,30,.3);
+}
+html[data-theme="panel"] .card:not(.soft)::before{
+  content:"";position:absolute;inset:0;z-index:2;pointer-events:none;border-radius:inherit;
+  background:
+    radial-gradient(circle at 50% 50%,#333634 0 19%,#7b7d78 21% 34%,#d8d6cf 36% 57%,transparent 61%) left 8px top 8px / 13px 13px no-repeat,
+    radial-gradient(circle at 50% 50%,#333634 0 19%,#7b7d78 21% 34%,#d8d6cf 36% 57%,transparent 61%) right 8px top 8px / 13px 13px no-repeat,
+    radial-gradient(circle at 50% 50%,#333634 0 19%,#7b7d78 21% 34%,#d8d6cf 36% 57%,transparent 61%) left 8px bottom 8px / 13px 13px no-repeat,
+    radial-gradient(circle at 50% 50%,#333634 0 19%,#7b7d78 21% 34%,#d8d6cf 36% 57%,transparent 61%) right 8px bottom 8px / 13px 13px no-repeat;
+}
+html[data-theme="panel"] .card.soft{
+  background:linear-gradient(#aba9a3,#949691);
+  border-color:#bcbab4;box-shadow:inset 0 2px 4px #696b67,0 2px 0 rgba(255,255,255,.55)
+}
+html[data-theme="panel"] .card .mini-heading,html[data-theme="panel"] .card .fineprint,
+html[data-theme="panel"] .card .muted,html[data-theme="panel"] .card .host-bank-help{color:#323633}
+html[data-theme="panel"] .card .eyebrow{color:#823c18}
+html[data-theme="panel"] .question-card{
+  position:relative;color:#222421;isolation:isolate;
+  background:
+    linear-gradient(125deg,rgba(255,255,255,.43),rgba(255,255,255,0) 50%),
+    linear-gradient(154deg,#d2cfc7,#aeadab);
+  border:3px solid #e4e1d9;border-radius:20px;
+  box-shadow:inset 0 2px 3px #f1eee8,inset 0 -4px 6px rgba(71,70,67,.32),
+    0 3px 0 #676965,0 8px 12px rgba(23,24,22,.26);
+  padding-left:27px
+}
+html[data-theme="panel"] .question-card::before{
+  content:"";position:absolute;top:30%;left:10px;width:6px;height:42%;border-radius:8px;
+  background:linear-gradient(90deg,#574f3c,#dfe95c 39%,#f2fb6b 54%,#978a36);
+  border:1px solid #777663;box-shadow:0 0 8px rgba(230,236,85,.56),inset 0 0 3px #f7fc9d;
+  pointer-events:none
+}
+html[data-theme="panel"] .question-card .q-label{color:#5c5550}
+html[data-theme="panel"] .question-card .question-text{color:#202220;text-shadow:0 1px rgba(255,255,255,.52)}
+html[data-theme="panel"] .question-card::after{color:#5b5851;opacity:.12}
+/* 大面積的「實體按鈕」：上下高光、按鍵厚度、凹槽和按下位移。 */
+html[data-theme="panel"] .btn{
+  border:2px solid #d6a078;border-radius:12px;
+  color:#1e201f;background:linear-gradient(177deg,#ffa45b 0%,#f77d2c 46%,#d55a19 100%);
+  text-shadow:0 1px rgba(255,240,219,.45);
+  box-shadow:inset 0 2px 1px #ffd9b1,inset 0 -3px 3px rgba(117,46,10,.64),
+    0 4px 0 #665c53,0 8px 11px rgba(26,27,26,.3);
+  transition:filter .12s,transform .1s,box-shadow .1s;
+}
+html[data-theme="panel"] .btn.secondary{
+  background:linear-gradient(180deg,#dee0dc,#a0a39f);color:#202220;border:2px solid #dedfd9;
+  text-shadow:0 1px #fff;box-shadow:inset 0 2px 2px #fff,inset 0 -3px 3px #858984,0 4px 0 #676b66,0 7px 10px #52534f55
+}
+html[data-theme="panel"] .btn.tertiary,html[data-theme="panel"] .btn.dark{
+  background:linear-gradient(175deg,#494b4a,#242727);color:#f5f6f0;border:2px solid #696b67;
+  text-shadow:0 -1px #121515;box-shadow:inset 0 2px 1px #80817c,inset 0 -3px 3px #151716,
+  0 4px 0 #40413d,0 7px 10px #32333055
+}
+html[data-theme="panel"] .btn:hover:not(:disabled){filter:brightness(1.05);transform:none}
+html[data-theme="panel"] .btn:active:not(:disabled){
+  transform:translateY(3px);box-shadow:inset 0 3px 7px rgba(46,32,19,.46),0 1px 0 #656764
+}
+html[data-theme="panel"] .role-choice{
+  color:#222422;border:3px solid #d6d3cc;border-radius:19px;
+  background:linear-gradient(153deg,#c8c7c1,#a5a5a0);text-shadow:0 1px rgba(255,255,255,.48);
+  box-shadow:inset 2px 3px 2px #e7e7e1,inset -2px -4px 3px #767a75,
+    0 4px 0 #5d625e,0 9px 15px rgba(22,24,23,.31)
+}
+html[data-theme="panel"] .role-choice:first-child{
+  color:#232624;background:linear-gradient(#d0cdc6,#adaeaa);border-color:#e1ded6
+}
+html[data-theme="panel"] .role-choice small{color:#464944}
+html[data-theme="panel"] .role-choice .role-icon{
+  background:linear-gradient(#ff9b56,#d5541c);
+  border:2px solid #b95827;border-radius:10px;
+  box-shadow:inset 0 2px 1px #ffd8b1,inset 0 -2px 3px #993b10,0 4px 0 #5c4b41,0 7px 8px #46464355;
+  text-shadow:none
+}
+html[data-theme="panel"] .role-choice.role-host .role-icon{
+  background:linear-gradient(#525453,#252827);border-color:#858781;
+  box-shadow:inset 0 2px 2px #91938e,inset 0 -3px 3px #0e1110,0 4px 0 #353734
+}
+html[data-theme="panel"] .role-arrow{color:#ad4a21;text-shadow:0 1px #e3c4ad}
+html[data-theme="panel"] .role-choice:hover{transform:none;filter:brightness(1.025)}
+html[data-theme="panel"] .role-choice:active{transform:translateY(3px);box-shadow:inset 0 3px 8px #656762,0 1px 0 #646763}
+html[data-theme="panel"] .option{
+  color:#222522;border:3px solid #d5d3cc;border-radius:13px;
+  background:linear-gradient(172deg,#cfcfc8 0%,#a7a8a3 100%);
+  box-shadow:inset 0 2px 2px #e9e8e3,inset 0 -3px 3px #787b75,
+    0 4px 0 #656963,0 7px 10px rgba(22,24,22,.24);
+  text-shadow:0 1px rgba(255,255,255,.48)
+}
+html[data-theme="panel"] .option:hover{background:linear-gradient(#dfded8,#adaeaa)}
+html[data-theme="panel"] .option-letter{
+  border:2px solid #787b75;border-radius:9px;min-width:34px;
+  color:#f7f7f2;background:linear-gradient(#575a58,#292d2b 75%,#171a19);
+  box-shadow:inset 0 1px 1px #999b96,inset 0 -2px 2px #0e1210,
+    0 3px 0 #5c5f5a,0 5px 7px #2b2f2b55;text-shadow:0 -1px #111
+}
+html[data-theme="panel"] .option.selected,html[data-theme="panel"] .option.guess-selected{
+  color:#211c17;border-color:#ffbc78;
+  background:linear-gradient(169deg,#ffd4a8,#f59c55 68%,#e6782d);
+  box-shadow:inset 0 3px 6px rgba(121,70,27,.37),0 2px 0 #6b6258;
+}
+html[data-theme="panel"] .option.selected .option-letter,
+html[data-theme="panel"] .option.guess-selected .option-letter{
+  color:#201d19;background:linear-gradient(#ffca78,#f27726);
+  border-color:#cf621b;box-shadow:inset 0 2px 3px #fff0cc,0 2px 0 #a95c27
+}
+html[data-theme="panel"] .option:active:not(:disabled){
+  transform:translateY(3px);box-shadow:inset 0 4px 8px #66696277,0 1px 0 #5d605b
+}
+html[data-theme="panel"] .sticky-submit{
+  background:linear-gradient(0deg,rgba(121,124,120,.99) 74%,rgba(121,124,120,0) 100%);
+}
+html[data-theme="panel"] .sticky-submit .btn{box-shadow:inset 0 2px 1px #ffd0a5,0 4px 0 #545955,0 7px 10px #34373555}
+/* 凹槽、實體面板、切換提示、黃綠色待機 LED。 */
+html[data-theme="panel"] .field input,
+html[data-theme="panel"] .field select,
+html[data-theme="panel"] .field textarea{
+  background:linear-gradient(#b2b4ae,#e4e3db 15%,#dddcd5);
+  border:2px solid #555b56;color:#202320;
+  border-radius:10px;box-shadow:inset 0 4px 6px #72767088,inset 0 -1px 0 #f2f1eb
+}
+html[data-theme="panel"] .field input:focus,
+html[data-theme="panel"] .field select:focus,
+html[data-theme="panel"] .field textarea:focus{
+  border-color:#c85b22;box-shadow:inset 0 3px 5px #777a75aa,0 0 0 3px #efaa6b88
+}
+html[data-theme="panel"] .field span,html[data-theme="panel"] .label{color:#2b2e2a}
+html[data-theme="panel"] .status-tag,html[data-theme="panel"] .chip,
+html[data-theme="panel"] .rank-pill,html[data-theme="panel"] .timer{
+  color:#f4f3ed;background:linear-gradient(179deg,#474b49,#222625);
+  border:2px solid #777b76;border-radius:13px;
+  text-shadow:0 -1px #111413;box-shadow:inset 0 2px 2px #888b84,inset 0 -2px 2px #0d1110,0 3px 0 #555955
+}
+html[data-theme="panel"] .chip.mint,html[data-theme="panel"] .chip.yellow{color:#ebf47c}
+html[data-theme="panel"] .timer{position:relative;padding-right:29px}
+html[data-theme="panel"] .timer::after{
+  content:"";position:absolute;right:9px;top:50%;transform:translateY(-50%);
+  width:9px;height:9px;border-radius:50%;
+  border:1px solid #737841;background:radial-gradient(circle at 35% 35%,#f9ffb3,#d6e23c 55%,#778123);
+  box-shadow:0 0 7px #e3ec73,0 0 0 2px #32352e
+}
+html[data-theme="panel"] .timer.urgent{background:linear-gradient(#ae4b2d,#6c281a);color:#fff}
+html[data-theme="panel"] .timer.urgent::after{background:radial-gradient(circle,#ffb4a3,#fa4c29 70%);box-shadow:0 0 8px #ff5037}
+html[data-theme="panel"] .progress{
+  height:12px;border:2px solid #bbbcb5;border-radius:8px;background:#4d534e;
+  box-shadow:inset 0 3px 4px #242825,0 1px 0 rgba(255,255,255,.5)
+}
+html[data-theme="panel"] .progress>div{
+  border-radius:6px;
+  background:linear-gradient(#f5f88f,#dde83b 58%,#9ca729);
+  box-shadow:inset 0 1px 1px #fffcc0,0 0 7px rgba(220,236,85,.6)
+}
+html[data-theme="panel"] .poll-status,
+html[data-theme="panel"] .vote-sync-indicator{color:#202720;font-weight:750;text-shadow:0 1px #ffffff77}
+html[data-theme="panel"] .answer-stepper span,
+html[data-theme="panel"] .self-selection,
+html[data-theme="panel"] .powerup,
+html[data-theme="panel"] .submit-feedback,
+html[data-theme="panel"] .host-vote-tools,
+html[data-theme="panel"] .info-box,
+html[data-theme="panel"] .how-to-play,
+html[data-theme="panel"] .host-extra,
+html[data-theme="panel"] .direction-item,
+html[data-theme="panel"] .bank-picker,
+html[data-theme="panel"] .lobby-code,
+html[data-theme="panel"] .avatar-pill,
+html[data-theme="panel"] .room-look{
+  color:#262a26;background:linear-gradient(#c4c5be,#a4a69f);
+  border:2px solid #dcddd5;border-radius:13px;
+  box-shadow:inset 0 2px 2px rgba(255,255,255,.74),inset 0 -2px 2px #777b7477,0 3px 0 #686c65
+}
+html[data-theme="panel"] .answer-stepper span.current,
+html[data-theme="panel"] .answer-stepper span.done{
+  color:#22241e;background:linear-gradient(#edf4b0,#cbd56a);
+  border-color:#9ba444;box-shadow:inset 0 2px 4px #a4b03e99
+}
+html[data-theme="panel"] .self-selection small{color:#6c3c22}
+html[data-theme="panel"] .self-selection strong,html[data-theme="panel"] .powerup b{color:#222522}
+html[data-theme="panel"] .submit-feedback.is-ready{color:#202522}
+html[data-theme="panel"] .submit-feedback.is-sending{background:linear-gradient(#fbdcb0,#edc287);color:#4a2a13;border-color:#d49345}
+html[data-theme="panel"] .submit-feedback.is-error{background:#f7d5c8;color:#852b19;border-color:#b55b35}
+html[data-theme="panel"] .talk-first{
+  color:#f5f5ef;background:
+    linear-gradient(145deg,rgba(255,255,255,.08),transparent 45%),
+    linear-gradient(#424645,#282c2a);
+  border:3px solid #a2a6a0;border-radius:18px;
+  box-shadow:inset 0 2px 2px #747873,inset 0 -4px 4px #171b19,0 4px 0 #626760,0 9px 15px #2f343166
+}
+html[data-theme="panel"] .talk-first h2,html[data-theme="panel"] .talk-first p{color:#fff;text-shadow:0 1px #151816}
+html[data-theme="panel"] .talk-first small{color:#e0e5dd}
+html[data-theme="panel"] .talk-eyebrow{color:#e7ef6a}
+html[data-theme="panel"] .score-highlight{
+  color:#222522;border:3px solid #dedbd3;
+  background:linear-gradient(#d4d1c9,#b1b0a9);
+  box-shadow:inset 0 2px 2px #fff,0 4px 0 #676b64
+}
+html[data-theme="panel"] .score-big{color:#b94516;text-shadow:0 1px #f1d5b6}
+html[data-theme="panel"] .bar-track{
+  color:#1d201e;border:2px solid #777b75;background:#8c908a;
+  box-shadow:inset 0 3px 4px #5f635b,0 1px 0 #e0e3d9
+}
+html[data-theme="panel"] .bar-fill{background:linear-gradient(#ffcb88,#f18a40);box-shadow:inset 0 1px 2px #ffe2bc}
+html[data-theme="panel"] .bar-letter{
+  color:#f2f4ed;border:1px solid #858982;
+  background:linear-gradient(#555a55,#2d312e);
+  box-shadow:inset 0 1px 2px #858a82,0 3px 0 #646863
+}
+html[data-theme="panel"] .bar-text,html[data-theme="panel"] .bar-votes{color:#252724}
+html[data-theme="panel"] .quick-rank-line,html[data-theme="panel"] .rank-item,
+html[data-theme="panel"] .rank-name,html[data-theme="panel"] .rank-points{color:#292c28}
+html[data-theme="panel"] .theme-setting{
+  color:#242623;border:3px solid #bfc0b9;border-radius:18px;
+  background:linear-gradient(#b7b9b2,#969b94);
+  box-shadow:inset 0 2px 3px #e6e7df,inset 0 -3px 3px #777b74,0 3px 0 #61665f
+}
+html[data-theme="panel"] .theme-choice,
+html[data-theme="panel"] .bank-tab{
+  color:#242623;border:2px solid #bfc2bc;border-radius:12px;
+  background:linear-gradient(#dadad3,#b1b4ad);
+  box-shadow:inset 0 2px 2px #f9faf1,0 3px 0 #747972
+}
+html[data-theme="panel"] .theme-choice.active,
+html[data-theme="panel"] .bank-tab.active{
+  border-color:#e89146;background:linear-gradient(#f8d9b4,#e0a369);
+  box-shadow:inset 0 3px 5px #b87947,0 1px 0 #75736a
+}
+html[data-theme="panel"] .theme-swatch-panel{
+  background:linear-gradient(#898b86,#616560);
+  box-shadow:inset 0 3px 4px #424641,0 1px #e1e2d7
+}
+html[data-theme="panel"] .theme-swatch-panel i{background:linear-gradient(#ffad64,#df6120)}
+html[data-theme="panel"] .theme-swatch-panel b{background:radial-gradient(circle at 35% 30%,#81847f,#171a19 65%)}
+html[data-theme="panel"] .theme-swatch-panel span{background:#dbe74a;box-shadow:0 0 6px #e6ee66}
+html[data-theme="panel"] .theme-choice small,
+html[data-theme="panel"] .theme-check,html[data-theme="panel"] .theme-help,
+html[data-theme="panel"] .theme-selected-name{color:#454943}
+html[data-theme="panel"] .theme-choice.active .theme-check{color:#873a16}
+html[data-theme="panel"] .gemini-count-hint{color:#282922;background:#e7d1b7;border-color:#c6a37d}
+html[data-theme="panel"] .footer{
+  position:relative;overflow:hidden;color:#323631;border-top:2px solid #c8cac1;
+  padding:42px 8px 7px;box-shadow:0 -2px 0 #5f655e;
+  text-shadow:0 1px #e2e4dc
+}
+html[data-theme="panel"] .footer::before{
+  content:"";pointer-events:none;position:absolute;top:9px;left:50%;transform:translateX(-50%);
+  width:123px;height:22px;
+  background:radial-gradient(circle,#3b403c 0 2px,#a3a69f 2.2px 3px,transparent 3.2px);
+  background-size:10px 10px
+}
+@media(max-width:580px){
+  html[data-theme="panel"] .container{
+    margin-top:0;margin-bottom:0;border-radius:21px;padding:27px 14px max(40px,env(safe-area-inset-bottom))
+  }
+  html[data-theme="panel"] .container::before{width:95px}
+  html[data-theme="panel"] .question-card{padding-left:24px}
+  html[data-theme="panel"] .voting-question .question-text{font-size:28px}
+  html[data-theme="panel"] .one-step .option{min-height:132px;font-size:18px}
+}
+@media(prefers-reduced-motion:reduce){
+  html[data-theme="panel"] .btn,html[data-theme="panel"] .option,
+  html[data-theme="panel"] .role-choice{transition:none!important}
+}
