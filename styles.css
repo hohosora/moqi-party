@@ -3970,3 +3970,11 @@ html[data-theme="panel"][data-game-screen="finished"] .info-box{
   image-rendering:crisp-edges;
   image-rendering:pixelated;
 }
+
+/* 寫實風題目字級與原本相同；確保新控制面板不壓縮閱讀字級。 */
+@media(max-width:580px){
+  html[data-theme="panel"] .voting-question .question-text{
+    font-size:28px;
+    line-height:1.5;
+  }
+}
