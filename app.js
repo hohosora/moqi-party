@@ -356,9 +356,9 @@
   function renderVote(){
     const q=question(), v=myVote(), n=state.players.length, count=currentVoteCount(), remaining=Math.max(0,Math.ceil(((state.room.deadline||Date.now())-Date.now())/1000));
     const step=state.choice===null?'choice':state.voteStep;
-    const locked=Boolean(v)||state.voteSubmitState==='sent';
-    const confirmedVote=v||(state.voteSubmitState==='sent'?{choice:state.choice,guess:state.guess}:null);
-    const waiting=locked?`<section class="card section-gap submitted"><div class="icon">📨</div><strong>答案已成功送達，等大家一起開獎！</strong><p class="muted">你選：${esc(q.a[confirmedVote.choice])}<br>你猜多數：${esc(q.a[confirmedVote.guess])}</p><span class="chip mint">✓ 答案已鎖定</span></section>`:'';
+    const locked=Boolean(v)||state.voteSubmitState==='sent'||state.voteSubmitState==='sending';
+    const confirmedVote=v||((state.voteSubmitState==='sent'||state.voteSubmitState==='sending')?{choice:state.choice,guess:state.guess}:null);
+    const waiting=locked?`<section class="card section-gap submitted"><div class="icon">📨</div><strong>${state.voteSubmitState==='sending'&&!v?'⏳ 正在送出答案，請保持網頁開啟…':'✅ 答案已成功送達，等大家一起開獎！'}</strong><p class="muted">你選：${esc(q.a[confirmedVote.choice])}<br>你猜多數：${esc(q.a[confirmedVote.guess])}</p><span class="chip mint">✓ 答案已鎖定</span></section>`:'';
     let task='';
     if(!locked&&step==='choice'){
       task=`<section class="vote-area one-step"><div class="answer-stepper"><span class="current">① 選自己</span><span>② 猜大家</span></div><h2 class="vote-label">如果是你，你會選哪一個？</h2><p class="vote-tip">點一下答案，就會進入下一步。</p>${choiceButtons('choice',state.choice,q)}</section>`;
@@ -523,7 +523,7 @@
     state.voteUnsub=L.onSnapshot(L.query(votesCollection(code),L.where('roundIndex','==',ri)),{includeMetadataChanges:true},snap=>{
       if(state.room?.roundIndex!==ri)return;
       const wasSubmitted=Boolean(myVote());
-      state.votes=snap.docs.map(d=>d.data());
+      state.votes=snap.docs.filter(d=>!d.metadata?.hasPendingWrites).map(d=>d.data());
       state.voteSyncFromCache=Boolean(snap.metadata?.fromCache);
       if(Boolean(myVote())!==wasSubmitted || !document.getElementById('vote-count'))render();
       else updateVoteStatusUI();
