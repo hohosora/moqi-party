@@ -44,7 +44,7 @@
     customEditId:null, customDraft:null, geminiDirection:'trends', geminiCount:8, aiText:'',
     aiPreview:[], aiPreviewSkipped:0, managerNotice:'', managerError:'',
     heroImage:'', photoBusy:false, voteSubmitState:'idle', voteSyncFromCache:false, lastVisibleQuestionKey:null,
-    themeChoice:normalizeTheme(localStorage.getItem('mqs_visual_theme_v1')),
+    themeChoice:'party', // 每次新開網站預設經典像素風；房間中沿用主持人的主題
     minimalHue:normalizeMinimalHue(localStorage.getItem('mqs_minimal_hue_v1'))
   };
   // 只切換視覺樣式，不改答題流程。舊房間或未知主題沿用既有 party 代碼，外觀顯示為經典像素風。
@@ -107,7 +107,6 @@
       if(normalizeTheme(state.room.theme)!==raw)await updateRoom({theme:raw});
     }
     state.themeChoice=raw;
-    try{localStorage.setItem('mqs_visual_theme_v1',raw);}catch{}
     // 本機先更新設定，遠端房間待 Firestore 同步後再套用。
     if(state.room)state.room={...state.room,theme:raw};
     render();
@@ -381,7 +380,7 @@
   function myRank(){const sorted=scoresSorted();return sorted.findIndex(p=>p.uid===state.uid)+1;}
   function myScore(){return state.room?.scores?.[state.uid]||0;}
   function hasDouble(){return !state.room?.usedDoubles?.[state.uid];}
-  function surface(content, right=''){return `<main class="container"><div class="topbar"><button type="button" class="brand brand-home" data-action="brand-home" aria-label="回首頁：默契失控局" title="回首頁"><span class="brand-mark" aria-hidden="true"><span>✦</span></span><span class="brand-title">默契失控局</span><span class="brand-home-hint">回首頁</span></button>${right || `<span class="status-tag">🎮 手機破冰遊戲</span>`}</div><div class="retro-pcb-backplane" aria-hidden="true"><i class="retro-pcb-channel left"></i><i class="retro-pcb-channel right"></i><i class="retro-pcb-chip upper"></i><i class="retro-pcb-chip lower"></i></div><div class="retro-circuit-deck" aria-hidden="true"><span class="retro-deck-switches"><i></i><i></i><i></i></span><span class="retro-deck-pipes"><i></i><i></i><i></i><i></i></span><span class="retro-deck-chip"><b></b><i></i><i></i><i></i></span><span class="retro-deck-leds"><i></i><i></i><i></i></span></div>${state.room && safeHero(state.room.heroImage)?`<div class="room-look ${state.room.phase==='lobby'?'lobby-look':''}"><img class="room-look-image" src="${esc(state.room.heroImage)}" alt="本場活動主視覺"><span>🎉 本場活動主視覺</span></div>`:''}${state.error?`<div class="notice" role="alert">${esc(state.error)}</div>`:''}${state.toast?`<div class="chip mint" style="margin-bottom:12px">✓ ${esc(state.toast)}</div>`:''}${content}<div class="footer">適合 10–20 人 ✦ 有笑點的社交，不是尷尬的面試<br>先笑出來，再慢慢認識彼此 ✨</div></main>`;}
+  function surface(content, right=''){return `<main class="container"><div class="topbar"><button type="button" class="brand brand-home" data-action="brand-home" aria-label="默契失控局，點擊回首頁" title="回首頁"><span class="brand-mark" aria-hidden="true"><span>✦</span></span><span class="brand-title">默契失控局</span></button></div>${right ? `<div class="header-room-status">${right}</div>` : ''}<div class="retro-pcb-backplane" aria-hidden="true"><i class="retro-pcb-channel left"></i><i class="retro-pcb-channel right"></i><i class="retro-pcb-chip upper"></i><i class="retro-pcb-chip lower"></i></div><div class="retro-circuit-deck" aria-hidden="true"><span class="retro-deck-switches"><i></i><i></i><i></i></span><span class="retro-deck-pipes"><i></i><i></i><i></i><i></i></span><span class="retro-deck-chip"><b></b><i></i><i></i><i></i></span><span class="retro-deck-leds"><i></i><i></i><i></i></span></div>${state.room && safeHero(state.room.heroImage)?`<div class="room-look ${state.room.phase==='lobby'?'lobby-look':''}"><img class="room-look-image" src="${esc(state.room.heroImage)}" alt="本場活動主視覺"><span>🎉 本場活動主視覺</span></div>`:''}${state.error?`<div class="notice" role="alert">${esc(state.error)}</div>`:''}${state.toast?`<div class="chip mint" style="margin-bottom:12px">✓ ${esc(state.toast)}</div>`:''}${content}<div class="footer">適合 10–20 人 ✦ 有笑點的社交，不是尷尬的面試<br>先笑出來，再慢慢認識彼此 ✨</div></main>`;}
   // 首頁只做角色分流；進階設定全部放進主持人頁面。
   function renderHome(){
     return surface(`
