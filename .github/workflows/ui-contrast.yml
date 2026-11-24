@@ -1,0 +1,32 @@
+name: UI contrast regression
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'styles.css'
+      - 'retro-mechanical.css'
+      - 'ui-clarity.css'
+      - 'app.js'
+      - 'index.html'
+      - 'tests/theme-contrast.cjs'
+      - '.github/workflows/ui-contrast.yml'
+  pull_request:
+    paths:
+      - 'styles.css'
+      - 'retro-mechanical.css'
+      - 'ui-clarity.css'
+      - 'app.js'
+      - 'index.html'
+      - 'tests/theme-contrast.cjs'
+      - '.github/workflows/ui-contrast.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check-contrast:
+    name: Verify three themes and 360 minimal hues
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check text and surface contrast
+        run: node tests/theme-contrast.cjs
