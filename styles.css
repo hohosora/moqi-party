@@ -1147,7 +1147,7 @@ html[data-theme="minimal"] input[name="minimalHue"]{
   appearance:none;-webkit-appearance:none;
   background:linear-gradient(90deg,#f46b70 0%,#e7bb67 17%,#8abf89 33%,#75bdbd 50%,#96a4e3 67%,#c48dce 83%,#f46b70 100%);
   box-shadow:inset 3px 3px 7px rgba(53,58,58,.26),inset -2px -2px 5px rgba(255,255,255,.6);
-  cursor:pointer;touch-action:pan-y
+  cursor:pointer;touch-action:auto
 }
 html[data-theme="minimal"] input[name="minimalHue"]::-webkit-slider-thumb{
   -webkit-appearance:none;appearance:none;width:32px;height:32px;
