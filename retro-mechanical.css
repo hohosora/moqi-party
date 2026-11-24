@@ -1232,3 +1232,17 @@ html[data-theme="panel"] .footer::before{
     text-align:left;max-width:100%;
   }
 }
+
+/* 15: Last-pass mobile legibility; keep dense data at 14px minimum. */
+@media(max-width:640px){
+  html[data-theme="panel"] .bar-text,
+  html[data-theme="panel"] .bar-votes{font-size:14px;line-height:1.5}
+  html[data-theme="panel"] .podium .name{font-size:13px;line-height:1.5}
+  html[data-theme="panel"] .podium .points{font-size:clamp(14px,3.8vw,18px)}
+  html[data-theme="panel"] .rank-points{font-size:14px;white-space:normal;text-align:center}
+  html[data-theme="panel"] .theme-check{font-weight:900}
+}
+@media(max-width:390px){
+  html[data-theme="panel"] .bank-tab{font-size:13px}
+  html[data-theme="panel"] .status-tag{font-size:12px}
+}
