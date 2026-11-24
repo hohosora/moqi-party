@@ -954,3 +954,8 @@ html[data-theme="minimal"] .bar-track.coldest{border-color:#517f89}
   .scoring-rule-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 10px}
   .scoring-rule-item strong,.scoring-rule-item b{font-size:15px}
 }
+
+/* Scoring mobile overflow safety. */
+.score-highlight .split > div:first-child{flex:1 1 0;min-width:0}
+.score-highlight .split > .score-emote{flex:0 0 auto}
+.result-bar .bar-track .bar-text{min-width:0;overflow-wrap:anywhere}
