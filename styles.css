@@ -1201,3 +1201,370 @@ html[data-theme="minimal"] input[name="minimalHue"]:focus-visible{
   background:#f0d5c7;border-radius:9px;
   box-shadow:2px 2px 5px #bbc0bd;
 }
+
+/* v11 / 01：經典像素風 — 參考紫黃高對比復古遊戲網站。
+   保留 HTML 頁面結構與可點擊位置；CSS 製作像素輪廓與街機視覺。 */
+html[data-theme="party"]{
+  --pixel-purple:#5b0af4;
+  --pixel-purple-deep:#33089e;
+  --pixel-lime:#ecff00;
+  --pixel-ink:#0a0811;
+  --pixel-white:#fffdf7;
+  --bg:var(--pixel-purple-deep);
+  --bg2:var(--pixel-purple);
+  --card:var(--pixel-white);
+  --card2:#f5f1ff;
+  --text:var(--pixel-white);
+  --muted:#eee4ff;
+  --yellow:var(--pixel-lime);
+  --pink:#f5a9ff;
+  --mint:var(--pixel-lime);
+  --purple:#6b19ff;
+  --line:#0a0811;
+  --shadow:7px 7px 0 var(--pixel-ink);
+  color-scheme:light
+}
+html[data-theme="party"] body{
+  color:#fff;
+  background:
+    radial-gradient(circle at 92% 16%,rgba(243,255,0,.16) 0 2px,transparent 2.5px) 0 0/23px 23px,
+    radial-gradient(circle at 5% 70%,rgba(255,255,255,.1) 0 2px,transparent 2.5px) 0 0/19px 19px,
+    linear-gradient(150deg,#6e17ff 0%,#5000db 51%,#2b066c 100%);
+}
+html[data-theme="party"] .ambient{display:none}
+html[data-theme="party"] .container{
+  margin-top:10px;margin-bottom:10px;
+  border:4px solid var(--pixel-ink);border-radius:0;
+  background:
+    linear-gradient(0deg,rgba(15,5,45,.13) 1px,transparent 1px) 0 0/24px 24px,
+    linear-gradient(90deg,rgba(15,5,45,.10) 1px,transparent 1px) 0 0/24px 24px,
+    linear-gradient(#6300f4,#4b08d0 75%,#3d009a);
+  box-shadow:8px 8px 0 var(--pixel-ink),inset 0 0 0 3px rgba(255,255,255,.08)
+}
+html[data-theme="party"] .topbar{
+  position:relative;z-index:2;
+  border:3px solid #050509;border-radius:0;
+  background:var(--pixel-lime);color:#0a0a0c;
+  box-shadow:5px 5px 0 #060408;
+  margin:0 0 38px;padding:10px 12px 19px;
+}
+html[data-theme="party"] .topbar::after{
+  content:"✦  多人派對遊戲  •  默契大考驗  •  手機即玩  ✦";
+  position:absolute;left:0;right:0;bottom:0;display:block;
+  overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+  padding:0 10px 3px;color:#08070e;
+  border-top:2px solid #060408;
+  font-family:ui-monospace,Consolas,monospace;
+  font-weight:900;font-size:10px;line-height:12px;letter-spacing:.015em;
+}
+html[data-theme="party"] .brand-home{
+  color:#0a080b;background:transparent;border:0;
+  border-radius:0;text-shadow:none;min-height:52px
+}
+html[data-theme="party"] .brand-home:hover{background:rgba(0,0,0,.08)}
+html[data-theme="party"] .brand-title{
+  color:#090609;font-size:19px;font-weight:1000;letter-spacing:-.07em
+}
+html[data-theme="party"] .brand-home-hint{
+  color:#160e1b;font-size:12px;font-weight:900
+}
+html[data-theme="party"] .brand-mark{
+  width:38px;height:38px;
+  transform:none;border:3px solid #08080a;border-radius:0;
+  color:#0b0810;background:#fffdf5;
+  box-shadow:3px 3px 0 #0a0811
+}
+html[data-theme="party"] .brand-mark span{transform:none;color:#5200e8;font-size:23px}
+html[data-theme="party"] .status-tag{
+  background:#09080d;color:#efff18;border:2px solid #050508;
+  border-radius:0;box-shadow:3px 3px 0 #796f06
+}
+html[data-theme="party"] .eyebrow{
+  color:var(--pixel-lime);
+  text-transform:uppercase;
+  font-family:ui-monospace,Consolas,monospace;
+  font-weight:950;letter-spacing:.1em
+}
+html[data-theme="party"] .hero-title{
+  font-weight:1000;letter-spacing:-.065em;color:#fff;
+  text-shadow:4px 4px 0 #0a0811,-2px -2px 0 #0a0811,2px -2px 0 #0a0811,-2px 2px 0 #0a0811;
+}
+html[data-theme="party"] .hero-title span{color:var(--pixel-lime)}
+html[data-theme="party"] .subhead,
+html[data-theme="party"] .simple-home-hero .subhead,
+html[data-theme="party"] .landing-note{
+  color:#fff;font-weight:750;text-shadow:1px 1px 0 #170b34
+}
+html[data-theme="party"] .splat{
+  border:4px solid #0a0811;border-radius:0;
+  background:var(--pixel-lime);
+  transform:rotate(8deg);
+  box-shadow:9px 9px 0 #0a0811
+}
+html[data-theme="party"] .star{
+  color:var(--pixel-lime);
+  text-shadow:4px 4px 0 #08070e;
+}
+html[data-theme="party"] .hero-face:not(.photo-face){filter:drop-shadow(5px 5px 0 #0a0811)}
+html[data-theme="party"] .hero-photo{
+  border:4px solid #0a0811;border-radius:0;box-shadow:6px 6px 0 #0b0810
+}
+/* 粗黑外框與「視窗」感，用於主持人表單、等候室、答題與排行榜。 */
+html[data-theme="party"] .card{
+  color:var(--pixel-ink);
+  background:var(--pixel-white);
+  border:3px solid #0b0910;border-radius:0;
+  box-shadow:7px 7px 0 #0b0910;
+}
+html[data-theme="party"] .card.soft{
+  color:var(--pixel-ink);
+  background:#faf7ff;
+  border:3px solid #0b0910;box-shadow:5px 5px 0 #0b0910
+}
+html[data-theme="party"] .entry-card{
+  position:relative;padding-top:39px;
+}
+html[data-theme="party"] .entry-card::before{
+  content:"■ ■ ■  ROOM SETUP";
+  position:absolute;top:0;left:0;right:0;
+  min-height:28px;padding:3px 12px;
+  background:var(--pixel-ink);color:#f6f2ff;
+  font-family:ui-monospace,Consolas,monospace;
+  font-size:12px;font-weight:950;line-height:24px;
+  letter-spacing:.02em;pointer-events:none;
+}
+html[data-theme="party"] .card .eyebrow,
+html[data-theme="party"] .card .mini-heading,
+html[data-theme="party"] .card .muted,
+html[data-theme="party"] .card .fineprint,
+html[data-theme="party"] .card .host-bank-help{
+  color:#201a27;text-shadow:none
+}
+html[data-theme="party"] .page-title,
+html[data-theme="party"] .mini-heading,
+html[data-theme="party"] .entry-heading .page-title{font-weight:1000}
+html[data-theme="party"] .entry-heading .eyebrow{color:var(--pixel-lime)}
+html[data-theme="party"] .role-choice,
+html[data-theme="party"] .role-choice:first-child,
+html[data-theme="party"] .role-choice.role-host{
+  color:#111015;
+  background:#fffef7;border:3px solid #0a0910;
+  border-radius:0;box-shadow:6px 6px 0 #0a0910;
+  text-shadow:none
+}
+html[data-theme="party"] .role-choice.role-host{background:#eaff0b}
+html[data-theme="party"] .role-choice small,
+html[data-theme="party"] .role-choice.role-host small{
+  color:#29202b;font-weight:750
+}
+html[data-theme="party"] .role-choice .role-icon,
+html[data-theme="party"] .role-choice.role-host .role-icon{
+  background:var(--pixel-lime);
+  border:3px solid #0b0910;border-radius:0;
+  box-shadow:3px 3px 0 #0b0910;
+  color:#101015;display:grid;place-items:center
+}
+html[data-theme="party"] .role-arrow{color:#101015}
+html[data-theme="party"] .role-choice:hover{transform:translate(-1px,-1px);filter:none}
+html[data-theme="party"] .role-choice:active{transform:translate(4px,4px);box-shadow:2px 2px 0 #07060a}
+html[data-theme="party"] .btn{
+  color:#0a0910;background:var(--pixel-lime);
+  border:3px solid #0a0810;border-radius:0;
+  box-shadow:5px 5px 0 #0a0810;
+  text-shadow:none;font-weight:1000;
+  font-family:inherit;
+  transition:transform .09s,box-shadow .09s;
+}
+html[data-theme="party"] .btn.secondary{
+  background:#fffdf6;color:#0a0810;border:3px solid #0a0810;
+  box-shadow:5px 5px 0 #0a0810
+}
+html[data-theme="party"] .btn.tertiary,
+html[data-theme="party"] .btn.dark{
+  color:#fff;background:#101017;border:3px solid #0a0810;
+  box-shadow:5px 5px 0 #0a0810
+}
+html[data-theme="party"] .btn:hover:not(:disabled){filter:brightness(1.04);transform:translate(-1px,-1px)}
+html[data-theme="party"] .btn:active:not(:disabled){
+  transform:translate(4px,4px);box-shadow:1px 1px 0 #0a0810
+}
+html[data-theme="party"] .field span,html[data-theme="party"] .label{color:#15131a;font-weight:900}
+html[data-theme="party"] .field input,
+html[data-theme="party"] .field select,
+html[data-theme="party"] .field textarea{
+  color:#0a0910;background:#fff;border:2px solid #0a0810;
+  border-radius:0;box-shadow:inset 3px 3px 0 rgba(10,8,16,.12)
+}
+html[data-theme="party"] .field input::placeholder,
+html[data-theme="party"] .field textarea::placeholder{color:#53515d}
+html[data-theme="party"] .field input:focus,
+html[data-theme="party"] .field select:focus,
+html[data-theme="party"] .field textarea:focus{
+  outline:3px solid #7300f3;outline-offset:2px
+}
+html[data-theme="party"] .theme-setting{
+  color:#121018;background:#fffef6;
+  border:3px solid #0a0810;border-radius:0;box-shadow:5px 5px 0 #0a0810
+}
+html[data-theme="party"] .theme-setting-heading strong,
+html[data-theme="party"] .theme-selected-name,
+html[data-theme="party"] .theme-help{color:#201522}
+html[data-theme="party"] .theme-grid{gap:8px}
+html[data-theme="party"] .theme-choice{
+  color:#111015;background:#fff;border:2px solid #0a0810;border-radius:0;
+  box-shadow:3px 3px 0 #0a0810;min-height:155px
+}
+html[data-theme="party"] .theme-choice strong,
+html[data-theme="party"] .theme-choice small,
+html[data-theme="party"] .theme-check{color:#111015}
+html[data-theme="party"] .theme-choice.active{
+  color:#070909;background:var(--pixel-lime);
+  border:3px solid #0a0810;box-shadow:inset 2px 2px 0 #f5ff9e,3px 3px 0 #0a0810
+}
+html[data-theme="party"] .theme-choice.active .theme-check{color:#0d0c0d}
+html[data-theme="party"] .theme-swatch-party{
+  background:#5600ff;border:2px solid #0a0810;border-radius:0;
+  image-rendering:pixelated
+}
+html[data-theme="party"] .theme-swatch-party i,
+html[data-theme="party"] .theme-swatch-party b,
+html[data-theme="party"] .theme-swatch-party em,
+html[data-theme="party"] .theme-swatch-party span{
+  background:#e9ff00;border:2px solid #0a0810;border-radius:0;
+  box-shadow:2px 2px 0 #0a0810
+}
+html[data-theme="party"] .option{
+  color:#100d12;background:#fff;
+  border:3px solid #0b0910;border-radius:0;
+  box-shadow:5px 5px 0 #0b0910;
+  text-shadow:none
+}
+html[data-theme="party"] .option:hover{background:#f3edff;filter:none}
+html[data-theme="party"] .option.selected,
+html[data-theme="party"] .option.guess-selected{
+  background:var(--pixel-lime);color:#0c0b12;
+  border-color:#0a0810;box-shadow:inset 3px 3px 0 #abb600,3px 3px 0 #0a0810
+}
+html[data-theme="party"] .option:active:not(:disabled){transform:translate(4px,4px);box-shadow:1px 1px 0 #0a0810}
+html[data-theme="party"] .option-letter{
+  color:#fff;background:#0b0810;border:2px solid #070508;
+  border-radius:0;box-shadow:3px 3px 0 #5600c8
+}
+html[data-theme="party"] .option.selected .option-letter,
+html[data-theme="party"] .option.guess-selected .option-letter{
+  background:#0b0810;color:var(--pixel-lime);box-shadow:2px 2px 0 #635e00
+}
+html[data-theme="party"] .question-card{
+  background:var(--pixel-lime);color:#0a0810;
+  border:3px solid #0b0810;border-radius:0;
+  box-shadow:6px 6px 0 #0b0810
+}
+html[data-theme="party"] .question-card .q-label,
+html[data-theme="party"] .question-card .question-text{color:#0d0c10}
+html[data-theme="party"] .question-card::after{color:#30098d;opacity:.12}
+html[data-theme="party"] .progress{
+  height:12px;border:2px solid #0b0810;
+  background:#18083f;border-radius:0;box-shadow:3px 3px 0 #0b0810
+}
+html[data-theme="party"] .progress>div{
+  background:var(--pixel-lime);border-radius:0;box-shadow:inset 0 0 0 2px #eafba4
+}
+html[data-theme="party"] .chip,
+html[data-theme="party"] .rank-pill,
+html[data-theme="party"] .timer{
+  color:#0b0810;background:#f5f3fb;border:2px solid #0b0810;
+  border-radius:0;box-shadow:3px 3px 0 #0b0810
+}
+html[data-theme="party"] .chip.mint,
+html[data-theme="party"] .chip.yellow{color:#0b0810;background:var(--pixel-lime)}
+html[data-theme="party"] .timer.urgent{color:#fff;background:#c51b41}
+html[data-theme="party"] .poll-status,
+html[data-theme="party"] .vote-sync-indicator,
+html[data-theme="party"] .room-theme-label{color:#fff}
+html[data-theme="party"] .answer-stepper span,
+html[data-theme="party"] .self-selection,
+html[data-theme="party"] .powerup,
+html[data-theme="party"] .submit-feedback,
+html[data-theme="party"] .host-vote-tools,
+html[data-theme="party"] .info-box,
+html[data-theme="party"] .how-to-play,
+html[data-theme="party"] .host-extra,
+html[data-theme="party"] .direction-item,
+html[data-theme="party"] .bank-picker,
+html[data-theme="party"] .lobby-code,
+html[data-theme="party"] .avatar-pill,
+html[data-theme="party"] .room-look{
+  color:#111015;background:#f8f5ff;border:3px solid #0b0810;
+  border-radius:0;box-shadow:4px 4px 0 #0b0810
+}
+html[data-theme="party"] .answer-stepper span.current,
+html[data-theme="party"] .answer-stepper span.done{background:var(--pixel-lime);color:#08070b}
+html[data-theme="party"] .self-selection strong,
+html[data-theme="party"] .self-selection small,
+html[data-theme="party"] .powerup b,
+html[data-theme="party"] .powerup small{color:#15101a}
+html[data-theme="party"] .submit-feedback.is-sending{background:#fef0b7;color:#21180c}
+html[data-theme="party"] .submit-feedback.is-error{background:#fcd9df;color:#6a1930}
+html[data-theme="party"] .sticky-submit{
+  background:linear-gradient(0deg,rgba(63,7,174,.99) 75%,transparent 100%)
+}
+html[data-theme="party"] .talk-first{
+  background:var(--pixel-lime);color:#0b0a10;
+  border:3px solid #0a0810;border-radius:0;box-shadow:6px 6px 0 #0a0810
+}
+html[data-theme="party"] .talk-first h2,
+html[data-theme="party"] .talk-first p,
+html[data-theme="party"] .talk-first small{color:#101015}
+html[data-theme="party"] .talk-eyebrow{color:#211028}
+html[data-theme="party"] .score-highlight{
+  background:#fff;border:3px solid #09070d;border-radius:0;
+  box-shadow:5px 5px 0 #09070d
+}
+html[data-theme="party"] .score-big{color:#5300db;text-shadow:1px 1px 0 #0a0810}
+html[data-theme="party"] .bar-track{
+  color:#121015;background:#edebf0;border:2px solid #0a0810;
+  border-radius:0;box-shadow:3px 3px 0 #0a0810
+}
+html[data-theme="party"] .bar-fill{background:var(--pixel-lime);border-radius:0}
+html[data-theme="party"] .bar-letter{color:#fff;background:#08070c;border-radius:0}
+html[data-theme="party"] .bar-text,
+html[data-theme="party"] .bar-votes,
+html[data-theme="party"] .rank-name,
+html[data-theme="party"] .rank-item,
+html[data-theme="party"] .rank-points,
+html[data-theme="party"] .quick-rank-line{color:#111018}
+html[data-theme="party"] .bank-tab{
+  color:#120e17;background:#fff;
+  border:2px solid #09070d;border-radius:0;box-shadow:3px 3px 0 #09070d
+}
+html[data-theme="party"] .bank-tab.active{color:#0b0810;background:var(--pixel-lime)}
+html[data-theme="party"] .direction-item strong,
+html[data-theme="party"] .direction-item small{color:#16131a}
+html[data-theme="party"] .gemini-count-hint{
+  color:#16131a;background:#efff44;border:2px solid #0a0810;border-radius:0
+}
+html[data-theme="party"] .footer{
+  color:#edff00;border-top:3px solid #0a0810;position:relative;
+  background:
+    radial-gradient(circle,#ddef00 0 1px,transparent 1.5px) 0 0/12px 12px,
+    linear-gradient(#2f007d,#1c0549);
+  margin-top:32px;padding:22px 12px;
+  font-weight:850;text-shadow:2px 2px 0 #08070d
+}
+@media(max-width:580px){
+  html[data-theme="party"] .container{padding:12px 12px max(30px,env(safe-area-inset-bottom));margin-top:0;margin-bottom:0;border-width:3px}
+  html[data-theme="party"] .topbar{padding:8px 8px 21px;margin-bottom:26px;gap:4px}
+  html[data-theme="party"] .brand-title{font-size:16px}
+  html[data-theme="party"] .brand-home-hint{font-size:11px}
+  html[data-theme="party"] .topbar::after{font-size:9px;letter-spacing:-.03em}
+  html[data-theme="party"] .entry-card{padding:40px 15px 18px}
+  html[data-theme="party"] .card{padding:20px 15px}
+  html[data-theme="party"] .theme-choice{padding:7px 5px;min-height:151px}
+  html[data-theme="party"] .option{font-size:18px}
+  html[data-theme="party"] .voting-question .question-text{font-size:28px}
+}
+@media(prefers-reduced-motion:reduce){
+  html[data-theme="party"] .btn,
+  html[data-theme="party"] .option,
+  html[data-theme="party"] .role-choice{transition:none!important}
+}
