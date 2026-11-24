@@ -3236,3 +3236,47 @@ html[data-theme="panel"] .question-card > p[style]{
 html[data-theme="panel"] .question-card > .page-title{
   color:#fffaf0!important
 }
+
+/* v14｜2026-11-24：白狗向量清晰化、寫實風首頁副標高對比。 */
+/* 原圖只有 80×74 的像素畫。現在改用向量 SVG，避免原 CSS 像素化重新降低畫質。 */
+.hero-face .mascot-dog{
+  image-rendering:auto;
+  -webkit-image-rendering:auto;
+  width:clamp(135px,16vw,185px);
+  height:auto;
+  object-fit:contain;
+}
+@media(max-width:580px){
+  .simple-home-hero .hero-graphic .mascot-dog{
+    image-rendering:auto;
+    width:112px;
+    max-width:100%;
+    height:auto;
+  }
+}
+@media(max-width:370px){
+  .simple-home-hero .hero-graphic .mascot-dog{width:92px}
+}
+/* 首頁玩家／主持人入口是淺色金屬鍵帽，避免副標受到舊的淺字規則影響。 */
+html[data-theme="panel"] .simple-home-hero + .role-choices .role-choice,
+html[data-theme="panel"] .simple-home-hero + .role-choices .role-choice:first-child,
+html[data-theme="panel"] .simple-home-hero + .role-choices .role-choice.role-host{
+  background:
+    linear-gradient(125deg,rgba(255,255,255,.43),transparent 47%,rgba(28,35,27,.08)),
+    linear-gradient(#f0f0e6,#d2d6cb 54%,#abb4a7);
+}
+html[data-theme="panel"] .simple-home-hero + .role-choices .role-choice small,
+html[data-theme="panel"] .simple-home-hero + .role-choices .role-choice.role-host small{
+  display:block;
+  color:#101813;
+  -webkit-text-fill-color:#101813;
+  font-size:clamp(16px,3.8vw,18px);
+  font-weight:850;
+  line-height:1.5;
+  opacity:1;
+  text-shadow:none;
+}
+html[data-theme="panel"] .simple-home-hero + .role-choices .role-choice strong{
+  color:#111912;
+  text-shadow:none;
+}
