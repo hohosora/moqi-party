@@ -807,7 +807,7 @@ html[data-theme="panel"] .host-vote-tools .fineprint{color:#3a3031}
 /* 10: Results panel / vote meters / warm-orange score module. */
 html[data-theme="panel"] .result-bar{
   box-sizing:border-box;min-width:0;
-  display:grid;grid-template-columns:39px minmax(0,1fr) 48px;
+  position:relative;display:grid;grid-template-columns:39px minmax(0,1fr) 48px;
   gap:9px;align-items:center;padding:11px;margin:11px 0;
   color:#272228;background:linear-gradient(#e8dac7,#cdb8a4);
   border:3px solid #3d2e2f;border-radius:4px;
@@ -1344,7 +1344,7 @@ html[data-theme="panel"] .retro-deck-pipes i::after{
   box-shadow:inset 0 1px #f1d1a0;
 }
 html[data-theme="panel"] .retro-deck-chip{
-  display:grid;grid-template-columns:repeat(3,1fr);align-items:center;gap:4px;
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:center;gap:2px;
   flex:none;width:48px;height:36px;padding:5px 6px;
   border:3px solid #8e7266;border-radius:2px;
   background:linear-gradient(#393239,#1c1d23);
@@ -1438,7 +1438,7 @@ html[data-theme="panel"] .result-bar::before{
   html[data-theme="panel"] .retro-deck-pipes i{flex-basis:4px;height:4px}
   html[data-theme="panel"] .retro-deck-chip{width:37px;height:30px;gap:2px;padding:3px}
   html[data-theme="panel"] .retro-deck-chip b,
-  html[data-theme="panel"] .retro-deck-chip i{width:5px;height:11px}
+  html[data-theme="panel"] .retro-deck-chip i{width:4px;height:11px}
   html[data-theme="panel"] .retro-deck-chip b{height:18px}
   html[data-theme="panel"] .retro-deck-leds{gap:4px;padding:5px}
   html[data-theme="panel"] .retro-deck-leds i{width:9px;height:9px}
