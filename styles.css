@@ -795,3 +795,386 @@ html[data-theme="panel"] .footer::before{
   html[data-theme="panel"] .btn,html[data-theme="panel"] .option,
   html[data-theme="panel"] .role-choice{transition:none!important}
 }
+
+/* v10｜極簡設計風 2.0：柔霧 Neumorphism、淺灰白軟質浮雕。
+   版面與功能共用原遊戲，只用單一 --m-hue 推算輔助色階。
+   配色、陰影皆為 CSS；不使用圖片、材質下載或 Canvas 動畫。 */
+html[data-theme="minimal"]{
+  --m-hue:20;
+  --m-shell:hsl(var(--m-hue) 11% 91%);
+  --m-surface:hsl(var(--m-hue) 12% 93%);
+  --m-pressed:hsl(var(--m-hue) 9% 88%);
+  --m-surface-highlight:hsl(var(--m-hue) 20% 98%);
+  --m-accent:hsl(var(--m-hue) 61% 75%);
+  --m-accent-strong:hsl(var(--m-hue) 68% 61%);
+  --m-accent-soft:hsl(var(--m-hue) 42% 87%);
+  --m-accent-pale:hsl(var(--m-hue) 30% 95%);
+  --m-ink:#272b2c;--m-sub:#505659;
+  --m-raised:-7px -7px 16px rgba(255,255,255,.9),7px 7px 16px rgba(116,122,122,.23);
+  --m-soft-raised:-4px -4px 9px rgba(255,255,255,.94),4px 4px 9px rgba(116,122,122,.23);
+  --m-inset:inset 5px 5px 11px rgba(116,122,122,.21),inset -5px -5px 11px rgba(255,255,255,.9);
+  --bg:var(--m-shell);--bg2:var(--m-pressed);--card:var(--m-surface);--card2:var(--m-surface);
+  --text:var(--m-ink);--muted:var(--m-sub);--yellow:var(--m-accent-strong);--pink:var(--m-accent);
+  --mint:var(--m-accent-strong);--purple:#aab0b2;--line:rgba(97,104,105,.19);--shadow:var(--m-raised);
+  color-scheme:light;
+}
+html[data-theme="minimal"] body{
+  color:var(--m-ink);
+  background:linear-gradient(145deg,var(--m-surface-highlight),var(--m-shell) 48%,var(--m-pressed) 100%);
+}
+html[data-theme="minimal"] .container{
+  color:var(--m-ink);
+  background:linear-gradient(152deg,rgba(255,255,255,.46),transparent 48%);
+  border-radius:32px;
+}
+html[data-theme="minimal"] .ambient{display:none}
+html[data-theme="minimal"] .topbar{
+  margin-bottom:27px;padding-bottom:12px;
+  border-bottom:1px solid rgba(255,255,255,.6)
+}
+html[data-theme="minimal"] .brand-home{color:#282c2d;border-radius:18px;text-shadow:none}
+html[data-theme="minimal"] .brand-home:hover{background:rgba(255,255,255,.35);border-color:rgba(255,255,255,.7)}
+html[data-theme="minimal"] .brand-mark{
+  background:var(--m-surface);color:#2c3031;border:1px solid rgba(255,255,255,.85);
+  border-radius:14px;transform:rotate(0);box-shadow:var(--m-soft-raised);
+}
+html[data-theme="minimal"] .brand-mark span{transform:none}
+html[data-theme="minimal"] .brand-title{color:var(--m-ink);text-shadow:none}
+html[data-theme="minimal"] .brand-home-hint{color:#383f40}
+html[data-theme="minimal"] .status-tag,html[data-theme="minimal"] .chip,
+html[data-theme="minimal"] .rank-pill,html[data-theme="minimal"] .timer{
+  color:#262b2c;background:var(--m-surface);
+  border:1px solid rgba(255,255,255,.8);border-radius:20px;
+  box-shadow:var(--m-soft-raised);text-shadow:none
+}
+html[data-theme="minimal"] .chip.mint,html[data-theme="minimal"] .chip.yellow{
+  background:var(--m-accent-soft);color:#282d2d;border-color:rgba(255,255,255,.84)
+}
+html[data-theme="minimal"] .timer.urgent{background:var(--m-accent);color:#191b1c;border-color:rgba(255,255,255,.9)}
+html[data-theme="minimal"] .page-title,html[data-theme="minimal"] .mini-heading,
+html[data-theme="minimal"] .hero-title,html[data-theme="minimal"] .entry-heading .eyebrow{
+  color:var(--m-ink);text-shadow:none
+}
+html[data-theme="minimal"] .eyebrow,html[data-theme="minimal"] .q-label{color:#414649}
+html[data-theme="minimal"] .hero-title span{color:var(--m-ink);text-decoration:underline;text-decoration-color:var(--m-accent-strong);text-decoration-thickness:5px;text-underline-offset:7px}
+html[data-theme="minimal"] .subhead,html[data-theme="minimal"] .simple-home-hero .subhead{
+  color:#4a5153
+}
+html[data-theme="minimal"] .splat{
+  background:radial-gradient(circle at 34% 28%,var(--m-surface-highlight),var(--m-pressed) 70%);
+  border-radius:50%;transform:rotate(0);
+  border:2px solid rgba(255,255,255,.72);
+  box-shadow:var(--m-raised),inset 7px 7px 14px rgba(255,255,255,.35),inset -7px -7px 14px rgba(122,129,128,.2)
+}
+html[data-theme="minimal"] .hero-face:not(.photo-face){filter:grayscale(.4) drop-shadow(3px 6px 4px rgba(97,100,99,.2));transform:rotate(0)}
+html[data-theme="minimal"] .hero-photo{border-color:var(--m-surface-highlight);box-shadow:var(--m-raised)}
+html[data-theme="minimal"] .star{color:var(--m-accent-strong);text-shadow:none}
+/* 讓卡片本身有圓角軟浮雕感，不是原派對卡片的改色版本。 */
+html[data-theme="minimal"] .card{
+  color:var(--m-ink);
+  background:var(--m-surface);
+  border:1px solid rgba(255,255,255,.8);
+  border-radius:30px;
+  box-shadow:var(--m-raised)
+}
+html[data-theme="minimal"] .card.soft{
+  background:var(--m-pressed);
+  box-shadow:var(--m-inset);
+  border:1px solid rgba(207,211,210,.35)
+}
+html[data-theme="minimal"] .card .mini-heading,
+html[data-theme="minimal"] .card .muted,
+html[data-theme="minimal"] .card .fineprint,
+html[data-theme="minimal"] .card .host-bank-help{color:#4a5053}
+html[data-theme="minimal"] .question-card{
+  color:var(--m-ink);
+  background:linear-gradient(135deg,var(--m-surface-highlight),var(--m-surface));
+  border:2px solid rgba(255,255,255,.85);
+  border-radius:30px;
+  box-shadow:var(--m-raised);
+  position:relative
+}
+html[data-theme="minimal"] .question-card::before{
+  content:"";position:absolute;left:10px;top:23px;bottom:23px;width:6px;
+  background:var(--m-accent-strong);
+  border-radius:6px;box-shadow:inset 1px 1px 1px #ffffff88;
+  pointer-events:none
+}
+html[data-theme="minimal"] .question-card::after{color:var(--m-accent);opacity:.16}
+html[data-theme="minimal"] .question-card .q-label,html[data-theme="minimal"] .question-card .question-text{color:var(--m-ink)}
+html[data-theme="minimal"] .voting-question{padding-left:25px}
+html[data-theme="minimal"] .voting-question .question-text{font-size:clamp(28px,5.6vw,36px);line-height:1.5}
+html[data-theme="minimal"] .progress{
+  height:11px;background:var(--m-pressed);border-radius:20px;
+  border:1px solid rgba(255,255,255,.65);
+  box-shadow:var(--m-inset)
+}
+html[data-theme="minimal"] .progress>div{
+  background:linear-gradient(var(--m-accent),var(--m-accent-strong));border-radius:20px;
+  box-shadow:inset 1px 1px 2px rgba(255,255,255,.8)
+}
+html[data-theme="minimal"] .poll-status,html[data-theme="minimal"] .vote-sync-indicator,
+html[data-theme="minimal"] .room-theme-label{color:#454c4e}
+html[data-theme="minimal"] .btn{
+  color:#1e2424;
+  background:var(--m-accent);
+  border:1px solid rgba(255,255,255,.77);
+  border-radius:22px;
+  box-shadow:var(--m-soft-raised);
+  text-shadow:none;
+  transition:transform .14s,box-shadow .14s,background .14s
+}
+html[data-theme="minimal"] .btn.secondary{
+  background:var(--m-surface);color:var(--m-ink);
+  border-color:rgba(255,255,255,.85);box-shadow:var(--m-soft-raised)
+}
+html[data-theme="minimal"] .btn.tertiary,html[data-theme="minimal"] .btn.dark{
+  color:#f7f7f6;background:#363d3e;border:1px solid #777d7c;
+  box-shadow:4px 4px 9px rgba(114,121,120,.25),-4px -4px 9px rgba(255,255,255,.7)
+}
+html[data-theme="minimal"] .btn:active:not(:disabled){
+  transform:translateY(2px);box-shadow:var(--m-inset)
+}
+/* 兩個角色入口仍在原位，改成浮起的霧面面板，不依賴對比強烈的色塊。 */
+html[data-theme="minimal"] .role-choice,
+html[data-theme="minimal"] .role-choice:first-child,
+html[data-theme="minimal"] .role-choice.role-host{
+  color:var(--m-ink);
+  background:var(--m-surface);
+  border:1px solid rgba(255,255,255,.85);
+  border-radius:29px;
+  box-shadow:var(--m-raised);
+  text-shadow:none;transition:transform .14s,box-shadow .14s
+}
+html[data-theme="minimal"] .role-choice small,
+html[data-theme="minimal"] .role-choice.role-host small{color:#53595b}
+html[data-theme="minimal"] .role-choice .role-icon,
+html[data-theme="minimal"] .role-choice.role-host .role-icon{
+  width:49px;height:49px;font-size:27px;
+  background:var(--m-pressed);border-radius:50%;
+  box-shadow:var(--m-inset);color:#333;display:grid;place-items:center
+}
+html[data-theme="minimal"] .role-choice .role-arrow,
+html[data-theme="minimal"] .role-choice.role-host .role-arrow{
+  color:var(--m-ink);background:var(--m-accent-soft);border-radius:50%;
+  width:39px;height:39px;display:grid;place-items:center;
+  box-shadow:var(--m-soft-raised);font-size:25px
+}
+html[data-theme="minimal"] .role-choice:active{
+  transform:translateY(2px);box-shadow:var(--m-inset)
+}
+/* 大型選項保留原有 18px / 132px 點擊區，按下時改為內凹浮雕。 */
+html[data-theme="minimal"] .option{
+  color:var(--m-ink);
+  background:var(--m-surface);
+  border:1px solid rgba(255,255,255,.9);
+  border-radius:24px;
+  box-shadow:var(--m-soft-raised);
+  text-shadow:none;
+  transition:transform .12s,box-shadow .12s,background .12s
+}
+html[data-theme="minimal"] .option:hover{background:var(--m-surface-highlight)}
+html[data-theme="minimal"] .option.selected,html[data-theme="minimal"] .option.guess-selected{
+  color:var(--m-ink);
+  background:var(--m-accent-soft);
+  border:2px solid var(--m-accent-strong);
+  box-shadow:var(--m-inset)
+}
+html[data-theme="minimal"] .option:active:not(:disabled){transform:translateY(2px);box-shadow:var(--m-inset)}
+html[data-theme="minimal"] .option-letter{
+  color:var(--m-ink);background:var(--m-pressed);
+  border:1px solid rgba(255,255,255,.6);
+  border-radius:50%;box-shadow:var(--m-inset)
+}
+html[data-theme="minimal"] .option.selected .option-letter,
+html[data-theme="minimal"] .option.guess-selected .option-letter{
+  color:#242829;background:var(--m-accent);
+  border-color:rgba(255,255,255,.7);box-shadow:var(--m-soft-raised)
+}
+html[data-theme="minimal"] .sticky-submit{
+  background:linear-gradient(0deg,var(--m-shell) 75%,rgba(229,232,231,0) 100%)
+}
+html[data-theme="minimal"] .sticky-submit .btn{box-shadow:var(--m-soft-raised)}
+html[data-theme="minimal"] .field input,
+html[data-theme="minimal"] .field select,
+html[data-theme="minimal"] .field textarea{
+  color:var(--m-ink);
+  background:var(--m-pressed);
+  border:1px solid rgba(255,255,255,.85);
+  border-radius:17px;
+  box-shadow:var(--m-inset)
+}
+html[data-theme="minimal"] .field span,html[data-theme="minimal"] .label{color:#343a3b}
+html[data-theme="minimal"] .field input::placeholder,
+html[data-theme="minimal"] .field textarea::placeholder{color:#666f70}
+html[data-theme="minimal"] .answer-stepper span,
+html[data-theme="minimal"] .self-selection,
+html[data-theme="minimal"] .powerup,
+html[data-theme="minimal"] .submit-feedback,
+html[data-theme="minimal"] .host-vote-tools,
+html[data-theme="minimal"] .info-box,
+html[data-theme="minimal"] .how-to-play,
+html[data-theme="minimal"] .host-extra,
+html[data-theme="minimal"] .direction-item,
+html[data-theme="minimal"] .bank-picker,
+html[data-theme="minimal"] .lobby-code,
+html[data-theme="minimal"] .avatar-pill,
+html[data-theme="minimal"] .room-look{
+  color:var(--m-ink);
+  background:var(--m-pressed);
+  border:1px solid rgba(255,255,255,.73);
+  border-radius:19px;box-shadow:var(--m-inset)
+}
+html[data-theme="minimal"] .answer-stepper span.current,
+html[data-theme="minimal"] .answer-stepper span.done{
+  color:#282d2f;background:var(--m-accent-soft);
+  border:1px solid var(--m-accent-strong)
+}
+html[data-theme="minimal"] .self-selection small,
+html[data-theme="minimal"] .self-selection strong,
+html[data-theme="minimal"] .powerup small,
+html[data-theme="minimal"] .powerup b,
+html[data-theme="minimal"] .host-extra summary,
+html[data-theme="minimal"] .how-to-play summary{color:#303637}
+html[data-theme="minimal"] .submit-feedback.is-ready{color:#28302f}
+html[data-theme="minimal"] .submit-feedback.is-sending{
+  color:#2d3030;background:var(--m-accent-soft);border:1px solid var(--m-accent-strong)
+}
+html[data-theme="minimal"] .submit-feedback.is-error{color:#802b22;background:#fbe4e0;border:1px solid #d1887b}
+html[data-theme="minimal"] .talk-first{
+  color:var(--m-ink);
+  background:linear-gradient(125deg,var(--m-accent-pale),var(--m-surface));
+  border:1px solid rgba(255,255,255,.9);
+  border-radius:30px;box-shadow:var(--m-raised)
+}
+html[data-theme="minimal"] .talk-eyebrow{color:#394042}
+html[data-theme="minimal"] .talk-first h2,html[data-theme="minimal"] .talk-first p{color:#222728}
+html[data-theme="minimal"] .talk-first small{color:#4b5456}
+html[data-theme="minimal"] .score-highlight{
+  color:#24292a;background:var(--m-accent-soft);
+  border:1px solid rgba(255,255,255,.89);
+  border-radius:26px;box-shadow:var(--m-soft-raised)
+}
+html[data-theme="minimal"] .score-big,html[data-theme="minimal"] .score-highlight .eyebrow{color:#23282a}
+html[data-theme="minimal"] .bar-track{
+  color:#242829;background:var(--m-pressed);
+  border:1px solid rgba(255,255,255,.72);
+  border-radius:19px;box-shadow:var(--m-inset)
+}
+html[data-theme="minimal"] .bar-fill{
+  background:var(--m-accent);
+  border-radius:19px;box-shadow:inset 1px 1px 2px rgba(255,255,255,.65)
+}
+html[data-theme="minimal"] .bar-letter{
+  color:var(--m-ink);background:var(--m-surface);
+  border:1px solid rgba(255,255,255,.75);
+  border-radius:50%;box-shadow:var(--m-soft-raised)
+}
+html[data-theme="minimal"] .bar-text,html[data-theme="minimal"] .bar-votes,
+html[data-theme="minimal"] .rank-item,html[data-theme="minimal"] .rank-name,
+html[data-theme="minimal"] .rank-points,html[data-theme="minimal"] .quick-rank-line{
+  color:#292e30
+}
+html[data-theme="minimal"] .quick-ranking,html[data-theme="minimal"] .full-rank-toggle .card{
+  background:var(--m-surface);box-shadow:var(--m-raised)
+}
+html[data-theme="minimal"] .full-rank-toggle summary{color:#303637}
+html[data-theme="minimal"] .theme-setting{
+  color:#303637;background:var(--m-pressed);
+  border:1px solid rgba(255,255,255,.76);
+  border-radius:26px;box-shadow:var(--m-inset)
+}
+html[data-theme="minimal"] .theme-setting-heading strong,
+html[data-theme="minimal"] .theme-selected-name,
+html[data-theme="minimal"] .theme-help{color:#394043}
+html[data-theme="minimal"] .theme-choice,
+html[data-theme="minimal"] .bank-tab{
+  color:#2d3233;background:var(--m-surface);
+  border:1px solid rgba(255,255,255,.8);
+  border-radius:19px;box-shadow:var(--m-soft-raised)
+}
+html[data-theme="minimal"] .theme-choice.active,
+html[data-theme="minimal"] .bank-tab.active{
+  color:#222729;background:var(--m-accent-soft);
+  border:2px solid var(--m-accent-strong);
+  box-shadow:var(--m-inset)
+}
+html[data-theme="minimal"] .theme-choice small,html[data-theme="minimal"] .theme-check,
+html[data-theme="minimal"] .theme-choice.active .theme-check{color:#42494b}
+html[data-theme="minimal"] .theme-swatch-minimal{
+  background:var(--m-pressed);
+  border:1px solid rgba(255,255,255,.75);box-shadow:var(--m-inset)
+}
+html[data-theme="minimal"] .theme-swatch-minimal i{background:var(--m-accent);border-radius:14px}
+html[data-theme="minimal"] .theme-swatch-minimal b{background:var(--m-surface);box-shadow:var(--m-soft-raised)}
+html[data-theme="minimal"] .theme-swatch-minimal em{background:var(--m-surface-highlight);border-radius:8px}
+html[data-theme="minimal"] .theme-swatch-minimal span{background:var(--m-accent-soft);border-radius:8px}
+html[data-theme="minimal"] .direction-item strong,
+html[data-theme="minimal"] .direction-item small{color:#3c4344}
+html[data-theme="minimal"] .gemini-count-hint{
+  color:#2d3132;background:var(--m-accent-soft);
+  border:1px solid rgba(255,255,255,.88)
+}
+html[data-theme="minimal"] .bank-list-item,
+html[data-theme="minimal"] .preview-panel{color:#303536;background:var(--m-surface)}
+html[data-theme="minimal"] .footer{color:#596164}
+/* 一條簡單的色相滑桿。只在主持人選「極簡風」時出現。 */
+html[data-theme="minimal"] .minimal-color-setting{
+  margin-top:15px;padding:16px 17px;
+  border-radius:23px;color:var(--m-ink);
+  background:var(--m-surface);
+  border:1px solid rgba(255,255,255,.88);
+  box-shadow:var(--m-soft-raised)
+}
+html[data-theme="minimal"] .minimal-color-title{
+  display:flex;justify-content:space-between;align-items:center;
+  gap:12px;margin-bottom:8px
+}
+html[data-theme="minimal"] .minimal-color-title strong{font-size:17px;color:#25292b}
+html[data-theme="minimal"] .minimal-color-sample{
+  display:block;flex:none;width:35px;height:35px;border-radius:50%;
+  background:var(--m-accent);
+  border:3px solid rgba(255,255,255,.9);
+  box-shadow:var(--m-soft-raised)
+}
+html[data-theme="minimal"] .minimal-color-label{
+  display:block;margin-bottom:12px;
+  font-size:15px;font-weight:700;line-height:1.6;color:#394042
+}
+html[data-theme="minimal"] input[name="minimalHue"]{
+  display:block;width:100%;height:38px;margin:0;
+  border:0;border-radius:19px;outline-offset:4px;
+  appearance:none;-webkit-appearance:none;
+  background:linear-gradient(90deg,#f46b70 0%,#e7bb67 17%,#8abf89 33%,#75bdbd 50%,#96a4e3 67%,#c48dce 83%,#f46b70 100%);
+  box-shadow:inset 3px 3px 7px rgba(53,58,58,.26),inset -2px -2px 5px rgba(255,255,255,.6);
+  cursor:pointer;touch-action:pan-y
+}
+html[data-theme="minimal"] input[name="minimalHue"]::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;width:32px;height:32px;
+  border:5px solid #fbfbfa;border-radius:50%;
+  background:var(--m-accent-strong);
+  box-shadow:0 2px 7px rgba(54,58,57,.37),0 0 0 1px #a5aaa8;
+}
+html[data-theme="minimal"] input[name="minimalHue"]::-moz-range-thumb{
+  width:24px;height:24px;border:5px solid #fbfbfa;border-radius:50%;
+  background:var(--m-accent-strong);
+  box-shadow:0 2px 7px rgba(54,58,57,.37),0 0 0 1px #a5aaa8;
+}
+html[data-theme="minimal"] .minimal-color-help{
+  margin:11px 0 0;font-size:14px;line-height:1.7;color:#4d5658
+}
+html[data-theme="minimal"] input[name="minimalHue"]:focus-visible{
+  outline:3px solid #313637;outline-offset:4px
+}
+@media(max-width:580px){
+  html[data-theme="minimal"] .container{padding-top:17px}
+  html[data-theme="minimal"] .voting-question .question-text{font-size:28px}
+  html[data-theme="minimal"] .one-step .option{font-size:18px;min-height:132px}
+  html[data-theme="minimal"] .voting-question{padding-left:24px}
+  html[data-theme="minimal"] .role-choice .role-icon,
+  html[data-theme="minimal"] .role-choice.role-host .role-icon{width:43px;height:43px;font-size:25px}
+}
+@media(prefers-reduced-motion:reduce){
+  html[data-theme="minimal"] .btn,html[data-theme="minimal"] .option,
+  html[data-theme="minimal"] .role-choice{transition:none!important}
+}
