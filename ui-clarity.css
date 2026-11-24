@@ -512,3 +512,105 @@ html[data-theme="minimal"] .direction-item.picked{border-color:#5b696a;backgroun
   .gemini-scene-field{padding:12px}
   .gemini-scene-field textarea{min-height:132px}
 }
+
+/* v5 | Gemini activity presets and optional scene notes. */
+.gemini-scene-field{
+  display:grid;
+  gap:11px;
+}
+.gemini-scene-field .gemini-scene-select,
+.gemini-scene-field .gemini-scene-extra{
+  display:flex;
+  min-width:0;
+  flex-direction:column;
+  gap:7px;
+}
+.gemini-scene-field .gemini-scene-select > span,
+.gemini-scene-field .gemini-scene-extra > span{
+  font-weight:900;
+  font-size:15px;
+  line-height:1.5;
+}
+.gemini-scene-field .gemini-scene-select select{
+  display:block;
+  box-sizing:border-box;
+  width:100%;
+  min-width:0;
+  max-width:100%;
+  min-height:52px;
+  padding:11px 36px 11px 13px;
+  font-size:16px;
+  line-height:1.45;
+  text-overflow:ellipsis;
+  border-radius:10px;
+  cursor:pointer;
+}
+.gemini-scene-field .gemini-scene-select select:focus-visible{
+  outline:3px solid var(--mint);
+  outline-offset:2px;
+}
+.gemini-scene-field .gemini-scene-summary{
+  margin:0;
+  padding:10px 12px;
+  border-left:4px solid currentColor;
+  font-size:13px;
+  line-height:1.65;
+  font-weight:750;
+  overflow-wrap:anywhere;
+}
+.gemini-scene-field .gemini-scene-extra textarea{margin:0}
+.gemini-scene-field .gemini-scene-help{margin:0}
+.gemini-scene-field .gemini-scene-required{
+  margin:0;
+  padding:9px 11px;
+  color:#8a1f22;
+  background:#ffe9dc;
+  border:1px solid #d87b6d;
+  border-radius:7px;
+  font-weight:750;
+  font-size:13px;
+  line-height:1.55;
+}
+html[data-theme="party"] .gemini-scene-field .gemini-scene-select select{
+  background:#fff;
+  color:#15101b;
+  border:2px solid #4c2385;
+  border-radius:0;
+  box-shadow:3px 3px 0 #100910;
+}
+html[data-theme="party"] .gemini-scene-field .gemini-scene-summary{
+  color:#301a41;
+  background:#f0e7fa;
+  border-color:#6c16bf;
+}
+html[data-theme="panel"] .gemini-scene-field .gemini-scene-select select{
+  color:#282027;
+  background:#fff8e9;
+  border:2px solid #917266;
+  border-radius:4px;
+  box-shadow:inset 0 2px 3px #e3c7a7,0 3px 0 #51403a;
+}
+html[data-theme="panel"] .gemini-scene-field .gemini-scene-summary{
+  color:#503025;
+  background:#ffe8cb;
+  border-color:#c86b26;
+}
+html[data-theme="minimal"] .gemini-scene-field .gemini-scene-select select{
+  color:#252b2c;
+  background:#f9f8f5;
+  border:1px solid #8b9698;
+  border-radius:12px;
+  box-shadow:var(--m-inset);
+}
+html[data-theme="minimal"] .gemini-scene-field .gemini-scene-summary{
+  color:#2e3f42;
+  background:var(--m-accent-soft);
+  border-color:#637b7d;
+}
+@media(max-width:580px){
+  .gemini-scene-field{gap:10px}
+  .gemini-scene-field .gemini-scene-select select{min-height:50px;font-size:16px}
+  .gemini-scene-field .gemini-scene-summary{font-size:13px}
+  .gemini-scene-field .gemini-scene-help{display:block}
+  .gemini-scene-field .gemini-scene-count{display:block;text-align:right}
+}
