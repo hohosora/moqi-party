@@ -1,4 +1,4 @@
-name: UI contrast regression
+name: UI and scoring regression
 on:
   push:
     branches: [main]
@@ -9,6 +9,7 @@ on:
       - 'app.js'
       - 'index.html'
       - 'tests/theme-contrast.cjs'
+      - 'tests/scoring-rules.cjs'
       - '.github/workflows/ui-contrast.yml'
   pull_request:
     paths:
@@ -18,15 +19,18 @@ on:
       - 'app.js'
       - 'index.html'
       - 'tests/theme-contrast.cjs'
+      - 'tests/scoring-rules.cjs'
       - '.github/workflows/ui-contrast.yml'
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
   check-contrast:
-    name: Verify three themes and 360 minimal hues
+    name: Verify themes and scoring logic
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Check text and surface contrast
         run: node tests/theme-contrast.cjs
+      - name: Check hot and cold prediction scoring
+        run: node tests/scoring-rules.cjs
