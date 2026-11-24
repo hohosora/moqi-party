@@ -614,3 +614,99 @@ html[data-theme="minimal"] .gemini-scene-field .gemini-scene-summary{
   .gemini-scene-field .gemini-scene-help{display:block}
   .gemini-scene-field .gemini-scene-count{display:block;text-align:right}
 }
+
+/* v6 | Contrast safety: explicit ON-SURFACE ink for all three visual themes.
+   UI accent tokens are for dark backgrounds/buttons; never use them as text on
+   pale cards. This prevents lime-on-yellow and accent-on-pastel regressions.
+   Keep mechanical dark-screen code previews distinct from its light panels. */
+html[data-theme="party"]{
+  --ui-pale-ink:#17101f;
+  --ui-pale-strong:#381273;
+  --ui-pale-code-bg:#171120;
+  --ui-pale-code-ink:#f8f6ff;
+}
+html[data-theme="panel"]{
+  --ui-pale-ink:#282027;
+  --ui-pale-strong:#4d231c;
+  --ui-pale-code-bg:#24252b;
+  --ui-pale-code-ink:#f5eadb;
+}
+html[data-theme="minimal"]{
+  --ui-pale-ink:#202729;
+  --ui-pale-strong:#263b40;
+  --ui-pale-code-bg:#242c30;
+  --ui-pale-code-ink:#f6f8f8;
+}
+/* Never inherit neon/accent text on the bright question-count hint. */
+html[data-theme="party"] .gemini-count-hint,
+html[data-theme="panel"] .gemini-count-hint,
+html[data-theme="minimal"] .gemini-count-hint{
+  color:var(--ui-pale-ink);
+  font-weight:750;
+  overflow-wrap:anywhere;
+}
+html[data-theme="party"] .gemini-count-hint strong,
+html[data-theme="panel"] .gemini-count-hint strong,
+html[data-theme="minimal"] .gemini-count-hint strong{
+  display:inline;
+  color:var(--ui-pale-strong);
+  font-size:1.08em;
+  font-weight:1000;
+  font-variant-numeric:tabular-nums;
+  text-decoration:underline;
+  text-underline-offset:3px;
+  text-decoration-thickness:2px;
+  white-space:nowrap;
+  text-shadow:none;
+}
+/* Surface-level semantic emphasis: these cards are light across the three
+   themes, so the dark-surface --mint and --yellow text tokens are unsafe. */
+html[data-theme="party"] .info-box strong,
+html[data-theme="minimal"] .info-box strong,
+html[data-theme="panel"] .info-box strong,
+html[data-theme="party"] .hero-controls b,
+html[data-theme="minimal"] .hero-controls b{
+  color:var(--ui-pale-strong);
+  text-shadow:none;
+}
+html[data-theme="party"] .prompt-details summary,
+html[data-theme="panel"] .prompt-details summary,
+html[data-theme="minimal"] .prompt-details summary{
+  color:var(--ui-pale-ink);
+  font-weight:900;
+}
+html[data-theme="party"] .prompt-details pre,
+html[data-theme="minimal"] .prompt-details pre{
+  color:var(--ui-pale-code-ink);
+  background:var(--ui-pale-code-bg);
+  border:1px solid rgba(255,255,255,.28);
+  border-radius:7px;
+  padding:12px;
+  max-width:100%;
+  box-sizing:border-box;
+}
+/* The adjustable minimal hue must not drive tiny text contrast on a pale list. */
+html[data-theme="minimal"] .bank-counter{
+  display:inline-flex;
+  align-self:flex-start;
+  width:max-content;
+  max-width:100%;
+  color:var(--ui-pale-strong);
+  background:var(--m-accent-soft);
+  border:1px solid #6e7779;
+  border-radius:9px;
+  padding:4px 9px;
+  font-weight:900;
+  line-height:1.45;
+}
+html[data-theme="minimal"] .bank-list-info small,
+html[data-theme="minimal"] .preview-panel .preview-item small{
+  color:#343b40;
+}
+/* Keyboard clarity across themes, including on bright panels. */
+html[data-theme="party"] .prompt-details summary:focus-visible,
+html[data-theme="panel"] .prompt-details summary:focus-visible,
+html[data-theme="minimal"] .prompt-details summary:focus-visible{
+  outline:3px solid currentColor;
+  outline-offset:3px;
+}
