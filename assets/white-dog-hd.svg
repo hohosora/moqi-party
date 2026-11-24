@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="戴著黑色墨鏡的白色小狗吉祥物">
+ <defs>
+  <linearGradient id="fur" x1="0" y1="0" x2="0.7" y2="1"><stop stop-color="#fff"/><stop offset="0.63" stop-color="#f8f8f5"/><stop offset="1" stop-color="#d9dce1"/></linearGradient>
+  <linearGradient id="ears" x1="0" y1="0" x2="0.5" y2="1"><stop stop-color="#ffb7d2"/><stop offset="0.75" stop-color="#fa7fae"/><stop offset="1" stop-color="#d9578e"/></linearGradient>
+  <linearGradient id="glasses" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#292e3a"/><stop offset="0.5" stop-color="#0c1119"/><stop offset="1" stop-color="#020306"/></linearGradient>
+  <linearGradient id="glassshine" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#b7d7ee" stop-opacity="0.48"/><stop offset="0.8" stop-color="#d7efff" stop-opacity="0.02"/></linearGradient>
+ </defs>
+ <path d="M392 347 C439 321 457 349 443 370 C427 395 409 394 394 384" fill="#eef0ee" stroke="#15191d" stroke-width="15" stroke-linejoin="round" stroke-linecap="round"/>
+ <path d="M156 324 C126 365 133 419 161 442 Q181 456 215 446 C237 452 267 452 290 447 Q335 466 360 436 C383 411 369 364 338 331 Z" fill="url(#fur)" stroke="#14191d" stroke-width="18" stroke-linejoin="round"/>
+ <path d="M178 384 C170 407 173 420 183 439 M328 383 C341 406 337 422 328 439" fill="none" stroke="#d5d9df" stroke-width="14" stroke-linecap="round"/>
+ <path d="M161 171 C137 133 127 62 139 27 C151 13 168 37 182 61 L220 108 L215 190 Z" fill="url(#fur)" stroke="#14191d" stroke-width="19" stroke-linejoin="round"/>
+ <path d="M149 46 C150 77 155 118 170 150 L198 143 C185 108 164 66 149 46 Z" fill="url(#ears)"/>
+ <path d="M350 174 C380 131 393 64 380 28 C368 12 351 38 336 64 L301 108 L303 187 Z" fill="url(#fur)" stroke="#14191d" stroke-width="19" stroke-linejoin="round"/>
+ <path d="M371 45 C367 86 359 120 347 149 L317 144 C331 102 354 60 371 45 Z" fill="url(#ears)"/>
+ <path d="M251 88 C316 80 377 107 397 162 C414 193 414 228 399 262 C415 290 399 324 369 335 C348 358 318 365 284 359 Q256 372 226 358 C195 365 163 355 145 335 C114 323 97 293 114 264 C97 226 102 192 120 162 C142 111 189 87 251 88 Z" fill="url(#fur)" stroke="#14191d" stroke-width="20" stroke-linejoin="round"/>
+ <path d="M116 255 L96 270 L120 281 M397 256 L416 272 L393 282" fill="#fff" stroke="#14191d" stroke-width="12" stroke-linejoin="round" stroke-linecap="round"/>
+ <path d="M145 261 C156 292 170 307 198 311 M367 260 C355 292 341 307 316 311" fill="none" stroke="#e1e4e8" stroke-width="10" stroke-linecap="round"/>
+ <path d="M134 170 Q170 160 205 163 L307 163 Q346 160 382 171" fill="none" stroke="#14191d" stroke-width="17" stroke-linecap="round"/>
+ <path d="M136 166 L232 167 Q248 172 246 198 L238 239 Q231 262 206 264 L164 258 Q142 255 139 233 L130 189 Q127 174 136 166 Z" fill="url(#glasses)" stroke="#05070b" stroke-width="12" stroke-linejoin="round"/>
+ <path d="M281 167 L378 166 Q385 175 382 191 L373 233 Q370 255 348 258 L305 264 Q281 262 275 239 L267 199 Q265 174 281 167 Z" fill="url(#glasses)" stroke="#05070b" stroke-width="12" stroke-linejoin="round"/>
+ <path d="M238 180 Q257 164 273 181" fill="none" stroke="#101317" stroke-width="15" stroke-linecap="round"/>
+ <path d="M150 177 L214 176 L183 205 L149 206 Z" fill="url(#glassshine)"/>
+ <path d="M287 178 L353 176 L322 202 L286 205 Z" fill="url(#glassshine)"/>
+ <path d="M159 230 L180 236 M320 238 L346 231" fill="none" stroke="#85939b" stroke-opacity=".45" stroke-width="8" stroke-linecap="round"/>
+ <path d="M199 271 Q255 250 313 270 C331 284 324 318 292 326 Q258 346 218 326 C184 316 182 289 199 271 Z" fill="#fff" stroke="#dce0e3" stroke-width="6"/>
+ <path d="M239 278 Q255 270 273 279 Q275 292 256 298 Q237 292 239 278 Z" fill="#131719"/>
+ <path d="M255 300 L255 310 M255 310 Q241 323 229 310 M255 310 Q270 324 283 310" fill="none" stroke="#1b1d20" stroke-width="8" stroke-linecap="round"/>
+ <path d="M251 317 Q258 319 263 315 L260 336 Q253 343 249 335 Z" fill="#ff86a4" stroke="#9d4664" stroke-width="3"/>
+ <path d="M207 352 Q225 369 241 362 Q251 375 265 362 Q285 370 302 354" stroke="#c8cfd4" stroke-width="7" fill="none" stroke-linecap="round"/>
+ <path d="M169 418 Q180 446 204 447 Q218 444 221 425 M293 425 Q299 443 318 447 Q348 441 356 418" fill="url(#fur)" stroke="#14191d" stroke-width="14" stroke-linecap="round"/>
+ <path d="M184 436 L188 442 M204 439 L206 445 M317 438 L318 445 M337 435 L339 442" fill="none" stroke="#81898c" stroke-width="5" stroke-linecap="round"/>
+ <path d="M142 147 Q163 123 194 115 M323 118 Q355 127 373 151" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" opacity=".9"/>
+</svg>
