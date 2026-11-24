@@ -711,3 +711,246 @@ html[data-theme="minimal"] .prompt-details summary:focus-visible{
   outline:3px solid currentColor;
   outline-offset:3px;
 }
+
+/* v7 | Popular-and-rare prediction scoring: clear rules and result breakdowns. */
+/* Neutral, theme-aware rule cards keep numbers readable on every light panel. */
+.scoring-rules{
+  --scoring-ink:#221b28;
+  --scoring-muted:#4c4051;
+  box-sizing:border-box;
+  min-width:0;
+  display:grid;
+  gap:12px;
+  margin:13px 0 4px;
+  padding:13px;
+  border:2px solid #bcb2c0;
+  border-radius:14px;
+  background:#fffcf5;
+  color:var(--scoring-ink);
+  font-size:14px;
+  line-height:1.6;
+  text-shadow:none;
+}
+.scoring-rule-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+}
+.scoring-rule-item{
+  min-width:0;
+  display:grid;
+  align-content:center;
+  gap:5px;
+  padding:11px 6px;
+  background:#f1edeb;
+  border:1px solid #c9bec7;
+  border-radius:10px;
+  text-align:center;
+  color:var(--scoring-ink);
+  overflow-wrap:anywhere;
+}
+.scoring-rule-item strong,.scoring-rule-item b{
+  display:block;
+  color:var(--scoring-ink);
+  font-size:clamp(12px,3.3vw,16px);
+  line-height:1.45;
+  font-weight:900;
+  text-shadow:none;
+}
+.scoring-rule-item b{font-size:clamp(17px,4vw,23px)}
+.scoring-rule-note{
+  margin:0;
+  color:var(--scoring-muted);
+  font-size:14px;
+  line-height:1.7;
+  font-weight:750;
+}
+.scoring-rule-details{
+  color:var(--scoring-ink);
+  border-top:1px solid #c5bbc1;
+  padding-top:10px;
+  font-size:14px;
+  line-height:1.7;
+}
+.scoring-rule-details summary{
+  color:var(--scoring-ink);
+  cursor:pointer;
+  font-size:14px;
+  font-weight:900;
+  line-height:1.6;
+}
+.scoring-rule-details ul{
+  margin:11px 0 0;
+  padding-left:20px;
+  color:var(--scoring-ink);
+}
+.scoring-rule-details li{
+  margin:7px 0;
+  color:var(--scoring-ink);
+  font-size:14px;
+  font-weight:650;
+  overflow-wrap:anywhere;
+}
+.scoring-rule-details li b{color:var(--scoring-ink)}
+.score-lookup{
+  box-sizing:border-box;
+  margin:15px 0;
+  padding:12px 15px;
+  border:2px solid #827794;
+  border-radius:13px;
+  background:#231d35;
+  color:#fffafa;
+  font-size:15px;
+  line-height:1.6;
+}
+.score-lookup > summary{
+  cursor:pointer;
+  color:#fffafa;
+  font-size:15px;
+  font-weight:850;
+  line-height:1.6;
+}
+.score-lookup > .scoring-rules{margin-top:13px}
+/* Score attribution is visible to players without reopening the instructions. */
+.score-highlight .score-breakdown{
+  display:grid;
+  gap:7px;
+  margin-top:8px;
+  min-width:0;
+  color:#221b27;
+  text-shadow:none;
+}
+.score-highlight .score-breakdown-line{
+  box-sizing:border-box;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:13px;
+  min-width:0;
+  padding:9px 11px;
+  background:rgba(255,255,255,.6);
+  border:1px solid rgba(38,28,36,.22);
+  border-radius:10px;
+  color:#221b27;
+}
+.score-highlight .score-breakdown-line span{
+  min-width:0;
+  flex:1;
+  color:#221b27;
+  font-size:14px;
+  font-weight:800;
+  line-height:1.5;
+  overflow-wrap:anywhere;
+}
+.score-highlight .score-breakdown-line small{
+  display:block;
+  color:#493e46;
+  font-size:12px;
+  font-weight:650;
+  line-height:1.5;
+  overflow-wrap:anywhere;
+}
+.score-highlight .score-breakdown-line strong{
+  flex:none;
+  white-space:nowrap;
+  color:#261633;
+  font-size:18px;
+  line-height:1.3;
+  font-weight:1000;
+  font-variant-numeric:tabular-nums;
+}
+.score-highlight .score-breakdown-note{
+  color:#392b38;
+  font-size:12px;
+  line-height:1.6;
+  font-weight:750;
+  margin:1px 0 0;
+}
+/* The three themes preserve their own overall visual style. */
+html[data-theme="party"] .scoring-rules{
+  border:3px solid #0a0810;
+  border-radius:0;
+  box-shadow:3px 3px 0 #0a0810;
+  background:#fffef4;
+}
+html[data-theme="party"] .scoring-rule-item{
+  border:2px solid #0a0810;
+  border-radius:0;
+  background:#f2edff;
+}
+html[data-theme="party"] .score-lookup{
+  border:3px solid #eaff2d;
+  border-radius:0;
+  background:#231038;
+  box-shadow:3px 3px 0 #07050b;
+}
+html[data-theme="party"] .score-highlight .score-breakdown-line{
+  border:2px solid #1d1127;
+  border-radius:0;
+  background:#f1edfb;
+}
+html[data-theme="panel"] .scoring-rules{
+  --scoring-ink:#2a2226;
+  --scoring-muted:#4d393a;
+  background:linear-gradient(#fff1d9,#e7cfaf);
+  border:3px solid #473235;
+  border-radius:6px;
+  box-shadow:inset 0 2px #fffaf0,0 3px 0 #302326;
+}
+html[data-theme="panel"] .scoring-rule-item{
+  color:#2b2524;
+  background:#f6e3c6;
+  border:2px solid #906c50;
+  border-radius:4px;
+}
+html[data-theme="panel"] .score-lookup{
+  background:linear-gradient(#40373c,#241f26);
+  border:3px solid #bd936d;
+  border-radius:7px;
+}
+html[data-theme="panel"] .score-highlight .score-breakdown-line{
+  background:#f4e0c0;
+  border:2px solid #927050;
+  border-radius:5px;
+}
+html[data-theme="minimal"] .scoring-rules{
+  --scoring-ink:#242a2d;
+  --scoring-muted:#435054;
+  background:#f8f7f3;
+  border:1px solid #a6b1b3;
+  border-radius:16px;
+  box-shadow:var(--m-soft-raised);
+}
+html[data-theme="minimal"] .scoring-rule-item{
+  background:#ebefec;
+  border:1px solid #b2bfc0;
+  border-radius:12px;
+}
+html[data-theme="minimal"] .score-lookup{
+  background:#2d373b;
+  border:1px solid #a8b6b7;
+  border-radius:18px;
+}
+html[data-theme="minimal"] .score-highlight .score-breakdown-line{
+  background:#faf9f5;
+  border:1px solid #9aa9aa;
+  border-radius:12px;
+}
+html[data-theme="party"] .bar-track.coldest{border-color:#741b97}
+html[data-theme="panel"] .bar-track.coldest{border-color:#57bcc9}
+html[data-theme="minimal"] .bar-track.coldest{border-color:#517f89}
+@media(max-width:480px){
+  .scoring-rules{padding:10px;gap:10px}
+  .scoring-rule-grid{gap:5px}
+  .scoring-rule-item{padding:10px 3px}
+  .scoring-rule-item strong{font-size:12px}
+  .scoring-rule-item b{font-size:17px}
+  .score-highlight .score-breakdown-line{padding:8px;gap:8px}
+  .score-highlight .score-breakdown-line span{font-size:13px}
+  .score-highlight .score-breakdown-line strong{font-size:17px}
+}
+@media(max-width:350px){
+  .scoring-rule-grid{grid-template-columns:1fr;gap:6px}
+  .scoring-rule-item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:8px 10px}
+  .scoring-rule-item strong,.scoring-rule-item b{font-size:15px}
+}
