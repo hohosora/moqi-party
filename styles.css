@@ -174,3 +174,12 @@ html{font-size:17px;-webkit-text-size-adjust:100%;text-size-adjust:100%}
   .option,.one-step .option{min-height:70px;display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:13px}
   .voting-question .question-text{font-size:27px}
 }
+/* v7：LOGO 兼具返回首頁的導覽功能，保留既有識別外觀。 */
+.brand-home{appearance:none;display:inline-flex;align-items:center;gap:10px;min-height:52px;max-width:100%;padding:5px 7px 5px 2px;border:1px solid transparent;border-radius:13px;background:transparent;color:var(--text);box-shadow:none;text-align:left;line-height:1.4}
+.brand-home:hover{background:rgba(255,255,255,.06);border-color:var(--line)}
+.brand-home:active{background:rgba(255,255,255,.1)}
+.brand-home:focus-visible{outline:3px solid var(--yellow);outline-offset:2px}
+.brand-home .brand-mark{flex-shrink:0}
+.brand-title{font-size:18px;white-space:nowrap}
+.brand-home-hint{white-space:nowrap;font-size:13px;font-weight:800;color:var(--mint)}
+@media(max-width:420px){.brand-home{gap:7px;min-width:0}.brand-title{font-size:16px}.brand-home-hint{font-size:12px}.topbar{gap:5px}}

@@ -43,7 +43,7 @@
     page:new URLSearchParams(location.search).has('room')?'join':'home', voteStep:'choice', bankMode:localStorage.getItem('mqs_bank_mode')||'mixed', managerTab:'custom',
     customEditId:null, customDraft:null, geminiDirection:'trends', geminiCount:8, aiText:'',
     aiPreview:[], aiPreviewSkipped:0, managerNotice:'', managerError:'',
-    heroImage:'', photoBusy:false, voteSubmitState:'idle', voteSyncFromCache:false
+    heroImage:'', photoBusy:false, voteSubmitState:'idle', voteSyncFromCache:false, lastVisibleQuestionKey:null
   };
   // 右上角主視覺：照片只在主持人裝置留有原圖的壓縮版本。
   // 線上開房時把小圖快照儲存在該房間文件，玩家加入後才會看到。
@@ -314,7 +314,7 @@
   function myRank(){const sorted=scoresSorted();return sorted.findIndex(p=>p.uid===state.uid)+1;}
   function myScore(){return state.room?.scores?.[state.uid]||0;}
   function hasDouble(){return !state.room?.usedDoubles?.[state.uid];}
-  function surface(content, right=''){return `<main class="container"><div class="topbar"><div class="brand"><div class="brand-mark"><span>✦</span></div>默契失控局</div>${right || `<span class="status-tag">🎉 派對破冰遊戲</span>`}</div>${state.room && safeHero(state.room.heroImage)?`<div class="room-look ${state.room.phase==='lobby'?'lobby-look':''}"><img class="room-look-image" src="${esc(state.room.heroImage)}" alt="本場活動主視覺"><span>🎉 本場活動主視覺</span></div>`:''}${state.error?`<div class="notice" role="alert">${esc(state.error)}</div>`:''}${state.toast?`<div class="chip mint" style="margin-bottom:12px">✓ ${esc(state.toast)}</div>`:''}${content}<div class="footer">適合 10–20 人 ✦ 有笑點的社交，不是尷尬的面試<br>先笑出來，再慢慢認識彼此 ✨</div></main>`;}
+  function surface(content, right=''){return `<main class="container"><div class="topbar"><button type="button" class="brand brand-home" data-action="brand-home" aria-label="回首頁：默契失控局" title="回首頁"><span class="brand-mark" aria-hidden="true"><span>✦</span></span><span class="brand-title">默契失控局</span><span class="brand-home-hint">回首頁</span></button>${right || `<span class="status-tag">🎉 派對破冰遊戲</span>`}</div>${state.room && safeHero(state.room.heroImage)?`<div class="room-look ${state.room.phase==='lobby'?'lobby-look':''}"><img class="room-look-image" src="${esc(state.room.heroImage)}" alt="本場活動主視覺"><span>🎉 本場活動主視覺</span></div>`:''}${state.error?`<div class="notice" role="alert">${esc(state.error)}</div>`:''}${state.toast?`<div class="chip mint" style="margin-bottom:12px">✓ ${esc(state.toast)}</div>`:''}${content}<div class="footer">適合 10–20 人 ✦ 有笑點的社交，不是尷尬的面試<br>先笑出來，再慢慢認識彼此 ✨</div></main>`;}
   // 首頁只做角色分流；進階設定全部放進主持人頁面。
   function renderHome(){
     return surface(`
@@ -411,11 +411,25 @@
   }
   function render(){
     if(!state.mode || !state.room) {$app.innerHTML=state.page==='manager'?renderManager():state.page==='host'?renderHost():state.page==='join'?renderJoin():renderHome();return;}
+    // 每次新題啟動時，先顯示題目，不沿用上一題或等候室留在頁面底部的位置。
+    // 以「房間＋題號」辨識，只捲動一次；同一題收到其他玩家的票數時不干擾目前閱讀位置。
+    const questionKey=state.room.phase==='voting'? `${state.mode}:${state.roomCode}:${state.room.roundIndex}` :null;
+    const showQuestionTop=questionKey!==null && questionKey!==state.lastVisibleQuestionKey;
+    if(showQuestionTop)state.lastVisibleQuestionKey=questionKey;
     if(state.room.phase==='lobby') $app.innerHTML=renderLobby();
     else if(state.room.phase==='voting') $app.innerHTML=renderVote();
     else if(state.room.phase==='reveal') $app.innerHTML=renderReveal();
     else if(state.room.phase==='finished') $app.innerHTML=renderFinished();
     else $app.innerHTML=surface('<div class="loading-page">正在同步遊戲房間…</div>');
+    if(showQuestionTop){
+      const resetToQuestion=()=>{
+        if(state.room?.phase==='voting' && state.lastVisibleQuestionKey===questionKey){
+          window.scrollTo(0,0);
+        }
+      };
+      if(typeof window.requestAnimationFrame==='function')window.requestAnimationFrame(resetToQuestion);
+      else resetToQuestion();
+    }
   }
   // ------ 公平計分：主持人根據各回合票數統一結算 ------
   function evaluateRound(room, players, votes){
@@ -453,7 +467,25 @@
   }
   function validateName(){const s=state.nickname.trim().slice(0,14);if(!s){state.error='先填入暱稱，這樣排行榜才知道誰是誰。';render();return null;}state.nickname=s;localStorage.setItem('mqs_name',s);state.error='';return s;}
   function clearListeners(){for(const f of state.unsubs){try{f();}catch{}}state.unsubs=[];if(state.voteUnsub){state.voteUnsub();state.voteUnsub=null;}state.watchedRound=null;}
-  function leave(){clearListeners();state.page='home';state.room=null;state.mode=null;state.roomCode='';state.votes=[];state.players=[];state.choice=null;state.guess=null;state.double=false;state.voteStep='choice';state.voteSubmitState='idle';state.voteSyncFromCache=false;state.error='';history.replaceState(null,'',location.pathname);render();}
+  function goHomeFromBrand(){
+    // 標誌只負責導覽，絕不直接刪除 Firebase 房間、重置其他玩家或清空既有分數。
+    if(state.room && state.mode){
+      if(state.room.phase!=='finished'){
+        const warning=state.mode==='demo'
+          ?'確定要回首頁嗎？這場示範局的進度將不會保留。'
+          :isHost()
+            ?'你是這場的主持人。離開後其他玩家仍會留在房間，但可能無人能繼續開獎或進入下一題。\n若需返回，請保留房號並使用原本瀏覽器重新加入。\n確定要回首頁嗎？'
+            :'確定要離開本場遊戲嗎？目前分數仍保留在房間，請保留邀請連結，才能使用原本瀏覽器重新加入。';
+        if(!window.confirm(warning))return;
+      }
+      leave();
+    }else{
+      if(state.page==='manager' && state.customDraft?.q?.trim() && !window.confirm('目前編輯中的題目尚未儲存，確定回首頁嗎？'))return;
+      state.page='home';state.error='';state.customDraft=null;state.customEditId=null;render();
+    }
+    window.scrollTo(0,0);
+  }
+  function leave(){clearListeners();state.page='home';state.room=null;state.mode=null;state.roomCode='';state.votes=[];state.players=[];state.choice=null;state.guess=null;state.double=false;state.voteStep='choice';state.voteSubmitState='idle';state.voteSyncFromCache=false;state.lastVisibleQuestionKey=null;state.error='';history.replaceState(null,'',location.pathname);render();}
   // ------ Firebase Web SDK：延後載入，離線示範模式不必連任何服務 ------
   async function getFirebase(){
     if(state.firebase)return state.firebase;
@@ -633,6 +665,7 @@
     if(g && !state.busy && state.voteSubmitState!=='sending' && !myVote()){state.guess=Number(g.dataset.guess);render();return;}
     const b=e.target.closest('[data-action]');if(!b||state.busy)return;
     const action=b.dataset.action;
+    if(action==='brand-home'){goHomeFromBrand();return;}
     if(action==='leave'){leave();return;}
     if(action==='open-home'){state.page='home';state.error='';render();window.scrollTo(0,0);return;}
     if(action==='open-host'){state.page='host';state.error='';render();window.scrollTo(0,0);return;}
