@@ -48,7 +48,7 @@
     minimalHue:normalizeMinimalHue(localStorage.getItem('mqs_minimal_hue_v1'))
   };
   // 只切換視覺樣式，不改答題流程。舊房間或未知主題自動使用經典派對風。
-  const THEME_NAMES={party:'經典派對風',panel:'立體按鍵風',minimal:'極簡設計風'};
+  const THEME_NAMES={party:'經典像素風',panel:'立體寫實風',minimal:'極簡設計風'};
   function normalizeTheme(value){return value==='panel'||value==='minimal'?value:'party';}
   function activeTheme(){return state.room?normalizeTheme(state.room.theme):(state.page==='host'||state.page==='manager'?state.themeChoice:'party');}
   // 色相統一限制在 0–359，不讓未驗證的房間資料進入 CSS。
@@ -62,17 +62,17 @@
     const hue=inRoom?activeMinimalHue():state.minimalHue;
     return `<div class="minimal-color-setting" role="group" aria-label="極簡風主題色">
       <div class="minimal-color-title"><strong>選擇一種主色</strong><span class="minimal-color-sample" aria-hidden="true"></span></div>
-      <label class="minimal-color-label" for="minimalHueRange">拖曳色彩條，選擇這場遊戲的主色</label>
+      <label class="minimal-color-label" for="minimalHueRange">拖動色彩條，讓整個介面的底色換成你選的主色</label>
       <input id="minimalHueRange" type="range" name="minimalHue" min="0" max="359" step="1" value="${hue}" aria-label="極簡風主色選擇" aria-describedby="minimalHueHelp">
-      <p id="minimalHueHelp" class="minimal-color-help">只需要選一個顏色，背景、面板、按鈕與選取狀態會自動產生深淺搭配。${inRoom&&state.mode==='online'?' 放開色彩條後才同步給所有玩家。':''}</p>
+      <p id="minimalHueHelp" class="minimal-color-help">只選一個顏色，整頁背景、卡片、按鈕與選取狀態就會自動依此色系產生深淺。${inRoom&&state.mode==='online'?' 放開色彩條後才同步給所有玩家。':''}</p>
     </div>`;
   }
   function themePicker(inRoom=false){
     const selected=inRoom?normalizeTheme(state.room?.theme):state.themeChoice;
     const themes=[
-      {id:'party',name:'經典派對風',detail:'深紫派對・活潑繽紛'},
-      {id:'panel',name:'立體按鍵風',detail:'霧面灰・立體機械按鍵'},
-      {id:'minimal',name:'極簡設計風',detail:'柔霧灰白・立體浮雕'}
+      {id:'party',name:'經典像素風',detail:'電玩紫黃・像素街機'},
+      {id:'panel',name:'立體寫實風',detail:'石墨金屬・擬真按鍵'},
+      {id:'minimal',name:'極簡設計風',detail:'全版主色・柔霧浮雕'}
     ];
     return `<section class="theme-setting space-top" aria-label="選擇遊戲介面風格">
       <div class="theme-setting-heading"><strong>🎨 遊戲介面風格</strong><span class="theme-selected-name">目前：${esc(THEME_NAMES[selected])}</span></div>
@@ -381,7 +381,7 @@
   function myRank(){const sorted=scoresSorted();return sorted.findIndex(p=>p.uid===state.uid)+1;}
   function myScore(){return state.room?.scores?.[state.uid]||0;}
   function hasDouble(){return !state.room?.usedDoubles?.[state.uid];}
-  function surface(content, right=''){return `<main class="container"><div class="topbar"><button type="button" class="brand brand-home" data-action="brand-home" aria-label="回首頁：默契失控局" title="回首頁"><span class="brand-mark" aria-hidden="true"><span>✦</span></span><span class="brand-title">默契失控局</span><span class="brand-home-hint">回首頁</span></button>${right || `<span class="status-tag">🎉 派對破冰遊戲</span>`}</div>${state.room && safeHero(state.room.heroImage)?`<div class="room-look ${state.room.phase==='lobby'?'lobby-look':''}"><img class="room-look-image" src="${esc(state.room.heroImage)}" alt="本場活動主視覺"><span>🎉 本場活動主視覺</span></div>`:''}${state.error?`<div class="notice" role="alert">${esc(state.error)}</div>`:''}${state.toast?`<div class="chip mint" style="margin-bottom:12px">✓ ${esc(state.toast)}</div>`:''}${content}<div class="footer">適合 10–20 人 ✦ 有笑點的社交，不是尷尬的面試<br>先笑出來，再慢慢認識彼此 ✨</div></main>`;}
+  function surface(content, right=''){return `<main class="container"><div class="topbar"><button type="button" class="brand brand-home" data-action="brand-home" aria-label="回首頁：默契失控局" title="回首頁"><span class="brand-mark" aria-hidden="true"><span>✦</span></span><span class="brand-title">默契失控局</span><span class="brand-home-hint">回首頁</span></button>${right || `<span class="status-tag">🎮 手機破冰遊戲</span>`}</div>${state.room && safeHero(state.room.heroImage)?`<div class="room-look ${state.room.phase==='lobby'?'lobby-look':''}"><img class="room-look-image" src="${esc(state.room.heroImage)}" alt="本場活動主視覺"><span>🎉 本場活動主視覺</span></div>`:''}${state.error?`<div class="notice" role="alert">${esc(state.error)}</div>`:''}${state.toast?`<div class="chip mint" style="margin-bottom:12px">✓ ${esc(state.toast)}</div>`:''}${content}<div class="footer">適合 10–20 人 ✦ 有笑點的社交，不是尷尬的面試<br>先笑出來，再慢慢認識彼此 ✨</div></main>`;}
   // 首頁只做角色分流；進階設定全部放進主持人頁面。
   function renderHome(){
     return surface(`
@@ -481,6 +481,7 @@
     // 房間主題由主持人建立時寫入 Firestore，玩家不需自行設定。
     document.documentElement.setAttribute('data-theme',activeTheme());
     document.documentElement.style.setProperty('--m-hue',String(activeMinimalHue()));
+    document.documentElement.style.setProperty('--m-theme-name',`'${'${THEME_NAMES[activeTheme()]||THEME_NAMES.party}'}'`);
     if(!state.mode || !state.room) {$app.innerHTML=state.page==='manager'?renderManager():state.page==='host'?renderHost():state.page==='join'?renderJoin():renderHome();return;}
     // 每次新題啟動時，先顯示題目，不沿用上一題或等候室留在頁面底部的位置。
     // 以「房間＋題號」辨識，只捲動一次；同一題收到其他玩家的票數時不干擾目前閱讀位置。
