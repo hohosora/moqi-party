@@ -125,11 +125,11 @@
   }
   function heroVisual(src,klass=''){
     const photo=safeHero(src);
-    return `<div class="hero-face shine ${photo?'photo-face':'dog-face'} ${klass}">${photo?`<img class="hero-photo" src="${esc(src)}" alt="主持人選擇的活動主視覺照片">`:'<img class="mascot-dog" src="assets/white-dog-pixel-hd.svg" width="112" height="104" alt="戴墨鏡的白狗吉祥物" decoding="async">'}</div>`;
+    return `<div class="hero-face shine ${photo?'photo-face':'emoji-face'} ${klass}">${photo?`<img class="hero-photo" src="${esc(src)}" alt="主持人選擇的活動主視覺照片">`:'🤪'}</div>`;
   }
   function heroControls(inRoom=false){
     const current=inRoom?state.room?.heroImage:state.heroImage;
-    return `<div class="hero-controls card soft section-gap"><div><b>📸 ${inRoom?'更換本房間主視覺':'主持人自訂主視覺'}</b><p class="fineprint">${inRoom?'更新後會同步到所有已加入房間的玩家。':'選一張照片取代右上角的白狗吉祥物。建立多人房間時會將壓縮後照片同步給玩家。'}</p></div><div class="hero-control-actions"><label class="btn dark small-btn hero-upload-label">${state.photoBusy?'⏳ 正在處理照片…':'📷 選擇照片'}<input type="file" id="heroPhotoUpload" accept="image/jpeg,image/png,image/webp" ${state.photoBusy?'disabled':''}></label><button class="btn tertiary small-btn" data-action="reset-hero" ${state.photoBusy||!safeHero(current)?'disabled':''}>↩ 還原白狗</button></div><p class="fineprint">支援 JPG、PNG、WebP；上傳時自動置中裁切、縮圖與壓縮。圖片僅作活動主視覺，請先取得照片當事人同意。</p></div>`;
+    return `<div class="hero-controls card soft section-gap"><div><b>📸 ${inRoom?'更換本房間主視覺':'主持人自訂主視覺'}</b><p class="fineprint">${inRoom?'更新後會同步到所有已加入房間的玩家。':'選一張照片取代右上角的 🤪 吐舌表情。建立多人房間時會將壓縮後照片同步給玩家。'}</p></div><div class="hero-control-actions"><label class="btn dark small-btn hero-upload-label">${state.photoBusy?'⏳ 正在處理照片…':'📷 選擇照片'}<input type="file" id="heroPhotoUpload" accept="image/jpeg,image/png,image/webp" ${state.photoBusy?'disabled':''}></label><button class="btn tertiary small-btn" data-action="reset-hero" ${state.photoBusy||!safeHero(current)?'disabled':''}>↩ 還原 🤪 表情</button></div><p class="fineprint">支援 JPG、PNG、WebP；上傳時自動置中裁切、縮圖與壓縮。圖片僅作活動主視覺，請先取得照片當事人同意。</p></div>`;
   }
   async function compressHero(file){
     if(!['image/jpeg','image/png','image/webp'].includes(file?.type))throw new Error('請選擇 JPG、PNG 或 WebP 格式的照片。');
@@ -765,7 +765,7 @@
     if(action==='open-join'){state.page='join';state.error='';render();window.scrollTo(0,0);return;}
     if(action==='edit-choice'&&!myVote()){state.voteStep='choice';render();window.scrollTo(0,0);return;}
     if(action==='reset-hero'){
-      try{await setHero('');state.toast='已還原預設白狗吉祥物。';state.error='';}
+      try{await setHero('');state.toast='已還原預設 🤪 吐舌表情。';state.error='';}
       catch(err){state.error=friendlyError(err);}render();return;
     }
     if(action==='manage'){state.page='manager';state.managerError='';state.managerNotice='';render();window.scrollTo(0,0);return;}
