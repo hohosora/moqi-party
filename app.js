@@ -39,7 +39,7 @@
     {q:"如果有一台只解決小麻煩的機器，你想先發明？",a:["自動翻找遙控器機","雨傘不會忘記機","點餐秒決定機","耳機線自動整理機"],talk:"替這項發明想一句很浮誇的廣告詞。",category:"humor",scenes:["all"]},
     {q:"群組聊天突然會自動播報，你最怕它念出什麼？",a:["剛打好又刪掉的草稿","已讀後的內心旁白","收藏的冷笑話","半夜突然想到的點子"],talk:"不必真的公開聊天紀錄，大家只分享最有趣的想像。",category:"humor",scenes:["friends","company","school"]},
     {q:"你最想拿哪一個無厘頭獎項？",a:["年度準時找到充電器獎","最佳零食分享大使","世界級方向感迷航獎","最會把平凡事說好笑獎"],talk:"全場幫其中一個獎項設計頒獎台詞。",category:"humor",scenes:["all"]},
-    {q:"如果今天的聚會是一部電影，你希望片名是？",a:["意外熱鬧的星期三","誰把笑聲開最大","我們真的第一次見面嗎","最後一塊點心的秘密"],talk:"選一個片名，請大家想像電影海報長什麼樣。",category:"humor",scenes:["church","community","school","company","friends"]},
+    {q:"如果今天的聚會是一部電影，你希望片名是？",a:["意外熱鬧的星期三","誰把笑聲開最大","我們真的第一次見面嗎","最後一塊點心的秘密"],talk:"選一個片名，請大家想像電影海報長什麼樣。",category:"humor",scenes:["church","community","school","company","friends","family"]},
     {q:"哪種超能力聽起來廢，但你其實很想要？",a:["永遠剝得漂亮的橘子","手機永遠不會掉在臉上","剛好搭上每班公車","每次抽衛生紙只出一張"],talk:"誰可以說服全場這能力其實超重要？",category:"humor",scenes:["all"]},
     {q:"如果你是便利商店的隱藏角色，任務會是？",a:["替猶豫客人加油","守護最後一份飯糰","幫大家找回忘拿的傘","替冰箱飲料排隊形"],talk:"幫這個角色取一個超有氣勢的稱號。",category:"humor",scenes:["all"]},
     {q:"第一次自我介紹若能配一個登場特效，你選？",a:["紙花緩緩飄落","一道迷你追光","背景響起小鼓聲","頭頂浮出可愛字幕"],talk:"每人可以只說特效名稱，不需要真的表演。",category:"humor",scenes:["church","community","school"]},
@@ -118,25 +118,25 @@
     {category:"personality",scenes:["all"]},
     {category:"everyday",scenes:["all"]},
     {category:"humor",scenes:["all"]},
-    {category:"interaction",scenes:["friends","church","community"]},
+    {category:"interaction",scenes:["friends","church","community","school"]},
     {category:"personality",scenes:["all"]},
-    {category:"everyday",scenes:["all"]},
     {category:"humor",scenes:["all"]},
     {category:"humor",scenes:["all"]},
     {category:"humor",scenes:["all"]},
-    {category:"interaction",scenes:["company","school","church"]},
     {category:"humor",scenes:["all"]},
-    {category:"interaction",scenes:["friends","family"]},
-    {category:"everyday",scenes:["all"]},
-    {category:"everyday",scenes:["all"]},
+    {category:"interaction",scenes:["all"]},
+    {category:"personality",scenes:["all"]},
     {category:"everyday",scenes:["all"]},
     {category:"everyday",scenes:["all"]},
     {category:"personality",scenes:["all"]},
-    {category:"interaction",scenes:["church","company","school","community"]},
+    {category:"personality",scenes:["all"]},
+    {category:"interaction",scenes:["church","company","school"]},
     {category:"personality",scenes:["all"]},
     {category:"personality",scenes:["all"]},
     {category:"humor",scenes:["all"]},
-    {category:"interaction",scenes:["friends","church","school"]},
+    {category:"humor",scenes:["all"]},
+    {category:"interaction",scenes:["all"]},
+    {category:"interaction",scenes:["friends","school","church","company"]},
     {category:"humor",scenes:["all"]},
   ];
   const QUICK_SCENES = {
@@ -427,8 +427,8 @@
       const groups=preferredSpecific?['specific','general','other']:['general','specific','other'];
       // 降低最近 40 題重複出現的機率；只有題庫不足時才回收舊題。
       let selected=null;
-      for(const freshness of [true,false]){
-        for(const group of groups){
+      for(const group of groups){
+        for(const freshness of [true,false]){
           selected=candidates.find(q=>(!recent.has(normalKey(q.q)))===freshness&&relevance(q)===group);
           if(selected)break;
         }
