@@ -1453,3 +1453,116 @@ html[data-theme="panel"] .result-bar::before{
   html[data-theme="panel"] .retro-deck-leds{gap:3px}
   html[data-theme="panel"] .retro-deck-pipes{min-width:8px}
 }
+
+/* v2.2｜復古機械風：兩種回答任務明確分色。選自己＝亮青綠，猜大家＝亮橘。
+   文字、狀態標籤、選項選取、機殼邊線全部同步，不只靠顏色判斷。 */
+html[data-theme="panel"] .vote-area.vote-step-choice{
+  border-left:8px solid #28bed2;
+  background:linear-gradient(150deg,#c5e6e8,#b6d3d2 57%,#a5bdbd);
+  box-shadow:inset 0 3px 3px #ebffff,inset 0 -5px 7px #7eaaac,
+    0 6px 0 #1b363c,0 12px 16px #06141999;
+}
+html[data-theme="panel"] .vote-area.vote-step-guess{
+  border-left:8px solid #ff9e2c;
+  background:linear-gradient(150deg,#ffe0ad,#f6c68f 58%,#dca368);
+  box-shadow:inset 0 3px 3px #fff5dc,inset 0 -5px 7px #bc8356,
+    0 6px 0 #463024,0 12px 16px #17110b80;
+}
+html[data-theme="panel"] .vote-area .answer-stepper span{
+  border:3px solid #50434b;border-radius:4px;
+  background:#37323b;color:#fff0dd;
+  box-shadow:inset 0 3px 5px #15151b,0 3px 0 #b9a99e;
+  font-size:clamp(15px,3.5vw,18px);font-weight:950;line-height:1.45;
+  min-height:51px;padding:9px 7px;
+  text-shadow:none;white-space:normal;overflow-wrap:anywhere;
+}
+html[data-theme="panel"] .vote-area.vote-step-choice .answer-stepper span.current{
+  color:#062f37;background:linear-gradient(#9af9ff,#39ccdc 62%,#1592a9);
+  border-color:#125668;
+  box-shadow:inset 0 3px 3px #d7ffff,inset 0 -3px 6px #0e738d,
+    0 3px 0 #104956;
+}
+html[data-theme="panel"] .vote-area.vote-step-choice .answer-stepper span:not(.current){
+  color:#f8ecda;background:#353038;border-color:#8d7a6f;
+}
+html[data-theme="panel"] .vote-area.vote-step-guess .answer-stepper span.done{
+  color:#08323b;background:linear-gradient(#c4f7ef,#73d9dc);
+  border-color:#377a81;
+  box-shadow:inset 0 3px 4px #b3ebdf,0 2px 0 #28535e;
+}
+html[data-theme="panel"] .vote-area.vote-step-guess .answer-stepper span.current{
+  color:#322014;background:linear-gradient(#ffedb1,#ffb343 59%,#ed741c);
+  border-color:#8b4622;
+  box-shadow:inset 0 3px 3px #fff4d4,inset 0 -3px 5px #c3631e,
+    0 3px 0 #82411c;
+}
+html[data-theme="panel"] .vote-area.vote-step-choice .vote-label{color:#073c48}
+html[data-theme="panel"] .vote-area.vote-step-guess .vote-label{color:#6b3016}
+html[data-theme="panel"] .vote-area.vote-step-choice .vote-tip{color:#234a53}
+html[data-theme="panel"] .vote-area.vote-step-guess .vote-tip{color:#593724}
+html[data-theme="panel"] .vote-area.vote-step-choice .option.selected{
+  color:#103339;
+  background:linear-gradient(#b9f5f5,#5bd4e2 58%,#20a7bf);
+  border:3px solid #174450;
+  box-shadow:inset 0 6px 9px #438a9c7a,inset 0 -2px 3px #e2ffff,
+    0 1px 0 #174750,0 5px 8px #06191a75;
+}
+html[data-theme="panel"] .vote-area.vote-step-choice .option.selected .option-letter{
+  color:#052d35;background:#b5ffff;border-color:#197d8d;
+}
+html[data-theme="panel"] .vote-area.vote-step-guess .option.guess-selected{
+  color:#2d1e16;
+  background:linear-gradient(#ffedba,#ffaf45 55%,#e97620);
+  border:3px solid #683d29;
+  box-shadow:inset 0 6px 9px #a65e337d,inset 0 -2px 3px #fff0b2,
+    0 1px 0 #7b4528,0 5px 8px #29171075;
+}
+html[data-theme="panel"] .vote-area.vote-step-guess .option.guess-selected .option-letter{
+  color:#382015;background:#fff0bb;border-color:#9d501e;
+}
+html[data-theme="panel"] .vote-area.vote-step-choice .option.selected::after{
+  background:#baffff;box-shadow:0 0 7px #6feaff;
+}
+html[data-theme="panel"] .vote-area.vote-step-guess .option.guess-selected::after{
+  background:#fff6c6;box-shadow:0 0 7px #ffbd45;
+}
+/* Mechanical instrument cluster: larger high-contrast timer.
+   Shared structure and responsive sizing live in styles.css v20. */
+html[data-theme="panel"][data-game-screen="voting"] #timer{
+  color:#ffdc84;background:linear-gradient(#353139,#171820);
+  border:4px solid #e8a64c;border-radius:5px;
+  box-shadow:inset 0 5px 8px #090a10,inset 0 -1px 1px #72604c,
+    0 5px 0 #2c1f24,0 10px 16px #0c0b0d8c;
+  min-width:190px;min-height:88px;padding:11px 20px;
+  text-shadow:none;
+}
+html[data-theme="panel"][data-game-screen="voting"] #timer .timer-caption{
+  color:#ffdc9f;
+  font-size:14px;font-weight:900;line-height:1.25;
+}
+html[data-theme="panel"][data-game-screen="voting"] #timer .timer-digits{
+  color:#ffdd8b;
+  font:1000 clamp(29px,4.6vw,39px)/1.12 ui-monospace,Consolas,monospace;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:-.02em;
+}
+html[data-theme="panel"][data-game-screen="voting"] #timer.urgent{
+  color:#fff4e3;background:linear-gradient(#ad3d29,#712117);
+  border-color:#ffc076;
+  box-shadow:inset 0 5px 8px #41100b,0 5px 0 #381e20,0 10px 16px #0c0b0d8c;
+}
+html[data-theme="panel"][data-game-screen="voting"] #timer.urgent .timer-caption,
+html[data-theme="panel"][data-game-screen="voting"] #timer.urgent .timer-digits{
+  color:#fff5e3;
+}
+@media(max-width:580px){
+  html[data-theme="panel"][data-game-screen="voting"] #timer{
+    width:100%;min-width:0;min-height:87px;
+  }
+  html[data-theme="panel"][data-game-screen="voting"] #timer .timer-digits{
+    font-size:clamp(33px,9.5vw,43px);
+  }
+  html[data-theme="panel"] .vote-area .answer-stepper span{
+    font-size:16px;min-height:54px;
+  }
+}

@@ -4138,3 +4138,74 @@ html[data-theme="party"] .card.entry-card > .field:first-child > span{
     padding:6px 11px;
   }
 }
+
+/* v20｜三款主題共同的醒目倒數計時面板。
+   題目在上、接著顯示清楚的兩行倒數數字，不影響遊戲同步。 */
+html[data-game-screen="voting"] .poll-status{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;
+  align-items:center;gap:13px;
+  margin:19px 0 13px;min-width:0;
+}
+html[data-game-screen="voting"] #vote-count{
+  display:block;min-width:0;overflow-wrap:anywhere;
+  font-size:clamp(16px,3.6vw,18px);font-weight:850;line-height:1.55;
+}
+html[data-game-screen="voting"] #timer{
+  box-sizing:border-box;display:flex;flex-direction:column;
+  justify-content:center;align-items:center;gap:3px;
+  min-width:190px;min-height:88px;max-width:100%;
+  padding:11px 22px;
+  line-height:1.12;text-align:center;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+  transition:background-color .16s,color .16s,border-color .16s;
+}
+html[data-game-screen="voting"] #timer .timer-caption{
+  display:block;font:900 14px/1.25 system-ui,-apple-system,"Noto Sans TC",sans-serif;
+  letter-spacing:.075em;
+}
+html[data-game-screen="voting"] #timer .timer-digits{
+  display:block;font:1000 clamp(29px,4.6vw,39px)/1.12 system-ui,-apple-system,"Noto Sans TC",sans-serif;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:-.025em;
+}
+html[data-theme="party"][data-game-screen="voting"] #timer{
+  color:#131015;background:#edff00;
+  border:4px solid #0a0811;border-radius:0;
+  box-shadow:6px 6px 0 #0a0811,inset 0 3px 0 #fffda6;
+  text-shadow:none;
+}
+html[data-theme="party"][data-game-screen="voting"] #timer.urgent{
+  color:#fff;background:#b61b37;border-color:#0a0811;
+  box-shadow:6px 6px 0 #0a0811,inset 0 3px 0 #e87d8e;
+}
+html[data-theme="party"][data-game-screen="voting"] #timer .timer-caption,
+html[data-theme="party"][data-game-screen="voting"] #timer .timer-digits{color:inherit}
+html[data-theme="minimal"][data-game-screen="voting"] #timer{
+  color:#fffaf3;background:#252d30;
+  border:3px solid var(--m-accent-strong,#b0a7a0);border-radius:20px;
+  box-shadow:inset 0 4px 6px rgba(0,0,0,.38),0 7px 17px rgba(23,29,29,.24);
+  text-shadow:none;
+}
+html[data-theme="minimal"][data-game-screen="voting"] #timer.urgent{
+  color:#fffaf3;background:#98283a;border-color:#ffc4b2;
+  box-shadow:inset 0 4px 7px #561729,0 7px 17px rgba(43,15,25,.24);
+}
+html[data-theme="minimal"][data-game-screen="voting"] #timer .timer-caption,
+html[data-theme="minimal"][data-game-screen="voting"] #timer .timer-digits{color:inherit}
+@media(max-width:580px){
+  html[data-game-screen="voting"] .poll-status{
+    display:flex;flex-direction:column;align-items:stretch;gap:9px;
+    margin:15px 0 12px;
+  }
+  html[data-game-screen="voting"] #timer{
+    width:100%;min-width:0;min-height:87px;padding:10px 14px;
+    order:-1;
+  }
+  html[data-game-screen="voting"] #timer .timer-digits{
+    font-size:clamp(33px,9.5vw,43px);
+  }
+  html[data-game-screen="voting"] #vote-count{
+    font-size:16px;line-height:1.55;
+  }
+}
