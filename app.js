@@ -481,7 +481,6 @@
     // 房間主題由主持人建立時寫入 Firestore，玩家不需自行設定。
     document.documentElement.setAttribute('data-theme',activeTheme());
     document.documentElement.style.setProperty('--m-hue',String(activeMinimalHue()));
-    document.documentElement.style.setProperty('--m-theme-name',`'${'${THEME_NAMES[activeTheme()]||THEME_NAMES.party}'}'`);
     if(!state.mode || !state.room) {$app.innerHTML=state.page==='manager'?renderManager():state.page==='host'?renderHost():state.page==='join'?renderJoin():renderHome();return;}
     // 每次新題啟動時，先顯示題目，不沿用上一題或等候室留在頁面底部的位置。
     // 以「房間＋題號」辨識，只捲動一次；同一題收到其他玩家的票數時不干擾目前閱讀位置。
