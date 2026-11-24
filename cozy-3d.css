@@ -996,3 +996,39 @@ html[data-theme="panel"] .footer{
     transition:none!important;
   }
 }
+
+/* v1.1: higher-specificity legacy cleanup for the waiting-room markup. */
+html[data-theme="panel"][data-game-screen="lobby"] .lobby-code{
+  color:#273d3f;border:2px solid #f8f5ee;border-radius:22px;
+  background:linear-gradient(#e8f0e9,#c5dad0);
+  box-shadow:inset 0 4px 7px #fbfff7,inset 0 -5px 9px #93b7a9,
+    0 6px 0 #608379,0 12px 17px #27434436;
+}
+html[data-theme="panel"][data-game-screen="lobby"] .lobby-code::before{
+  content:none!important;display:none!important;
+}
+html[data-theme="panel"][data-game-screen="lobby"] .lobby-code .eyebrow{
+  color:#344a4a;font-family:inherit;font-size:13px;
+}
+html[data-theme="panel"][data-game-screen="lobby"] .code-digits{
+  color:#254549;text-shadow:none;font-family:ui-monospace,Consolas,monospace;
+  font-size:clamp(30px,7.7vw,45px);letter-spacing:.065em;font-weight:950;
+}
+html[data-theme="panel"][data-game-screen="lobby"] .lobby-code .btn{
+  color:#fff8ed;text-shadow:none;
+  background:linear-gradient(#688984,#47686c);
+  border:2px solid #9cb7af;border-radius:16px;
+  box-shadow:inset 0 3px 3px #a2c3b5,inset 0 -4px 7px #2e5052,
+    0 5px 0 #31565a,0 10px 15px #1f38383a;
+}
+html[data-theme="panel"][data-game-screen="lobby"] .share-link{
+  color:#344c4c;background:#f2eee4;
+  border:1px solid #fff8ee;border-radius:15px;
+  box-shadow:inset 3px 4px 9px #cdd0c5,inset -2px -2px 4px #fff;
+}
+/* High-specificity reset: no black LCD in the 3D soothing score tile. */
+html[data-theme="panel"][data-game-screen="finished"] .question-card{
+  color:#2b3e40;background:linear-gradient(#fff0e0,#ead7c8);
+  border-color:#fff6e8;box-shadow:inset 0 4px 5px #fff,inset 0 -5px 9px #ceb8a9,
+    0 7px 0 #947e71,0 14px 21px #203f3e32;
+}
