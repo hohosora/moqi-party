@@ -4098,3 +4098,43 @@ html[data-theme="party"] .preview-panel .preview-item small{
   font-weight:700;
   line-height:1.7;
 }
+
+/* v19｜像素風手機主持人暱稱被 ROOM SETUP 標題列遮住：
+   舊 .card 規則在手機尺寸覆蓋了 .entry-card 的上內距。
+   較精確的 .card.entry-card 直接預留標題列高度，並保障首個 label 清楚。 */
+html[data-theme="party"] .card.entry-card{
+  position:relative;
+  padding-top:64px;
+}
+html[data-theme="party"] .card.entry-card::before{
+  box-sizing:border-box;
+  min-height:35px;
+  line-height:24px;
+  padding:5px 12px;
+  z-index:1;
+  pointer-events:none;
+}
+html[data-theme="party"] .card.entry-card > .field:first-child{
+  position:relative;
+  z-index:2;
+  min-width:0;
+}
+html[data-theme="party"] .card.entry-card > .field:first-child > span{
+  display:block;
+  position:relative;
+  color:#18121d;
+  -webkit-text-fill-color:#18121d;
+  font-size:17px;
+  line-height:1.5;
+  font-weight:900;
+  margin-bottom:7px;
+}
+@media(max-width:580px){
+  html[data-theme="party"] .card.entry-card{
+    padding:66px 15px 21px;
+  }
+  html[data-theme="party"] .card.entry-card::before{
+    min-height:36px;
+    padding:6px 11px;
+  }
+}
