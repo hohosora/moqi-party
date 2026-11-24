@@ -4038,3 +4038,63 @@ html[data-theme="party"] select:focus-visible{
 html[data-theme="party"] select:disabled{
   opacity:.65;
 }
+
+/* v18｜經典像素風：收藏題庫及 Gemini 預覽文字可讀性修正。
+   收藏清單在白色卡片上，不再沿用深背景的淡字與亮黃題號。 */
+html[data-theme="party"] .bank-list .bank-list-item{
+  color:#111015;
+  background:#fffdf6;
+  border:2px solid #0a0810;
+  border-radius:0;
+  box-shadow:3px 3px 0 #0a0810;
+}
+html[data-theme="party"] .bank-list .bank-list-info strong{
+  color:#111015;
+  font-size:16px;
+  font-weight:900;
+  line-height:1.6;
+  text-shadow:none;
+  opacity:1;
+}
+html[data-theme="party"] .bank-list .bank-list-info small{
+  display:block;
+  color:#27222f;
+  font-size:15px;
+  font-weight:750;
+  line-height:1.75;
+  text-shadow:none;
+  opacity:1;
+  overflow-wrap:anywhere;
+}
+html[data-theme="party"] .bank-list .bank-counter{
+  align-self:flex-start;
+  width:max-content;
+  padding:4px 9px;
+  color:#edff00;
+  background:#0b0911;
+  border:2px solid #0a0810;
+  border-radius:0;
+  font-size:14px;
+  font-weight:950;
+  line-height:1.45;
+  text-shadow:none;
+}
+html[data-theme="party"] .preview-panel{
+  color:#111015;
+  background:#fffdf6;
+  border:3px solid #0a0810;
+  border-radius:0;
+  box-shadow:4px 4px 0 #0a0810;
+}
+html[data-theme="party"] .preview-panel .preview-item b{
+  color:#111015;
+  font-size:16px;
+  font-weight:900;
+  line-height:1.6;
+}
+html[data-theme="party"] .preview-panel .preview-item small{
+  color:#27222f;
+  font-size:15px;
+  font-weight:700;
+  line-height:1.7;
+}
