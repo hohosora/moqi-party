@@ -404,3 +404,111 @@ html[data-theme="minimal"] .header-room-status{margin:-12px 0 19px}
     font-size:clamp(16px,4.7vw,19px);
   }
 }
+
+/* v4 | Gemini contextual question generation: editable scene brief. */
+/* The host's event description belongs to the Gemini workflow only.
+   Clear input boundaries across pixel, mechanical and minimal styles. */
+.gemini-scene-field{
+  box-sizing:border-box;
+  margin-top:15px;
+  padding:14px;
+  border:2px solid var(--line);
+  border-radius:14px;
+  background:rgba(255,255,255,.055);
+  min-width:0;
+}
+.gemini-scene-field > span{
+  display:block;
+  font-size:16px;
+  line-height:1.5;
+  font-weight:900;
+}
+.gemini-scene-field textarea{
+  box-sizing:border-box;
+  display:block;
+  width:100%;
+  min-width:0;
+  min-height:118px;
+  font-size:16px;
+  line-height:1.65;
+  resize:vertical;
+}
+.gemini-scene-field .gemini-scene-help{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  flex-wrap:wrap;
+  gap:7px;
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.65;
+  font-weight:600;
+}
+.gemini-scene-field .gemini-scene-count{
+  display:inline-flex;
+  flex:none;
+  white-space:nowrap;
+  margin-left:auto;
+  color:inherit;
+  font-size:13px;
+  line-height:1.65;
+  font-weight:700;
+}
+.gemini-scene-field textarea:focus-visible{
+  outline:3px solid var(--mint);
+  outline-offset:2px;
+}
+html[data-theme="party"] .gemini-scene-field{
+  color:#15101a;
+  background:#fffaf0;
+  border:3px solid #100910;
+  border-radius:0;
+  box-shadow:4px 4px 0 #0d0813;
+}
+html[data-theme="party"] .gemini-scene-field > span,
+html[data-theme="party"] .gemini-scene-field .gemini-scene-help{color:#24202a}
+html[data-theme="party"] .gemini-scene-field textarea{
+  color:#19101f;
+  background:#fff;
+  border:2px solid #4c2385;
+  border-radius:0;
+}
+html[data-theme="party"] .gemini-scene-field textarea::placeholder{color:#655875}
+html[data-theme="panel"] .gemini-scene-field{
+  color:#251e21;
+  background:linear-gradient(145deg,#f0e1ce,#d5b9a4);
+  border:3px solid #4e3936;
+  border-radius:5px;
+  box-shadow:inset 0 2px 2px #fff1df,0 4px 0 #20191d;
+}
+html[data-theme="panel"] .gemini-scene-field > span,
+html[data-theme="panel"] .gemini-scene-field .gemini-scene-help{color:#352a2b}
+html[data-theme="panel"] .gemini-scene-field textarea{
+  color:#282027;
+  background:#fff8e9;
+  border:2px solid #917266;
+  border-radius:4px;
+}
+html[data-theme="panel"] .gemini-scene-field textarea::placeholder{color:#675751}
+html[data-theme="minimal"] .gemini-scene-field{
+  color:#282b30;
+  background:var(--m-surface);
+  border:1px solid rgba(255,255,255,.77);
+  box-shadow:var(--m-raised);
+}
+html[data-theme="minimal"] .gemini-scene-field > span,
+html[data-theme="minimal"] .gemini-scene-field .gemini-scene-help{color:#343b3d}
+html[data-theme="minimal"] .gemini-scene-field textarea{
+  color:#252b2c;
+  background:#f9f8f5;
+  border:1px solid #8b9698;
+}
+html[data-theme="minimal"] .gemini-scene-field textarea::placeholder{color:#5d686a}
+/* Ensure the selected third direction stands out in all three themes. */
+html[data-theme="party"] .direction-item.picked{border-color:#08060e;background:#efff83;box-shadow:4px 4px 0 #0b0810}
+html[data-theme="panel"] .direction-item.picked{border-color:#ef9e4c;background:linear-gradient(#ffe0ac,#f6b566);box-shadow:inset 0 2px #fff3d4,0 4px 0 #55382a}
+html[data-theme="minimal"] .direction-item.picked{border-color:#5b696a;background:var(--m-accent-soft);box-shadow:var(--m-soft-raised)}
+@media(max-width:580px){
+  .gemini-scene-field{padding:12px}
+  .gemini-scene-field textarea{min-height:132px}
+}
