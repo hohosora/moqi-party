@@ -48,7 +48,7 @@
   };
   // 只切換視覺樣式，不改答題流程。舊房間或未知主題自動使用經典派對風。
   const THEME_NAMES={party:'經典派對風',panel:'立體按鍵風',minimal:'極簡設計風'};
-  function normalizeTheme(value){return Object.hasOwn(THEME_NAMES,value)?value:'party';}
+  function normalizeTheme(value){return value==='panel'||value==='minimal'?value:'party';}
   function activeTheme(){return state.room?normalizeTheme(state.room.theme):(state.page==='host'||state.page==='manager'?state.themeChoice:'party');}
   function themePicker(inRoom=false){
     const selected=inRoom?normalizeTheme(state.room?.theme):state.themeChoice;
