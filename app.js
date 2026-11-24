@@ -44,18 +44,35 @@
     customEditId:null, customDraft:null, geminiDirection:'trends', geminiCount:8, aiText:'',
     aiPreview:[], aiPreviewSkipped:0, managerNotice:'', managerError:'',
     heroImage:'', photoBusy:false, voteSubmitState:'idle', voteSyncFromCache:false, lastVisibleQuestionKey:null,
-    themeChoice:normalizeTheme(localStorage.getItem('mqs_visual_theme_v1'))
+    themeChoice:normalizeTheme(localStorage.getItem('mqs_visual_theme_v1')),
+    minimalHue:normalizeMinimalHue(localStorage.getItem('mqs_minimal_hue_v1'))
   };
   // 只切換視覺樣式，不改答題流程。舊房間或未知主題自動使用經典派對風。
   const THEME_NAMES={party:'經典派對風',panel:'立體按鍵風',minimal:'極簡設計風'};
   function normalizeTheme(value){return value==='panel'||value==='minimal'?value:'party';}
   function activeTheme(){return state.room?normalizeTheme(state.room.theme):(state.page==='host'||state.page==='manager'?state.themeChoice:'party');}
+  // 色相統一限制在 0–359，不讓未驗證的房間資料進入 CSS。
+  function normalizeMinimalHue(raw){
+    if(raw===null||raw===undefined||raw==='')return 20;
+    const value=Number(raw);
+    return Number.isInteger(value)&&value>=0&&value<=359?value:20;
+  }
+  function activeMinimalHue(){return state.room?normalizeMinimalHue(state.room.minimalHue):state.minimalHue;}
+  function minimalColorBar(inRoom=false){
+    const hue=inRoom?activeMinimalHue():state.minimalHue;
+    return `<div class="minimal-color-setting" role="group" aria-label="極簡風主題色">
+      <div class="minimal-color-title"><strong>選擇一種主色</strong><span class="minimal-color-sample" aria-hidden="true"></span></div>
+      <label class="minimal-color-label" for="minimalHueRange">拖曳色彩條，選擇這場遊戲的主色</label>
+      <input id="minimalHueRange" type="range" name="minimalHue" min="0" max="359" step="1" value="${hue}" aria-label="極簡風主色選擇" aria-describedby="minimalHueHelp">
+      <p id="minimalHueHelp" class="minimal-color-help">只需要選一個顏色，背景、面板、按鈕與選取狀態會自動產生深淺搭配。${inRoom&&state.mode==='online'?' 放開色彩條後才同步給所有玩家。':''}</p>
+    </div>`;
+  }
   function themePicker(inRoom=false){
     const selected=inRoom?normalizeTheme(state.room?.theme):state.themeChoice;
     const themes=[
       {id:'party',name:'經典派對風',detail:'深紫派對・活潑繽紛'},
       {id:'panel',name:'立體按鍵風',detail:'霧面灰・立體機械按鍵'},
-      {id:'minimal',name:'極簡設計風',detail:'橘紅黑白・幾何色塊'}
+      {id:'minimal',name:'極簡設計風',detail:'柔霧灰白・立體浮雕'}
     ];
     return `<section class="theme-setting space-top" aria-label="選擇遊戲介面風格">
       <div class="theme-setting-heading"><strong>🎨 遊戲介面風格</strong><span class="theme-selected-name">目前：${esc(THEME_NAMES[selected])}</span></div>
@@ -66,8 +83,22 @@
           <span class="theme-check">${selected===t.id?'✓ 已選擇':'點選套用'}</span>
         </button>`).join('')}
       </div>
+      ${selected==='minimal'?minimalColorBar(inRoom):''}
       <p class="theme-help">${inRoom?'可在開始前更換；所有玩家會同步看到新主題。':'建立房間後所有玩家會自動使用相同風格；位置、字級、題庫與玩法都不變。'}</p>
     </section>`;
+  }
+  async function chooseMinimalHue(raw){
+    const hue=normalizeMinimalHue(raw);
+    if(state.room){
+      if(!isHost()||state.room.phase!=='lobby'||normalizeTheme(state.room.theme)!=='minimal')
+        throw new Error('只有主持人能在遊戲開始前選擇極簡風主色。');
+      // 只有放開色彩條才寫入 Firestore，避免連續拖曳造成大量寫入。
+      if(activeMinimalHue()!==hue)await updateRoom({minimalHue:hue});
+      state.room={...state.room,minimalHue:hue};
+    }
+    state.minimalHue=hue;
+    try{localStorage.setItem('mqs_minimal_hue_v1',String(hue));}catch{}
+    render();
   }
   async function chooseTheme(raw){
     if(!Object.hasOwn(THEME_NAMES,raw))throw new Error('無法辨識這個介面風格。');
@@ -449,6 +480,7 @@
   function render(){
     // 房間主題由主持人建立時寫入 Firestore，玩家不需自行設定。
     document.documentElement.setAttribute('data-theme',activeTheme());
+    document.documentElement.style.setProperty('--m-hue',String(activeMinimalHue()));
     if(!state.mode || !state.room) {$app.innerHTML=state.page==='manager'?renderManager():state.page==='host'?renderHost():state.page==='join'?renderJoin():renderHome();return;}
     // 每次新題啟動時，先顯示題目，不沿用上一題或等候室留在頁面底部的位置。
     // 以「房間＋題號」辨識，只捲動一次；同一題收到其他玩家的票數時不干擾目前閱讀位置。
@@ -501,7 +533,7 @@
     const preparedQuestions=buildRoomQuestions();
     clearListeners();state.mode='demo';state.uid='demo-me';state.roomCode='DEMO88';
     state.players=[{uid:state.uid,name,emoji:'😎',joinedAt:0},...BOT_NAMES.map((name,i)=>({uid:'bot'+i,name,emoji:EMOJIS[i],joinedAt:i+1}))];
-    state.room={hostUid:state.uid,phase:'lobby',roundIndex:-1,totalRounds:state.rounds,seconds:state.seconds,questions:preparedQuestions,scores:{},streaks:{},usedDoubles:{},lastResult:null,deadline:null,heroImage:state.heroImage,theme:state.themeChoice};
+    state.room={hostUid:state.uid,phase:'lobby',roundIndex:-1,totalRounds:state.rounds,seconds:state.seconds,questions:preparedQuestions,scores:{},streaks:{},usedDoubles:{},lastResult:null,deadline:null,heroImage:state.heroImage,theme:state.themeChoice,minimalHue:state.minimalHue};
     state.votes=[];state.choice=null;state.guess=null;state.double=false;state.voteStep='choice';state.voteSubmitState='idle';history.replaceState(null,'',location.pathname);render();
   }
   function validateName(){const s=state.nickname.trim().slice(0,14);if(!s){state.error='先填入暱稱，這樣排行榜才知道誰是誰。';render();return null;}state.nickname=s;localStorage.setItem('mqs_name',s);state.error='';return s;}
@@ -549,7 +581,7 @@
     let code='';
     for(let i=0;i<6;i++){const candidate=randomCode();const snap=await L.getDoc(roomRef(candidate));if(!snap.exists()){code=candidate;break;}}
     if(!code)throw new Error('房間代碼產生失敗，請再試一次。');
-    const data={hostUid:state.uid,phase:'lobby',roundIndex:-1,totalRounds:state.rounds,seconds:state.seconds,questions:preparedQuestions,scores:{},streaks:{},usedDoubles:{},lastResult:null,deadline:null,createdAt:Date.now(),heroImage:state.heroImage,theme:state.themeChoice};
+    const data={hostUid:state.uid,phase:'lobby',roundIndex:-1,totalRounds:state.rounds,seconds:state.seconds,questions:preparedQuestions,scores:{},streaks:{},usedDoubles:{},lastResult:null,deadline:null,createdAt:Date.now(),heroImage:state.heroImage,theme:state.themeChoice,minimalHue:state.minimalHue};
     await L.setDoc(roomRef(code),data);
     await L.setDoc(playerRef(code,state.uid),{uid:state.uid,name,emoji:emojiFor(state.uid),joinedAt:Date.now()});
     state.mode='online';state.roomCode=code;state.room=data;state.player=state.uid;history.replaceState(null,'',`?room=${code}`);
@@ -683,12 +715,25 @@
   }
   // ------ UI 事件代理 ------
   document.addEventListener('input',e=>{
+    if(e.target.name==='minimalHue'){
+      const hue=normalizeMinimalHue(e.target.value);
+      // 預覽只改 CSS，不重新繪製畫面或呼叫 Firebase。
+      document.documentElement.style.setProperty('--m-hue',String(hue));
+      return;
+    }
     if(e.target.name==='nickname'){state.nickname=e.target.value;localStorage.setItem('mqs_name',state.nickname);}
     if(e.target.name==='codeInput'){state.codeInput=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,'').slice(0,6);e.target.value=state.codeInput;}
     if(e.target.name==='aiJson'){state.aiText=e.target.value;state.aiPreview=[];}
     if(['customQ','customTalk','customA0','customA1','customA2','customA3'].includes(e.target.id)){state.customDraft={q:document.getElementById('customQ')?.value||'',a:[0,1,2,3].map(i=>document.getElementById(`customA${i}`)?.value||''),talk:document.getElementById('customTalk')?.value||''};}
   });
   document.addEventListener('change',e=>{
+    if(e.target.name==='minimalHue'){
+      if(state.busy)return;
+      state.busy=true;
+      chooseMinimalHue(e.target.value).then(()=>{state.error='';}).catch(err=>{state.error=friendlyError(err);})
+        .finally(()=>{state.busy=false;render();});
+      return;
+    }
     if(e.target.name==='rounds'){state.rounds=Number(e.target.value);state.geminiCount=state.rounds;state.aiPreview=[];render();}
     if(e.target.name==='seconds')state.seconds=Number(e.target.value);
     if(e.target.id==='double')state.double=e.target.checked;
