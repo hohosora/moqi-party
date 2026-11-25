@@ -1,0 +1,22 @@
+# Local dependencies and generated output
+node_modules/
+coverage/
+playwright-report/
+test-results/
+.firebase/
+firebase-debug.log
+firestore-debug.log
+*.log
+
+# Never commit private keys, Admin SDK credentials, or debug tokens.
+.env
+.env.*
+!.env.example
+*service-account*.json
+*serviceAccount*.json
+*adminsdk*.json
+*.pem
+*.p12
+*.p8
+*.key
+.DS_Store
