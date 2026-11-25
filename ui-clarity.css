@@ -1197,3 +1197,112 @@ html[data-theme="minimal"] .score-highlight .score-big{
   color:#23282a;
   text-shadow:none;
 }
+
+/* v10 | Across-screen text contrast audit (pixel + minimal, 2026-11-25). */
+/*
+ * The earlier v6/v9 fixes handled selected buttons and scores, but shared
+ * dark-theme defaults were still inherited by several PALE UI containers.
+ * The following text-only overrides stay scoped to the existing visual theme
+ * and the actual light surface; no layout or gameplay styles are changed.
+ */
+
+/* A. Pixel: white/pale containers should never inherit violet-pale or neon
+   text intended for the purple background. Maintain dark score ink and the
+   retro block edges; save lime accents for truly dark panels. */
+html[data-theme="party"] .score-highlight{
+  color:var(--ui-pale-ink);
+}
+html[data-theme="party"] .score-highlight .eyebrow,
+html[data-theme="party"] .score-highlight .score-detail,
+html[data-theme="party"] .score-highlight .score-detail small{
+  color:#291934;
+  text-shadow:none;
+}
+html[data-theme="party"] .quick-ranking .full-rank-toggle,
+html[data-theme="party"] .quick-ranking .full-rank-toggle > summary,
+html[data-theme="party"] .quick-ranking .full-rank-toggle .rank-list,
+html[data-theme="party"] .quick-ranking .full-rank-toggle .rank-index,
+html[data-theme="party"] .leader-top .podium .fineprint,
+html[data-theme="party"] .leader-top .podium .name,
+html[data-theme="party"] .rank-list .rank-index{
+  color:#271b31;
+  text-shadow:none;
+}
+html[data-theme="party"] .host-vote-tools > summary,
+html[data-theme="party"] .host-vote-tools > .fineprint,
+html[data-theme="party"] .host-vote-tools .fineprint,
+html[data-theme="party"] .how-to-play li,
+html[data-theme="party"] .host-extra .fineprint{
+  color:#211b27;
+  text-shadow:none;
+}
+html[data-theme="party"] .card .mint-text,
+html[data-theme="party"] .card .accent-text{
+  color:var(--ui-pale-strong);
+  text-shadow:none;
+}
+/* Help text next to the scoreboard is intentionally lime/white on purple,
+   not inside the pale score card. Keep its role-based contrast. */
+html[data-theme="party"] .host-mode-footnote{
+  color:#f8f5ff;
+}
+
+/* B. Minimal: its final iteration uses LIGHT body, pale cards, pastel
+   surfaces and a variable hue. Several old, shared dark-theme classes
+   still set pale text (#d4d6d6 / #e8e3f5), especially outside cards.
+   Use invariant charcoal instead of the adjustable --mint/--yellow. */
+html[data-theme="minimal"] .landing-note,
+html[data-theme="minimal"] .muted,
+html[data-theme="minimal"] .fineprint,
+html[data-theme="minimal"] .vote-tip,
+html[data-theme="minimal"] .look-up-note{
+  color:#30393c;
+  text-shadow:none;
+}
+html[data-theme="minimal"] .host-vote-tools > summary,
+html[data-theme="minimal"] .host-vote-tools .fineprint,
+html[data-theme="minimal"] .quick-ranking .full-rank-toggle,
+html[data-theme="minimal"] .quick-ranking .full-rank-toggle > summary,
+html[data-theme="minimal"] .leader-top .podium .fineprint,
+html[data-theme="minimal"] .rank-list .rank-index,
+html[data-theme="minimal"] .score-highlight .score-detail{
+  color:#252f32;
+  text-shadow:none;
+}
+html[data-theme="minimal"] .mint-text,
+html[data-theme="minimal"] .accent-text,
+html[data-theme="minimal"] .room-look span{
+  color:#25373b;
+  text-shadow:none;
+}
+/* Error text should never inherit the white-on-dark default after a
+   host/guest/network error; it sits on a pastel notice panel. */
+html[data-theme="minimal"] .notice{
+  color:#732421;
+  background:#ffede9;
+  border-color:#b96359;
+  text-shadow:none;
+}
+html[data-theme="minimal"] .field input::placeholder,
+html[data-theme="minimal"] .field textarea::placeholder{
+  color:#455153;
+  opacity:1;
+}
+/* Keep text above pastel bars readable even when the 0–359 hue slider
+   produces a light green / yellow / cyan background. */
+html[data-theme="minimal"] .score-highlight .eyebrow,
+html[data-theme="minimal"] .score-highlight .score-big,
+html[data-theme="minimal"] .quick-ranking .quick-rank-line,
+html[data-theme="minimal"] .quick-ranking .quick-rank-line b{
+  color:#253034;
+  text-shadow:none;
+}
+
+/* C. Shared contained light panels: protect labels while leaving the
+   dark-mode score-lookup and retro-mechanical screen completely untouched. */
+html[data-theme="party"] .quick-host-card .fineprint,
+html[data-theme="party"] .quick-host-card .field span,
+html[data-theme="minimal"] .quick-host-card .fineprint,
+html[data-theme="minimal"] .quick-host-card .field span{
+  color:var(--ui-pale-ink);
+}
