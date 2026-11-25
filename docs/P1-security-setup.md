@@ -1,6 +1,8 @@
 # P1 安全保護啟用清單 — 默契失控局
 
-> 狀態：GitHub 原始碼已加強；正式 Firebase 安全規則、帳務預算及 GitHub 分支保護仍需由有管理權限的帳號啟用。**GitHub Pages 部署不會自動更新 Firebase 資料庫安全規則。**
+> **2026-11-25 進度更新：** GitHub `main` 分支保護已啟用，使用者也已回報將強化規則發布到 Firebase 並完成桌機／手機遊戲驗收。**帳務警示尚未確認設定完成**。下方保留操作步驟供日後重新設定與核對。**GitHub Pages 部署不會自動更新 Firebase 資料庫安全規則。**
+>
+> 下一階段安全優化見 [`P2-security-hardening.md`](P2-security-hardening.md)。
 
 ## 1. GitHub 正式程式碼的分支保護（需儲存庫管理員操作）
 
