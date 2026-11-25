@@ -158,7 +158,7 @@
     mode:null, room:null, roomCode:'', player:null, players:[], votes:[], uid:null,
     choice:null, guess:null, double:false, nickname:localStorage.getItem('mqs_name') || '',
     codeInput:new URLSearchParams(location.search).get('room')?.toUpperCase() || '',
-    rounds:8, seconds:30, busy:false, error:'', toast:'',
+    rounds:8, seconds:30, busy:false, error:'', toast:'', createProgress:null,
     unsubs:[], voteUnsub:null, watchedRound:null, firebase:null, autoRevealing:false,
     page:new URLSearchParams(location.search).has('room')?'join':'home', hostMode:'custom', quickScene:'general', quickQuestions:[], voteStep:'choice', bankMode:localStorage.getItem('mqs_bank_mode')||'mixed', managerTab:'custom',
     customEditId:null, customDraft:null, geminiDirection:'trends', geminiScenePreset:'friends', geminiContext:'', geminiCount:8, aiText:'',
@@ -674,6 +674,37 @@
       </section>
       <p class="host-mode-footnote">兩種模式都使用相同的多人遊戲、計分規則與排行榜；快速開局不需要 Gemini，也不會取用私人題庫。</p>`);
   }
+  // HOST_CREATE_PROGRESS_START
+  const CREATE_STAGES={
+    prepare:'正在連線及進行網站安全驗證…',
+    auth:'正在確認主持人登入…',
+    code:'正在確認可用房間代碼…',
+    room:'正在等待資料庫確認房間建立…',
+    player:'正在確認主持人加入房間…',
+    batch:'正在等待資料庫確認房間與主持人…'
+  };
+  function hostCreateStatus(){
+    return `<div class="host-create-progress" ${state.createProgress?'':'hidden'}><strong role="status" class="host-create-stage">${state.createProgress?esc(CREATE_STAGES[state.createProgress.stage]):''}</strong><span class="host-create-elapsed" aria-hidden="true"></span><small class="host-create-hint"></small></div>`;
+  }
+  function updateCreateProgress(){
+    const p=state.createProgress;if(!p)return;
+    const box=$app.querySelector('.host-create-progress');if(!box)return;
+    const stage=box.querySelector('.host-create-stage'),label=CREATE_STAGES[p.stage];
+    box.hidden=false;if(stage.textContent!==label)stage.textContent=label;
+    const seconds=Math.max(0,Math.floor((Date.now()-p.started)/1000));
+    box.querySelector('.host-create-elapsed').textContent='已等待 '+seconds+' 秒';
+    const hint=p.stage==='room'||p.stage==='player'||p.stage==='batch'
+      ?(seconds>=8?'資料庫仍在確認，請保持頁面開啟；不要重複建立房間。':'資料寫入確認後才會顯示房號。')
+      :(seconds>=8?'連線較平常慢，尚未送出建房資料。請保持頁面開啟，並確認網路連線。':'正在準備連線，請稍候。');
+    const h=box.querySelector('.host-create-hint');if(h.textContent!==hint)h.textContent=hint;
+    // Settings must not drift while asynchronous creation is pending.
+    for(const control of $app.querySelectorAll('input,select,textarea,[data-action="host"]'))control.disabled=true;
+  }
+  function setCreateStage(stage){
+    if(!state.createProgress)return;
+    state.createProgress.stage=stage;updateCreateProgress();
+  }
+  // HOST_CREATE_PROGRESS_END
   function renderQuickHost(){
     const qs=prepareQuickQuestions();
     const scene=QUICK_SCENES[state.quickScene]||QUICK_SCENES.general;
@@ -686,7 +717,7 @@
         <details class="quick-preview"><summary>👀 想先確認題目？展開預覽（${qs.length} 題）</summary><ol>${qs.map(q=>`<li>${esc(q.q)}</li>`).join('')}</ol></details>
         <button class="btn tertiary full space-top" data-action="quick-reshuffle">🔀 換一組題目</button>
         <div class="divider"></div>
-        <button class="btn full" data-action="host">🚀 建立多人房間</button>
+        <button class="btn full" data-action="host" ${state.createProgress?'disabled aria-busy="true"':''}>🚀 建立多人房間</button>${hostCreateStatus()}
         <button class="btn tertiary full space-top" data-action="demo">🎭 先玩示範局</button>
         <p class="fineprint">新手提示會隨遊戲進度出現，幫你記得何時邀請、開始與開獎。想調整題庫、風格或時間？返回改用「自訂主持」。</p>
       </section>`);
@@ -698,7 +729,7 @@
         <label class="field space-top"><span>本場題庫</span><select name="bankMode"><option value="mixed" ${state.bankMode==='mixed'?'selected':''}>🎲 三種混合｜笑點不重複</option><option value="classic" ${state.bankMode==='classic'?'selected':''}>📚 內建精選｜${QUESTIONS.length} 題</option><option value="custom" ${state.bankMode==='custom'?'selected':''}>✏️ 主持人自訂｜${bank.custom.length} 題</option><option value="ai" ${state.bankMode==='ai'?'selected':''}>✨ Gemini 生成｜${bank.ai.length} 題</option></select></label>
         <div class="host-bank-help"><span>這套題庫目前可用 ${selectedQuestions().length} 題</span><button class="btn dark small-btn" data-action="manage">⚙️ 管理題庫</button></div>
         ${themePicker()}
-        <button class="btn full space-top" data-action="host">🚀 建立多人房間</button><button class="btn tertiary full space-top" data-action="demo">🎭 先玩示範局</button>
+        <button class="btn full space-top" data-action="host" ${state.createProgress?'disabled aria-busy="true"':''}>🚀 建立多人房間</button>${hostCreateStatus()}<button class="btn tertiary full space-top" data-action="demo">🎭 先玩示範局</button>
         <p class="fineprint">${CONFIGURED?'🟢 已填入 Firebase 連線設定；多人功能仍需 Firestore 權限正常。':'⚠️ 尚未設定 Firebase；目前僅可玩示範局。'}</p>
       </section>
       <details class="host-extra section-gap"><summary>進階設定：更換活動主視覺照片</summary>${heroControls(false)}</details>
@@ -798,7 +829,7 @@
     document.documentElement.style.setProperty('--m-hue',String(activeMinimalHue()));
     const metaThemeColor=document.querySelector('meta[name="theme-color"]');
     if(metaThemeColor)metaThemeColor.setAttribute('content',activeTheme()==='panel'?'#f76a12':'#121028');
-    if(!state.mode || !state.room) {$app.innerHTML=state.page==='manager'?renderManager():state.page==='host'?renderHost():state.page==='quick-host'?renderQuickHost():state.page==='host-choice'?renderHostChoice():state.page==='join'?renderJoin():renderHome();decorateVisibleEmoji($app);return;}
+    if(!state.mode || !state.room) {$app.innerHTML=state.page==='manager'?renderManager():state.page==='host'?renderHost():state.page==='quick-host'?renderQuickHost():state.page==='host-choice'?renderHostChoice():state.page==='join'?renderJoin():renderHome();decorateVisibleEmoji($app);if(state.createProgress)updateCreateProgress();return;}
     // 每次新題啟動時，先顯示題目，不沿用上一題或等候室留在頁面底部的位置。
     // 以「房間＋題號」辨識，只捲動一次；同一題收到其他玩家的票數時不干擾目前閱讀位置。
     const questionKey=state.room.phase==='voting'? `${state.mode}:${state.roomCode}:${state.room.roundIndex}` :null;
@@ -884,14 +915,14 @@
     window.scrollTo(0,0);
   }
   function leave(){clearListeners();state.page='home';state.room=null;state.mode=null;state.roomCode='';state.votes=[];state.players=[];state.choice=null;state.guess=null;state.double=false;state.voteStep='choice';state.voteSubmitState='idle';state.voteSyncFromCache=false;state.lastVisibleQuestionKey=null;state.error='';history.replaceState(null,'',location.pathname);render();}
-  // ------ Firebase Web SDK：延後載入，離線示範模式不必連任何服務 ------
+  // ------ Firebase Web SDK：主持入口預載；示範模式不等待、不登入、不讀寫 Firebase ------
   // CONNECTION_DIAGNOSTICS_START
   // Opt-in staging only; bounded in-memory timings, no identifiers or telemetry.
   function makeConnectionDiagnostics(enabled,clock){
     const entries=[];
     function record(stage,start,outcome){
       if(!enabled)return;
-      if(!/^(sdk|appcheck-sdk|appcheck-token|auth-restore|auth-anonymous|room-read|roster-read|player-write|invite-read|v3-join|room-first|roster-first|votes-first)$/.test(stage))return;
+      if(!/^(sdk|appcheck-sdk|appcheck-token|auth-restore|auth-anonymous|room-read|roster-read|player-write|invite-read|v3-join|room-first|roster-first|votes-first|create-code-read|create-room-write|create-host-write|create-v3-write)$/.test(stage))return;
       entries.push({stage,ms:Math.max(0,Math.round(clock()-start)),outcome:outcome==='ok'?'ok':'error'});
       if(entries.length>100)entries.shift();
     }
@@ -912,40 +943,69 @@
   const connectionDiagnostics=makeConnectionDiagnostics(diagnosticsEnabled,()=>performance.now());
   if(diagnosticsEnabled)window.__MOQI_CONNECTION_DIAGNOSTICS__=()=>connectionDiagnostics.snapshot();
   const onlineRoomUrl=code=>`?room=${code}${diagnosticsEnabled?'&diagnostics=1':''}`;
-  async function getFirebase(){
-    if(state.firebase)return state.firebase;
-    if(!CONFIGURED)throw new Error('尚未設定 Firebase。可先按「先玩示範局」，或依操作說明完成 Firebase 設定再使用多人連線。');
+  // FIREBASE_PREPARE_START
+  // Start public SDK loading + App Check while a host is choosing settings.
+  // Never sign in or read/write Firestore until an explicit online action.
+  // Single flight prevents duplicate initialization/attestation and allows an
+  // offline demo to proceed without awaiting this optional preparation.
+  let firebasePreparation=null,firebaseConnecting=null;
+  function prepareFirebase(){
+    if(firebasePreparation)return firebasePreparation;
+    if(!CONFIGURED)return Promise.reject(new Error('尚未設定 Firebase。可先按「先玩示範局」，或依操作說明完成 Firebase 設定再使用多人連線。'));
     const base='https://www.gstatic.com/firebasejs/11.10.0/';
-    const [appLib,authLib,dbLib]=await connectionDiagnostics.measure('sdk',()=>Promise.all([import(base+'firebase-app.js'),import(base+'firebase-auth.js'),import(base+'firebase-firestore.js')]));
-    const app=appLib.getApps().length?appLib.getApp():appLib.initializeApp(window.GAME_FIREBASE_CONFIG);
     const siteKey=String(window.GAME_APP_CHECK_SITE_KEY||'').trim();
-    if(siteKey){
-      // Initialize App Check before *any* Firebase Auth / Firestore calls.
-      // Without a configured reCAPTCHA Enterprise site key, current gameplay
-      // stays fully unchanged until the owner deliberately opts in.
-      try{
-        const appCheckLib=await connectionDiagnostics.measure('appcheck-sdk',()=>import(base+'firebase-app-check.js'));
-        const appCheck=appCheckLib.initializeAppCheck(app,{
-          provider:new appCheckLib.ReCaptchaEnterpriseProvider(siteKey),
-          isTokenAutoRefreshEnabled:true
-        });
-        await connectionDiagnostics.measure('appcheck-token',async()=>{await appCheckLib.getToken(appCheck);});
-        console.info('Firebase App Check 已取得驗證權杖；Firestore 強制驗證需另行於 Firebase Console 啟用。');
-      }catch(error){
-        // Observe-only rollout: do not break guest/host gameplay when a
-        // browser blocks reCAPTCHA or its token exchange. Firebase Console
-        // App Check metrics must confirm valid traffic BEFORE enforcement.
-        // Once enforcement is enabled, token failures will be rejected by Firebase.
-        console.warn('Firebase App Check 驗證未完成（強制驗證狀態請查 Firebase Console）：',error);
+    firebasePreparation=(async()=>{
+      // All four SDK modules can download together, rather than waiting for
+      // the three core modules before requesting App Check.
+      const appCheckModule=siteKey
+        ?connectionDiagnostics.measure('appcheck-sdk',()=>import(base+'firebase-app-check.js')).catch(error=>({loadError:error}))
+        :Promise.resolve(null);
+      const [[appLib,authLib,dbLib],appCheckLib]=await Promise.all([
+        connectionDiagnostics.measure('sdk',()=>Promise.all([import(base+'firebase-app.js'),import(base+'firebase-auth.js'),import(base+'firebase-firestore.js')])),
+        appCheckModule
+      ]);
+      const app=appLib.getApps().length?appLib.getApp():appLib.initializeApp(window.GAME_FIREBASE_CONFIG);
+      if(siteKey){
+        try{
+          if(appCheckLib.loadError)throw appCheckLib.loadError;
+          const appCheck=appCheckLib.initializeAppCheck(app,{
+            provider:new appCheckLib.ReCaptchaEnterpriseProvider(siteKey),
+            isTokenAutoRefreshEnabled:true
+          });
+          await connectionDiagnostics.measure('appcheck-token',async()=>{await appCheckLib.getToken(appCheck);});
+        }catch(error){
+          // Preserve existing App Check behavior. Enforcement remains server-side.
+          console.warn('Firebase App Check 驗證未完成（強制驗證狀態請查 Firebase Console）：',error);
+        }
       }
-    }
-    const auth=authLib.getAuth(app);
-    await connectionDiagnostics.measure('auth-restore',()=>new Promise((res,rej)=>{const un=authLib.onAuthStateChanged(auth,()=>{un();res();},rej);}));
-    if(!auth.currentUser)await connectionDiagnostics.measure('auth-anonymous',()=>authLib.signInAnonymously(auth));
-    const db=dbLib.getFirestore(app);
-    state.firebase={auth,db,dbLib};state.uid=auth.currentUser.uid;
-    return state.firebase;
+      return {app,authLib,dbLib};
+    })().catch(error=>{firebasePreparation=null;throw error;});
+    return firebasePreparation;
   }
+  function warmHostConnection(){
+    if(CONFIGURED&&!state.firebase)void prepareFirebase().catch(()=>{});
+  }
+  async function getFirebase(onStage=()=>{}){
+    if(state.firebase?.auth.currentUser){
+      // Demo mode sets a local UID; restore the authenticated UID on reentry.
+      state.uid=state.firebase.auth.currentUser.uid;return state.firebase;
+    }
+    if(!firebaseConnecting){
+      firebaseConnecting=(async()=>{
+        const {app,authLib,dbLib}=await prepareFirebase();
+        onStage('auth');
+        const auth=authLib.getAuth(app);
+        await connectionDiagnostics.measure('auth-restore',()=>new Promise((res,rej)=>{const un=authLib.onAuthStateChanged(auth,()=>{un();res();},rej);}));
+        if(!auth.currentUser)await connectionDiagnostics.measure('auth-anonymous',()=>authLib.signInAnonymously(auth));
+        if(!auth.currentUser)throw new Error('無法確認登入狀態，請重新整理後再試。');
+        const db=dbLib.getFirestore(app);
+        state.firebase={auth,db,dbLib};state.uid=auth.currentUser.uid;
+        return state.firebase;
+      })().finally(()=>{firebaseConnecting=null;});
+    }
+    return firebaseConnecting;
+  }
+  // FIREBASE_PREPARE_END
   const roomRef=code=>state.firebase.dbLib.doc(state.firebase.db,'rooms',code);
   const playerRef=(code,uid)=>state.firebase.dbLib.doc(state.firebase.db,'rooms',code,'players',uid);
   const votesCollection=code=>state.firebase.dbLib.collection(state.firebase.db,'rooms',code,'votes');
@@ -1020,27 +1080,42 @@
   async function createOnline(){
     const name=validateName();if(!name)return;
     const preparedQuestions=buildRoomQuestions();
-    const f=await getFirebase(),L=f.dbLib;
+    // Snapshot all choices before the first async operation.
+    const data={hostUid:null,phase:'lobby',roundIndex:-1,totalRounds:state.rounds,seconds:state.seconds,questions:preparedQuestions,scores:{},streaks:{},usedDoubles:{},lastResult:null,deadline:null,createdAt:0,heroImage:state.heroImage,theme:state.themeChoice,minimalHue:state.minimalHue,quickMode:state.hostMode==='quick',quickScene:state.hostMode==='quick'?state.quickScene:null};
+    state.createProgress={started:Date.now(),stage:'prepare'};updateCreateProgress();
+    const f=await getFirebase(setCreateStage),L=f.dbLib;
+    setCreateStage('code');
     let code='';
     for(let i=0;i<6;i++){
       const candidate=randomCode();
-      if(P3_ADMISSION_READS_ENABLED&&(await L.getDocFromServer(p3Refs(L,f.db,candidate,state.uid).gate)).exists())continue;
-      const snap=await L.getDoc(roomRef(candidate));
+      if(P3_ADMISSION_READS_ENABLED&&(await connectionDiagnostics.measure('invite-read',()=>L.getDocFromServer(p3Refs(L,f.db,candidate,state.uid).gate))).exists())continue;
+      // Never accept a cache-only absence as a free room code.
+      const snap=await connectionDiagnostics.measure('create-code-read',()=>L.getDocFromServer(roomRef(candidate)));
       if(!snap.exists()){code=candidate;break;}
     }
     if(!code)throw new Error('房間代碼產生失敗，請再試一次。');
-    const data={hostUid:state.uid,phase:'lobby',roundIndex:-1,totalRounds:state.rounds,seconds:state.seconds,questions:preparedQuestions,scores:{},streaks:{},usedDoubles:{},lastResult:null,deadline:null,createdAt:Date.now(),heroImage:state.heroImage,theme:state.themeChoice,minimalHue:state.minimalHue,quickMode:state.hostMode==='quick',quickScene:state.hostMode==='quick'?state.quickScene:null};
+    data.hostUid=state.uid;data.createdAt=Date.now();
     const player={uid:state.uid,name,emoji:emojiFor(state.uid),joinedAt:Date.now()};
     if(P3_ADMISSION_CREATE_ENABLED){
       if(!P3_ADMISSION_READS_ENABLED)throw new Error('新版房間尚未啟用。');
-      await p3CreateRoom(L,f.db,code,data,player);
+      setCreateStage('batch');
+      await connectionDiagnostics.measure('create-v3-write',()=>p3CreateRoom(L,f.db,code,data,player));
       data.protocol=3;
     }else{
-      await L.setDoc(roomRef(code),data);
-      await L.setDoc(playerRef(code,state.uid),player);
+      // Production legacy Rules require the parent to already exist; do
+      // not batch these two writes or weaken rules. Never render a room
+      // code before both server acknowledgements.
+      setCreateStage('room');
+      await connectionDiagnostics.measure('create-room-write',()=>L.setDoc(roomRef(code),data));
+      setCreateStage('player');
+      await connectionDiagnostics.measure('create-host-write',()=>L.setDoc(playerRef(code,state.uid),player));
     }
     saveQuickHistory(preparedQuestions);
-    state.mode='online';state.roomCode=code;state.room=data;state.player=state.uid;history.replaceState(null,'',onlineRoomUrl(code));
+    state.mode='online';state.roomCode=code;state.room=data;state.player=state.uid;
+    state.players=[player];state.votes=[];state.watchedRound=null;
+    state.createProgress=null;
+    history.replaceState(null,'',onlineRoomUrl(code));
+    render();
     subscribeOnline(code);
   }
   async function joinOnline(){
@@ -1227,6 +1302,7 @@
     }finally{state.autoRevealing=false;}
   }
   function currentTimeTick(){
+    if(state.createProgress)updateCreateProgress();
     if(state.room?.phase!=='voting')return;
     // Host-only count aggregation is throttled independently from the timer.
     void refreshHostVoteCount();
@@ -1299,7 +1375,7 @@
     }
     if(action==='leave'){leave();return;}
     if(action==='open-home'){state.page='home';state.error='';render();window.scrollTo(0,0);return;}
-    if(action==='open-host'){state.page='host-choice';state.error='';render();window.scrollTo(0,0);return;}
+    if(action==='open-host'){state.page='host-choice';state.error='';render();warmHostConnection();window.scrollTo(0,0);return;}
     if(action==='host-choice-back'){state.page='host-choice';state.error='';render();window.scrollTo(0,0);return;}
     if(action==='choose-host-custom'){state.hostMode='custom';state.page='host';state.error='';render();window.scrollTo(0,0);return;}
     if(action==='choose-host-quick'){
@@ -1345,7 +1421,7 @@
       if(action==='confirm-ai')confirmAi();
       if(action==='export-bank')exportBank();
     }catch(err){if(state.page==='manager'){state.managerError=err.message||friendlyError(err);state.managerNotice='';}else state.error=friendlyError(err);}
-    finally{state.busy=false;render();}
+    finally{state.createProgress=null;state.busy=false;render();}
   });
   window.addEventListener('unhandledrejection',e=>{console.error('Unhandled game error:',e.reason);});
   window.setInterval(currentTimeTick,1000);

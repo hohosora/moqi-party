@@ -1,5 +1,9 @@
 # AI 任務清單
 
+## 2026-11-25 · 緊急建房延遲驗收
+
+使用者回報建房等待約 30–60 秒。前端熱修提前預備 SDK/App Check、分段等待提示、房號深色字及伺服器確認後顯示。具權限 Codex 接續 [Issue #46](https://github.com/hohosora/moqi-party/issues/46) staging 自動化工作時，優先以最新 main 的 `diagnostics=1` 量測 `sdk`, `appcheck-sdk`, `appcheck-token`, `auth-restore`, `auth-anonymous`, `create-code-read`, `create-room-write`, `create-host-write`, `room-first`, `roster-first`。包含冷啟動、暖啟動、主持人設定停留 0/5/10 秒、正常及高延遲網路、App Check 錯誤；記錄樣本數、P50/P95/最大值、錯誤類別，不輸出房號、UID 或憑證。預熱可與人類填表時間重疊，不能將總取證耗時宣稱縮短。維持正式 25 targets、Firestore 強制驗證與 Spark，未獲證據不得調整雲端安全設定。
+
 ## 正式實機第二輪結果
 
 7 項設定下票數更新正常，但手機重新整理後重加延遲；正式金鑰已回復 25 項並讀回核實。正式 Rules 暫緩發布。[實機回報與 staging 對照](P25-P32-CLOUD-ACCEPTANCE.md)。
