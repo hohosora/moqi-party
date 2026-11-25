@@ -1,5 +1,9 @@
 # 測試紀錄
 
+## P2.5 · 30 天金鑰使用查核
+
+2026-11-25 以 main e36cb70、API Keys、Service Usage、Cloud Monitoring、GitHub 與官方產品清單交叉核對。30 天 28 條序列合計 270 次，其中 94 次可歸屬此 key。隔離端到端與還原演練待核准。 [完整查核與修正方案](P25-KEY-REVIEW.md)
+
 ## 2026-11-25 · P2.5 依賴與安全性驗證
 
 P2 結案 PR #34 合併於 `36e5c47`。[Rules](https://github.com/hohosora/moqi-party/actions/runs/45563186274) 與 [UI／計分](https://github.com/hohosora/moqi-party/actions/runs/45563186194) 皆成功。下方六題實測屬 P2 正式版驗收。

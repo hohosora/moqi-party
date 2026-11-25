@@ -1,5 +1,9 @@
 # 專案狀態
 
+## P2.5 · 30 天金鑰使用查核
+
+Secret Scanning #1 唯讀查核完成，警示維持 open。限制提案、共享來源風險與還原程序已提交，待管理者確認後再進入隔離驗證。 [完整查核與修正方案](P25-KEY-REVIEW.md)
+
 ## 2026-11-25 · P2.5 供應鏈修正已合併，金鑰警示待審
 
 #26、#24、#22 已依序合併。#23 與當時 main 衝突，以 [#35](https://github.com/hohosora/moqi-party/pull/35) 取代。[#36](https://github.com/hohosora/moqi-party/pull/36) 聯合取代 #25、#27；三個舊 PR 均已關閉，未直接合併。測試端使用 firebase 13.4.0、rules-unit-testing 6.0.0 與 firebase-tools 15.37.0。詳細版本、回歸與剩餘中度公告見[測試紀錄](TEST-LOG.md)。
