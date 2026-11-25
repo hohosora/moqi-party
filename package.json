@@ -8,6 +8,6 @@
   "devDependencies": {
     "firebase": "^11.10.0",
     "firebase-tools": "^15.37.0",
-    "@firebase/rules-unit-testing": "^4.0.0"
+    "@firebase/rules-unit-testing": "^6.0.0"
   }
 }
