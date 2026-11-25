@@ -27,7 +27,8 @@ async function main(){
   const results=[],browserErrors=[];
   try{
     for(const theme of ['party','minimal']){
-      const page=await browser.newPage({viewport:{width:390,height:844},deviceScaleFactor:1});
+      const context=await browser.newContext({viewport:{width:390,height:844},deviceScaleFactor:1});
+      const page=await context.newPage();
       page.on('pageerror',e=>browserErrors.push(theme+': '+String(e)));
       await page.goto('http://127.0.0.1:'+port+'/',{waitUntil:'domcontentloaded'});
       await page.locator('.brand-title').waitFor();
@@ -114,7 +115,7 @@ async function main(){
         await page.locator('[data-action="next"]').click();
       }
       await audit('finished');
-      await page.close();
+      await context.close();
     }
   }finally{
     await browser.close();await new Promise(resolve=>server.close(resolve));
