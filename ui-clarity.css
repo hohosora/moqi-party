@@ -1306,3 +1306,34 @@ html[data-theme="minimal"] .quick-host-card .fineprint,
 html[data-theme="minimal"] .quick-host-card .field span{
   color:var(--ui-pale-ink);
 }
+
+/* v10.1 | Lobby badges: real browser audit caught neon host/self labels
+   on pale player chips in BOTH themes. These are 13px readable tags now. */
+html[data-theme="party"] .avatar-pill .host-badge{
+  display:inline-flex;
+  align-items:center;
+  box-sizing:border-box;
+  padding:3px 7px;
+  color:#17101f;
+  background:#f1efda;
+  border:2px solid #17101f;
+  border-radius:0;
+  font-size:13px;
+  font-weight:950;
+  line-height:1.35;
+  text-shadow:none;
+}
+html[data-theme="minimal"] .avatar-pill .host-badge{
+  display:inline-flex;
+  align-items:center;
+  box-sizing:border-box;
+  padding:3px 8px;
+  color:#202729;
+  background:#fcfbf8;
+  border:1px solid #647275;
+  border-radius:11px;
+  font-size:13px;
+  font-weight:900;
+  line-height:1.35;
+  text-shadow:none;
+}
