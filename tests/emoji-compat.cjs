@@ -25,9 +25,14 @@ const server=http.createServer((req,res)=>{
         await page.goto('http://127.0.0.1:'+server.address().port+'/',{waitUntil:'domcontentloaded'});
         await page.locator('.brand-title').waitFor();
         const verify=async(screen,selector)=>{
-          const actual=await page.locator(selector+' bdi.emoji-glyph').count();
-          assert.ok(actual>=1,theme+'/'+viewport.width+'/'+screen+': no emoji in '+selector);
-          const family=await page.locator(selector+' bdi.emoji-glyph').first().evaluate(el=>getComputedStyle(el).fontFamily);
+          // Read glyph count and CSS atomically from a stable container:
+          // the 1-second timer can replace its child bdi between two queries.
+          const sample=await page.locator(selector).first().evaluate(root=>{
+            const glyphs=root.querySelectorAll('bdi.emoji-glyph');
+            return {count:glyphs.length,family:glyphs.length?getComputedStyle(glyphs[0]).fontFamily:''};
+          });
+          assert.ok(sample.count>=1,theme+'/'+viewport.width+'/'+screen+': no emoji in '+selector);
+          const family=sample.family;
           assert.match(family,/Segoe UI Emoji/,'Explicit Windows emoji font required');
           assert.match(family,/Apple Color Emoji/,'Apple emoji font required');
           assert.equal(await page.locator('.brand-mark bdi.emoji-glyph').count(),0,'Logo ornament must preserve its font');
