@@ -3,7 +3,14 @@
 // Run after npm install: npm run test:rules
 const fs = require('node:fs');
 const {initializeTestEnvironment, assertSucceeds, assertFails} = require('@firebase/rules-unit-testing');
-const {doc,collection,setDoc,updateDoc,getDoc,getDocs,query,where,deleteDoc} = require('firebase/firestore');
+const L=require('firebase/firestore');
+const {doc,collection,setDoc,updateDoc,getDoc,getDocs,query,where,deleteDoc}=L;
+const assert=require('node:assert/strict');
+const source=fs.readFileSync('app.js','utf8');
+const helpers=source.split('// P3_ADMISSION_HELPERS_START')[1].split('// P3_ADMISSION_HELPERS_END')[0];
+const {p3Refs,p3CreateRoom,p3JoinRoom,p3StartRoom,P3_ADMISSION_READS_ENABLED,P3_ADMISSION_CREATE_ENABLED}=new Function(helpers+';return {p3Refs,p3CreateRoom,p3JoinRoom,p3StartRoom,P3_ADMISSION_READS_ENABLED,P3_ADMISSION_CREATE_ENABLED};')();
+assert.equal(P3_ADMISSION_READS_ENABLED,false);
+assert.equal(P3_ADMISSION_CREATE_ENABLED,false);
 
 async function main(){
   const env=await initializeTestEnvironment({
@@ -77,6 +84,61 @@ async function main(){
       await setDoc(doc(ctx.firestore(),path),{...room(),phase:'reveal',roundIndex:5,deadline:Date.now(),lastResult});
     });
     await allow(updateDoc(ref,{phase:'finished',deadline:null}),'Final reveal can finish game');
+    // Exercise the actual browser helpers with integrated candidate rules.
+    const code='PQRSTU',ph=p3Refs(L,host,code,'hostA');
+    const outsider=env.authenticatedContext('outsider').firestore(),po=p3Refs(L,outsider,code,'outsider');
+    const player=uid=>({uid,name:'玩家',emoji:'😎',joinedAt:Date.now()});
+    const v3room={...room(),questions:Array.from({length:12},()=>questions[0]),totalRounds:12};
+    await deny(setDoc(ph.room,{...v3room,protocol:3}),'V3 room without gate/host denied');
+    await deny(setDoc(ph.gate,{phase:'lobby',count:1,seats:{'1':true}}),'V3 gate alone denied');
+    // Both halves remain mandatory: invalid first or last question must reject
+    // the whole transaction, with no orphan invitation or host player.
+    for(const [badCode,badIndex] of [['QRSTUV',0],['RSTUVW',11]]){
+      const broken={...v3room,questions:v3room.questions.map((q,i)=>i===badIndex?{...q,a:['invalid']}:q)};
+      await deny(p3CreateRoom(L,host,badCode,broken,player('hostA')),'V3 rejects malformed question '+badIndex);
+      const badRefs=p3Refs(L,host,badCode,'hostA');
+      assert.equal((await getDoc(badRefs.gate)).exists(),false);checks++;
+      assert.equal((await getDoc(badRefs.self)).exists(),false);checks++;
+    }
+    await allow(p3CreateRoom(L,host,code,v3room,player('hostA')),'V3 browser creates 12-question room atomically');
+    await allow(getDoc(po.gate),'V3 outsider exact invite lookup');
+    await deny(getDoc(po.room),'V3 outsider private room denied');
+    await deny(getDocs(collection(outsider,'rooms',code,'players')),'V3 outsider roster denied');
+    await deny(getDocs(collection(outsider,'rooms',code,'votes')),'V3 outsider votes denied');
+    await deny(setDoc(po.self,player('outsider')),'V3 old client player write denied');
+    await deny(updateDoc(po.gate,{count:2,seats:{'1':true,'2':true}}),'V3 unpaired gate denied');
+    await deny(setDoc(po.self,{...player('outsider'),seat:'2'}),'V3 unpaired member denied');
+    await allow(p3JoinRoom(L,guest,code,player('guestB')),'V3 browser joins');
+    await allow(p3JoinRoom(L,guest,code,player('guestB')),'V3 rejoin');
+    assert.equal((await getDoc(ph.gate)).data().count,2);checks++;
+    const ids=['hostA','guestB'];
+    for(let i=3;i<=19;i++){
+      const uid='v3-player-'+i;ids.push(uid);
+      await allow(p3JoinRoom(L,env.authenticatedContext(uid).firestore(),code,player(uid)),'V3 join '+i);
+    }
+    const rivals=['v3-last-a','v3-last-b'];
+    const race=await Promise.allSettled(rivals.map(uid=>p3JoinRoom(L,env.authenticatedContext(uid).firestore(),code,player(uid))));
+    assert.equal(race.filter(x=>x.status==='fulfilled').length,1);checks++;
+    ids.push(rivals[race.findIndex(x=>x.status==='fulfilled')]);
+    assert.equal((await getDoc(ph.gate)).data().count,20);checks++;
+    assert.equal((await getDocs(collection(host,'rooms',code,'players'))).size,20);checks++;
+    await assert.rejects(p3JoinRoom(L,outsider,code,player('outsider')),/20 人/);checks++;
+    const bad=L.writeBatch(outsider),gate=(await getDoc(po.gate)).data();
+    bad.update(po.gate,{count:21,seats:{...gate.seats,'21':true}});
+    bad.set(po.self,{...player('outsider'),seat:'21'});
+    await deny(bad.commit(),'V3 direct 21st seat denied');
+    const patch={phase:'voting',roundIndex:0,deadline:Date.now()+30000,scores:Object.fromEntries(ids.map(uid=>[uid,0])),streaks:{},usedDoubles:{},lastResult:null};
+    await deny(updateDoc(ph.room,patch),'V3 start without gate denied');
+    await deny(updateDoc(ph.gate,{phase:'voting'}),'V3 gate close without start denied');
+    await allow(p3StartRoom(L,host,code,'hostA',patch),'V3 browser starts game atomically');
+    await allow(p3JoinRoom(L,guest,code,player('guestB')),'V3 existing player rejoin during voting');
+    await allow(setDoc(doc(host,'rooms',code,'votes','hostA_0'),vote),'V3 host vote');
+    await allow(setDoc(doc(guest,'rooms',code,'votes','guestB_0'),{...vote,uid:'guestB'}),'V3 member vote');
+    await allow(getDocs(query(collection(host,'rooms',code,'votes'),where('roundIndex','==',0))),'V3 settlement query');
+    await deny(getDocs(collection(outsider,'rooms',code,'votes')),'V3 outsider votes denied during voting');
+    await allow(updateDoc(ph.room,{phase:'reveal',scores:patch.scores,streaks:{hostA:0},usedDoubles:{},lastResult}),'V3 existing reveal');
+    await allow(updateDoc(ph.room,{phase:'voting',roundIndex:1,deadline:Date.now()+30000,lastResult:null}),'V3 next question');
+    await deny(getDoc(po.room),'V3 outsider still denied');
     console.log('PASS: '+checks+' Firestore security emulator assertions');
   } finally{
     await env.cleanup();

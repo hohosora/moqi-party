@@ -14,6 +14,46 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/rooms/$(code)/players/$(uid));
     }
 
+    // V3 admission: keep legacy rooms readable during migration.
+    function isV3(data) { return 'protocol' in data && data.protocol == 3; }
+    function gatePath(code) { return /databases/$(database)/documents/roomInvites/$(code); }
+    function playerPath(code,uid) { return /databases/$(database)/documents/rooms/$(code)/players/$(uid); }
+    function isMember(code) { return playerExists(code,request.auth.uid); }
+    function validSeat(seat) { return seat is string && seat.matches('^([1-9]|1[0-9]|20)$'); }
+    function validGate(g) {
+      return g.keys().hasOnly(['phase','count','seats'])
+        && g.keys().hasAll(['phase','count','seats'])
+        && g.phase in ['lobby','voting']
+        && g.count is int && g.count >= 1 && g.count <= 20
+        && g.seats is map && g.seats.size() == g.count;
+    }
+    function initialGate(g) {
+      return validGate(g) && g.phase == 'lobby' && g.count == 1 && g.seats == {'1':true};
+    }
+    function validJoin(before,after,seat) {
+      return validSeat(seat) && validGate(after)
+        && before.phase == 'lobby' && after.phase == 'lobby'
+        && after.count == before.count + 1
+        && !(seat in before.seats) && after.seats[seat] == true
+        && after.seats.diff(before.seats).affectedKeys().hasOnly([seat])
+        && after.diff(before).affectedKeys().hasOnly(['count','seats']);
+    }
+    function validV3Create(code,data) {
+      return isV3(data) && !exists(gatePath(code))
+        && !exists(playerPath(code,request.auth.uid))
+        && initialGate(getAfter(gatePath(code)).data)
+        && getAfter(playerPath(code,request.auth.uid)).data.seat == '1';
+    }
+    function validV3Start(code,data) {
+      let before = get(gatePath(code)).data;
+      let after = getAfter(gatePath(code)).data;
+      return before.phase == 'lobby' && before.count >= 2
+        && after.phase == 'voting' && after.diff(before).affectedKeys().hasOnly(['phase'])
+        && data.scores.size() == before.count;
+    }
+    function readableRoomChildren(code) {
+      return !isV3(get(roomPath(code)).data) || isMember(code);
+    }
     // Never trust browser-side form limits. Keep all values bounded at the database.
     function validHeroImage(data) {
       return !('heroImage' in data) || (
@@ -52,6 +92,23 @@ service cloud.firestore {
         && questions[0].q.size() > 0 && questions[0].q.size() <= 120
         && questions[0].talk.size() > 0 && questions[0].talk.size() <= 160;
     }
+    // The atomic V3 create requires BOTH room and invite writes. Split the same
+    // question checks across their rules to stay within the expression budget.
+    // Legacy rooms retain the original full validator.
+    function validV3QuestionsFirst(questions,count) {
+      return questions is list && questions.size() == count
+        && validQuestionAt(questions,0) && validQuestionAt(questions,1)
+        && validQuestionAt(questions,2) && validQuestionAt(questions,3)
+        && validQuestionAt(questions,4) && validQuestionAt(questions,5)
+        && questions[0].q.size() > 0 && questions[0].q.size() <= 120
+        && questions[0].talk.size() > 0 && questions[0].talk.size() <= 160;
+    }
+    function validV3QuestionsRest(questions) {
+      return questions is list
+        && validQuestionAt(questions,6) && validQuestionAt(questions,7)
+        && validQuestionAt(questions,8) && validQuestionAt(questions,9)
+        && validQuestionAt(questions,10) && validQuestionAt(questions,11);
+    }
     function validQuickSettings(data) {
       return (!('quickMode' in data) || data.quickMode is bool)
         && (!('quickScene' in data) || data.quickScene == null ||
@@ -62,7 +119,7 @@ service cloud.firestore {
         && data.keys().hasOnly([
           'hostUid', 'phase', 'roundIndex', 'totalRounds', 'seconds', 'questions',
           'scores', 'streaks', 'usedDoubles', 'lastResult', 'deadline', 'createdAt',
-          'heroImage', 'theme', 'minimalHue', 'quickMode', 'quickScene'
+          'heroImage', 'theme', 'minimalHue', 'quickMode', 'quickScene', 'protocol'
         ])
         && data.keys().hasAll([
           'hostUid', 'phase', 'roundIndex', 'totalRounds', 'seconds', 'questions',
@@ -74,7 +131,8 @@ service cloud.firestore {
         && data.totalRounds in [6, 8, 10, 12]
         && data.seconds in [15, 30, 45]
         && data.createdAt is int && data.createdAt > 0
-        && validQuestions(data.questions, data.totalRounds)
+        && (isV3(data) ? validV3QuestionsFirst(data.questions,data.totalRounds)
+          : validQuestions(data.questions,data.totalRounds))
         && data.scores is map && data.scores.size() == 0
         && data.streaks is map && data.streaks.size() == 0
         && data.usedDoubles is map && data.usedDoubles.size() == 0
@@ -101,7 +159,7 @@ service cloud.firestore {
     function onlyUpdated(fields) {
       return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
     }
-    function validRoomUpdate() {
+    function validRoomUpdate(code) {
       return resource.data.hostUid == request.auth.uid
         && request.resource.data.hostUid == resource.data.hostUid
         && validAppearance(request.resource.data)
@@ -115,6 +173,7 @@ service cloud.firestore {
             && validDeadline(request.resource.data)
             && request.resource.data.scores is map
             && request.resource.data.scores.size() <= 20
+            && (!isV3(resource.data) || validV3Start(code,request.resource.data))
             && request.resource.data.streaks is map
             && request.resource.data.usedDoubles is map
             && request.resource.data.lastResult == null
@@ -139,23 +198,63 @@ service cloud.firestore {
         );
     }
 
-    match /rooms/{code} {
-      // Exact room-code lookup allowed for anonymous signed-in players, room listing disabled.
+    match /roomInvites/{code} {
+      // Only non-identifying occupancy is exposed on exact code lookup.
       allow get: if signedIn();
       allow list: if false;
-      allow create: if signedIn() && validRoomCreate(request.resource.data, code);
-      allow update: if signedIn() && validRoomUpdate();
+      allow create: if signedIn() && code.matches('^[A-HJ-NP-Z2-9]{6}$')
+        && initialGate(request.resource.data)
+        && !exists(roomPath(code)) && !exists(playerPath(code,request.auth.uid))
+        && isV3(getAfter(roomPath(code)).data)
+        && getAfter(roomPath(code)).data.hostUid == request.auth.uid
+        && validV3QuestionsRest(getAfter(roomPath(code)).data.questions)
+        && getAfter(playerPath(code,request.auth.uid)).data.seat == '1';
+      allow update: if signedIn() && isV3(get(roomPath(code)).data) && (
+        (!isMember(code) && get(roomPath(code)).data.phase == 'lobby'
+          && getAfter(roomPath(code)).data.phase == 'lobby'
+          && validJoin(resource.data,request.resource.data,
+            getAfter(playerPath(code,request.auth.uid)).data.seat))
+        || (isMember(code) && get(roomPath(code)).data.hostUid == request.auth.uid
+          && get(roomPath(code)).data.phase == 'lobby'
+          && getAfter(roomPath(code)).data.phase == 'voting'
+          && resource.data.phase == 'lobby' && resource.data.count >= 2
+          && request.resource.data.phase == 'voting'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['phase']))
+      );
+      allow delete: if false;
+    }
+    match /rooms/{code} {
+      // Legacy rooms retain exact-code lookup. V3 full room is member-only.
+      allow get: if signedIn() && (resource == null || !isV3(resource.data) || isMember(code));
+      allow list: if false;
+      allow create: if signedIn() && validRoomCreate(request.resource.data, code)
+        && ((!('protocol' in request.resource.data) && !exists(gatePath(code)))
+          || validV3Create(code,request.resource.data));
+      allow update: if signedIn() && validRoomUpdate(code);
       allow delete: if false;
 
       match /players/{uid} {
-        // Room joining reads the roster before the player document exists.
-        allow read: if signedIn();
+        allow get: if signedIn() && (request.auth.uid == uid || readableRoomChildren(code));
+        allow list: if signedIn() && readableRoomChildren(code);
         allow create: if signedIn()
           && request.auth.uid == uid
-          && request.resource.data.keys().hasOnly(['uid', 'name', 'emoji', 'joinedAt'])
+          && request.resource.data.keys().hasOnly(['uid', 'name', 'emoji', 'joinedAt', 'seat'])
           && request.resource.data.keys().hasAll(['uid', 'name', 'emoji', 'joinedAt'])
           && request.resource.data.uid == uid
-          && get(roomPath(code)).data.phase == 'lobby'
+          && (
+            (exists(roomPath(code)) && !isV3(get(roomPath(code)).data)
+              && !('seat' in request.resource.data) && get(roomPath(code)).data.phase == 'lobby')
+            || (validSeat(request.resource.data.seat)
+              && isV3(getAfter(roomPath(code)).data)
+              && getAfter(roomPath(code)).data.phase == 'lobby'
+              && ((!exists(roomPath(code)) && !exists(gatePath(code))
+                    && getAfter(roomPath(code)).data.hostUid == uid
+                    && request.resource.data.seat == '1'
+                    && initialGate(getAfter(gatePath(code)).data))
+                || (exists(roomPath(code)) && isV3(get(roomPath(code)).data)
+                    && get(roomPath(code)).data.phase == 'lobby'
+                    && validJoin(get(gatePath(code)).data,getAfter(gatePath(code)).data,request.resource.data.seat))))
+          )
           && request.resource.data.name is string
           && request.resource.data.name.size() >= 1
           && request.resource.data.name.size() <= 14
@@ -168,9 +267,8 @@ service cloud.firestore {
       }
 
       match /votes/{voteId} {
-        // Existing polling/answer-count listeners require this read access.
-        // Read isolation requires a separate protocol update in a later phase.
-        allow read: if signedIn();
+        // V3 excludes outsiders, but members retain existing vote reads until P3-4.
+        allow read: if signedIn() && readableRoomChildren(code);
         allow create: if signedIn()
           && playerExists(code, request.auth.uid)
           && roomIsVoting(code)

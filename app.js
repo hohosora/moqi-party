@@ -922,16 +922,71 @@
   const roomRef=code=>state.firebase.dbLib.doc(state.firebase.db,'rooms',code);
   const playerRef=(code,uid)=>state.firebase.dbLib.doc(state.firebase.db,'rooms',code,'players',uid);
   const votesCollection=code=>state.firebase.dbLib.collection(state.firebase.db,'rooms',code,'votes');
+  // P3_ADMISSION_HELPERS_START
+  // Enable only after compatible Rules and controlled cloud validation.
+  const P3_ADMISSION_READS_ENABLED=false;
+  const P3_ADMISSION_CREATE_ENABLED=false;
+  function p3Refs(L,db,code,uid){
+    return {gate:L.doc(db,'roomInvites',code),room:L.doc(db,'rooms',code),self:L.doc(db,'rooms',code,'players',uid)};
+  }
+  async function p3CreateRoom(L,db,code,data,player){
+    const r=p3Refs(L,db,code,player.uid),batch=L.writeBatch(db);
+    batch.set(r.gate,{phase:'lobby',count:1,seats:{'1':true}});
+    batch.set(r.room,{...data,protocol:3});
+    batch.set(r.self,{...player,seat:'1'});
+    await batch.commit();
+  }
+  async function p3JoinRoom(L,db,code,player){
+    const r=p3Refs(L,db,code,player.uid);
+    await L.runTransaction(db,async tx=>{
+      if((await tx.get(r.self)).exists())return;
+      const gate=await tx.get(r.gate);
+      if(!gate.exists())throw new Error('找不到這個房間，請再確認代碼。');
+      const g=gate.data();
+      if(g.phase!=='lobby')throw new Error('這場已經開始，請向主持人索取新房間代碼。');
+      if(g.count>=20)throw new Error('這個房間已滿 20 人，請主持人另開一局。');
+      const seat=Array.from({length:20},(_,i)=>String(i+1)).find(x=>!g.seats[x]);
+      if(!seat)throw new Error('房間名額同步異常，請稍後重試。');
+      tx.update(r.gate,{count:g.count+1,seats:{...g.seats,[seat]:true}});
+      tx.set(r.self,{...player,seat});
+    },{maxAttempts:10});
+    return L.getDocFromServer(r.room);
+  }
+  async function p3StartRoom(L,db,code,uid,patch){
+    const r=p3Refs(L,db,code,uid);
+    await L.runTransaction(db,async tx=>{
+      const gate=await tx.get(r.gate),room=await tx.get(r.room);
+      if(!gate.exists()||!room.exists()||gate.data().phase!=='lobby'||room.data().phase!=='lobby')
+        throw new Error('房間狀態已改變，請稍後重試。');
+      if(gate.data().count<2||Object.keys(patch.scores).length!==gate.data().count)
+        throw new Error('玩家名單仍在同步，請稍後再開始。');
+      tx.update(r.gate,{phase:'voting'});
+      tx.update(r.room,patch);
+    });
+  }
+  // P3_ADMISSION_HELPERS_END
   async function createOnline(){
     const name=validateName();if(!name)return;
     const preparedQuestions=buildRoomQuestions();
     const f=await getFirebase(),L=f.dbLib;
     let code='';
-    for(let i=0;i<6;i++){const candidate=randomCode();const snap=await L.getDoc(roomRef(candidate));if(!snap.exists()){code=candidate;break;}}
+    for(let i=0;i<6;i++){
+      const candidate=randomCode();
+      if(P3_ADMISSION_READS_ENABLED&&(await L.getDocFromServer(p3Refs(L,f.db,candidate,state.uid).gate)).exists())continue;
+      const snap=await L.getDoc(roomRef(candidate));
+      if(!snap.exists()){code=candidate;break;}
+    }
     if(!code)throw new Error('房間代碼產生失敗，請再試一次。');
     const data={hostUid:state.uid,phase:'lobby',roundIndex:-1,totalRounds:state.rounds,seconds:state.seconds,questions:preparedQuestions,scores:{},streaks:{},usedDoubles:{},lastResult:null,deadline:null,createdAt:Date.now(),heroImage:state.heroImage,theme:state.themeChoice,minimalHue:state.minimalHue,quickMode:state.hostMode==='quick',quickScene:state.hostMode==='quick'?state.quickScene:null};
-    await L.setDoc(roomRef(code),data);
-    await L.setDoc(playerRef(code,state.uid),{uid:state.uid,name,emoji:emojiFor(state.uid),joinedAt:Date.now()});
+    const player={uid:state.uid,name,emoji:emojiFor(state.uid),joinedAt:Date.now()};
+    if(P3_ADMISSION_CREATE_ENABLED){
+      if(!P3_ADMISSION_READS_ENABLED)throw new Error('新版房間尚未啟用。');
+      await p3CreateRoom(L,f.db,code,data,player);
+      data.protocol=3;
+    }else{
+      await L.setDoc(roomRef(code),data);
+      await L.setDoc(playerRef(code,state.uid),player);
+    }
     saveQuickHistory(preparedQuestions);
     state.mode='online';state.roomCode=code;state.room=data;state.player=state.uid;history.replaceState(null,'',`?room=${code}`);
     subscribeOnline(code);
@@ -941,13 +996,21 @@
     const code=state.codeInput.trim().toUpperCase();
     if(!/^[A-Z2-9]{6}$/.test(code))throw new Error('請輸入正確的 6 碼房間代碼。');
     const f=await getFirebase(),L=f.dbLib;
-    const snap=await L.getDoc(roomRef(code));
+    let snap;
+    const player={uid:state.uid,name,emoji:emojiFor(state.uid),joinedAt:Date.now()};
+    const gate=P3_ADMISSION_READS_ENABLED?await L.getDocFromServer(p3Refs(L,f.db,code,state.uid).gate):null;
+    if(gate?.exists())snap=await p3JoinRoom(L,f.db,code,player);
+    else{
+      snap=await L.getDoc(roomRef(code));
+      if(!snap.exists())throw new Error('找不到這個房間，請再確認代碼。');
+      if(snap.data().protocol===3)throw new Error('請重新整理至最新版再加入房間。');
+      const current=await L.getDocs(L.collection(f.db,'rooms',code,'players'));
+      const selfExists=current.docs.some(d=>d.id===state.uid);
+      if(snap.data().phase!=='lobby'&&!selfExists)throw new Error('這場已經開始，請向主持人索取新房間代碼。');
+      if(current.size>=20&&!selfExists)throw new Error('這個房間已滿 20 人，請主持人另開一局。');
+      if(!selfExists)await L.setDoc(playerRef(code,state.uid),player);
+    }
     if(!snap.exists())throw new Error('找不到這個房間，請再確認代碼。');
-    const current=await L.getDocs(L.collection(f.db,'rooms',code,'players'));
-    const selfExists=current.docs.some(d=>d.id===state.uid);
-    if(snap.data().phase!=='lobby'&&!selfExists)throw new Error('這場已經開始，請向主持人索取新房間代碼。');
-    if(current.size>=20&&!selfExists)throw new Error('這個房間已滿 20 人，請主持人另開一局。');
-    if(!selfExists){await L.setDoc(playerRef(code,state.uid),{uid:state.uid,name,emoji:emojiFor(state.uid),joinedAt:Date.now()});}
     state.mode='online';state.roomCode=code;state.room=snap.data();state.player=state.uid;history.replaceState(null,'',`?room=${code}`);
     subscribeOnline(code);
   }
@@ -1069,7 +1132,9 @@
       state.error='';render();return;
     }
     const L=state.firebase.dbLib;
-    await L.updateDoc(roomRef(state.roomCode),patch);
+    if(state.room.protocol===3&&state.room.phase==='lobby'&&patch.phase==='voting')
+      await p3StartRoom(L,state.firebase.db,state.roomCode,state.uid,patch);
+    else await L.updateDoc(roomRef(state.roomCode),patch);
   }
   async function submitVote(){
     if(state.room.phase!=='voting'||myVote()||state.voteSubmitState==='sent')return;
