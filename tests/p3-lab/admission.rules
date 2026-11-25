@@ -1,0 +1,99 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // EMULATOR ONLY: intentionally separate from production rooms and rules.
+    function signedIn() { return request.auth != null; }
+    function gatePath(code) {
+      return /databases/$(database)/documents/p3LabInvites/$(code);
+    }
+    function roomPath(code) {
+      return /databases/$(database)/documents/p3LabRooms/$(code);
+    }
+    function memberPath(code, uid) {
+      return /databases/$(database)/documents/p3LabRooms/$(code)/members/$(uid);
+    }
+    function member(code) {
+      return signedIn() && exists(memberPath(code, request.auth.uid));
+    }
+    function validCode(code) { return code.matches('^[A-HJ-NP-Z2-9]{6}$'); }
+    function validSeat(s) {
+      return s is string && s.matches('^([1-9]|1[0-9]|20)$');
+    }
+    function validGate(g) {
+      return g.keys().hasOnly(['phase','count','seats'])
+        && g.keys().hasAll(['phase','count','seats'])
+        && g.phase in ['lobby','voting']
+        && g.count is int && g.count >= 1 && g.count <= 20
+        && g.seats is map && g.seats.size() == g.count;
+    }
+    function initialGate(g) {
+      return validGate(g) && g.phase == 'lobby'
+        && g.count == 1 && g.seats == {'1':true};
+    }
+    function validMember(m) {
+      return m.keys().hasOnly(['seat','joinedAt'])
+        && m.keys().hasAll(['seat','joinedAt'])
+        && validSeat(m.seat) && m.joinedAt == request.time;
+    }
+    function validJoin(code, before, after, seat) {
+      return validSeat(seat) && validGate(after)
+        && before.phase == 'lobby' && after.phase == 'lobby'
+        && after.count == before.count + 1
+        && !(seat in before.seats) && after.seats[seat] == true
+        && after.seats.diff(before.seats).affectedKeys().hasOnly([seat])
+        && after.diff(before).affectedKeys().hasOnly(['count','seats']);
+    }
+    match /p3LabInvites/{code} {
+      // Exact lookup exposes occupancy/phase, not host or player identifiers.
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn() && validCode(code)
+        && initialGate(request.resource.data)
+        && !exists(roomPath(code)) && !exists(memberPath(code,request.auth.uid))
+        && getAfter(roomPath(code)).data.hostUid == request.auth.uid
+        && getAfter(memberPath(code,request.auth.uid)).data.seat == '1';
+      allow update: if signedIn() && (
+        (!exists(memberPath(code,request.auth.uid))
+          && validJoin(code,resource.data,request.resource.data,
+            getAfter(memberPath(code,request.auth.uid)).data.seat))
+        || (member(code)
+          && get(roomPath(code)).data.hostUid == request.auth.uid
+          && resource.data.phase == 'lobby' && resource.data.count >= 2
+          && request.resource.data.phase == 'voting'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['phase']))
+      );
+      allow delete: if false;
+    }
+    match /p3LabRooms/{code} {
+      allow get: if member(code);
+      allow list: if false;
+      allow create: if signedIn() && validCode(code)
+        && request.resource.data.keys().hasOnly(['hostUid','protocol'])
+        && request.resource.data.keys().hasAll(['hostUid','protocol'])
+        && request.resource.data.hostUid == request.auth.uid
+        && request.resource.data.protocol == 3
+        && !exists(gatePath(code))
+        && !exists(memberPath(code,request.auth.uid))
+        && initialGate(getAfter(gatePath(code)).data)
+        && getAfter(memberPath(code,request.auth.uid)).data.seat == '1';
+      allow update, delete: if false;
+      match /members/{uid} {
+        // A user can check their own (possibly absent) member document.
+        allow get: if signedIn() && (request.auth.uid == uid || member(code));
+        allow list: if member(code);
+        allow create: if signedIn() && request.auth.uid == uid
+          && validMember(request.resource.data)
+          && (
+            (!exists(roomPath(code)) && !exists(gatePath(code))
+              && getAfter(roomPath(code)).data.hostUid == uid
+              && request.resource.data.seat == '1'
+              && initialGate(getAfter(gatePath(code)).data))
+            || (exists(roomPath(code))
+              && validJoin(code,get(gatePath(code)).data,
+                getAfter(gatePath(code)).data,request.resource.data.seat))
+          );
+        allow update, delete: if false;
+      }
+    }
+  }
+}
