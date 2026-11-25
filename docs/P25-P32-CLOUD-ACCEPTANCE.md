@@ -31,6 +31,10 @@ Hosting 版本 `b37de4caf44294a0`，staging Rules release 指向 `e50786d0-8542-
 | V3 | 使用同一套候選 helpers，原子建房成功；關閉新建後既有房達到 20 人，第 21 人被拒絕。重新加入、8 題投票、揭曉及最終排行榜通過。這次驗收未量測 20 台實機同時作答延遲 |
 | 實體手機 | 尚待實體手機瀏覽器完成 7 項清單下的隔離驗收。行動版面模擬的結果獨立記錄 |
 
+## 部署後獨立讀回
+
+已從測試站下載 app.js，並透過 Firebase Rules API 讀取已發布 Rules，兩份來源經 LF 正規化後的 SHA-256 各自與 main 候選一致。staging 管理文件已讀回嚴格布林 false；兩個專案均再次回覆 billingEnabled=false。正式 Firestore 過去滾動 24 小時彙總讀取 569、寫入 197、刪除 0；這是監控觀測值，與免費配額的每日結算時段可能不同。
+
 ## 正式放行與還原
 
 目前部署限於 staging。正式金鑰、Rules、App Check、計費及 V3 開關保持預檢狀態。待 staging 實機回報後，再比對最新 main／CI、正式 release／etag、控制文件、App Check 和計費；任一有漂移即暫停重核。先只縮減正式 key 的 API targets，保留 referrer，確認自然流量與錯誤率，再只部署候選 firestore:rules。讀回正式 release 並核對來源雜湊，保持 V3 新建關閉，驗證舊房後再依證據處理警示。
