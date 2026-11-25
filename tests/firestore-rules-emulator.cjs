@@ -91,6 +91,15 @@ async function main(){
     const v3room={...room(),questions:Array.from({length:12},()=>questions[0]),totalRounds:12};
     await deny(setDoc(ph.room,{...v3room,protocol:3}),'V3 room without gate/host denied');
     await deny(setDoc(ph.gate,{phase:'lobby',count:1,seats:{'1':true}}),'V3 gate alone denied');
+    // Both halves remain mandatory: invalid first or last question must reject
+    // the whole transaction, with no orphan invitation or host player.
+    for(const [badCode,badIndex] of [['QRSTUV',0],['RSTUVW',11]]){
+      const broken={...v3room,questions:v3room.questions.map((q,i)=>i===badIndex?{...q,a:['invalid']}:q)};
+      await deny(p3CreateRoom(L,host,badCode,broken,player('hostA')),'V3 rejects malformed question '+badIndex);
+      const badRefs=p3Refs(L,host,badCode,'hostA');
+      assert.equal((await getDoc(badRefs.gate)).exists(),false);checks++;
+      assert.equal((await getDoc(badRefs.self)).exists(),false);checks++;
+    }
     await allow(p3CreateRoom(L,host,code,v3room,player('hostA')),'V3 browser creates 12-question room atomically');
     await allow(getDoc(po.gate),'V3 outsider exact invite lookup');
     await deny(getDoc(po.room),'V3 outsider private room denied');
