@@ -295,6 +295,14 @@
   }
   const CONFIGURED = Boolean(window.GAME_FIREBASE_CONFIG?.apiKey && window.GAME_FIREBASE_CONFIG?.projectId);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, x=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[x]));
+  // Firestore result maps can be changed by the room host. Never place
+  // arbitrary values from these maps directly into innerHTML or inline CSS.
+  function safeScore(value){
+    return typeof value==='number' && Number.isSafeInteger(value) && value>=0 && value<=1000000 ? value : 0;
+  }
+  function safeVoteCount(value){
+    return typeof value==='number' && Number.isInteger(value) && value>=0 && value<=20 ? value : 0;
+  }
   state.heroImage=readSavedHero();
   // 讓玩家看到的錯誤訊息一律為台灣繁體中文；技術細節僅留在開發者主控台。
   function friendlyError(err){
@@ -598,7 +606,15 @@
     bank.custom.push(...valid.custom);bank.ai.push(...valid.ai);saveBank();
     state.managerError='';state.managerNotice=`已還原 ${valid.custom.length} 道自訂題、${valid.ai.length} 道 Gemini 題（重複題目已跳過）。`;
   }
-  function randomCode(){const s='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';return Array.from({length:6},()=>s[Math.floor(Math.random()*s.length)]).join('');}
+  function randomCode(){
+    // 32-symbol alphabet => 5 bits per character. Use browser CSPRNG,
+    // not Math.random(), for the six-character invite code.
+    const alphabet='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    if(!globalThis.crypto?.getRandomValues)throw new Error('請使用支援安全加密的 HTTPS 瀏覽器開啟遊戲。');
+    const bytes=new Uint8Array(6);
+    globalThis.crypto.getRandomValues(bytes);
+    return Array.from(bytes,byte=>alphabet[byte&31]).join('');
+  }
   function emojiFor(uid){let v=0;for(const ch of uid)v+=ch.charCodeAt(0);return EMOJIS[v % EMOJIS.length];}
   function inviteUrl(){let u = new URL(location.href);u.searchParams.set('room',state.roomCode);u.hash='';return u.toString();}
   const me=()=>state.players.find(p=>p.uid===state.uid);
@@ -610,9 +626,9 @@
     const players=new Set(state.players.map(p=>p.uid));
     return new Set(state.votes.filter(v=>v.roundIndex===state.room.roundIndex && players.has(v.uid)).map(v=>v.uid)).size;
   }
-  function scoresSorted(){let scores=state.room?.scores||{};return [...state.players].sort((a,b)=>(scores[b.uid]||0)-(scores[a.uid]||0) || a.joinedAt-b.joinedAt);}
+  function scoresSorted(){let scores=state.room?.scores||{};return [...state.players].sort((a,b)=>safeScore(scores[b.uid])-safeScore(scores[a.uid]) || a.joinedAt-b.joinedAt);}
   function myRank(){const sorted=scoresSorted();return sorted.findIndex(p=>p.uid===state.uid)+1;}
-  function myScore(){return state.room?.scores?.[state.uid]||0;}
+  function myScore(){return safeScore(state.room?.scores?.[state.uid]);}
   function hasDouble(){return !state.room?.usedDoubles?.[state.uid];}
   function surface(content, right=''){return `<main class="container"><div class="topbar"><button type="button" class="brand brand-home" data-action="brand-home" aria-label="默契失控局，點擊回首頁" title="回首頁"><span class="brand-mark" aria-hidden="true"><span>✦</span></span><span class="brand-title">默契失控局</span></button></div>${right ? `<div class="header-room-status">${right}</div>` : ''}<div class="retro-pcb-backplane" aria-hidden="true"><i class="retro-pcb-channel left"></i><i class="retro-pcb-channel right"></i><i class="retro-pcb-chip upper"></i><i class="retro-pcb-chip lower"></i></div><div class="retro-circuit-deck" aria-hidden="true"><span class="retro-deck-switches"><i></i><i></i><i></i></span><span class="retro-deck-pipes"><i></i><i></i><i></i><i></i></span><span class="retro-deck-chip"><b></b><i></i><i></i><i></i></span><span class="retro-deck-leds"><i></i><i></i><i></i></span></div>${state.room && safeHero(state.room.heroImage)?`<div class="room-look ${state.room.phase==='lobby'?'lobby-look':''}"><img class="room-look-image" src="${esc(state.room.heroImage)}" alt="本場活動主視覺"><span>🎉 本場活動主視覺</span></div>`:''}${state.error?`<div class="notice" role="alert">${esc(state.error)}</div>`:''}${state.toast?`<div class="chip mint" style="margin-bottom:12px">✓ ${esc(state.toast)}</div>`:''}${content}<div class="footer">適合 10–20 人 ✦ 有笑點的社交，不是尷尬的面試<br>先笑出來，再慢慢認識彼此 ✨</div></main>`;}
   // 首頁只做角色分流；進階設定全部放進主持人頁面。
@@ -718,21 +734,25 @@
     `, `<span class="status-tag">${esc(state.roomCode)}</span>`);
   }
   function renderPoll(){
-    const q=question(),counts=state.room.lastResult?.counts || [0,0,0,0],tops=state.room.lastResult?.top||[],cold=state.room.lastResult?.cold||[],total=counts.reduce((a,b)=>a+b,0);
+    const q=question(),raw=state.room.lastResult||{};
+    // Reject malformed Firestore results before rendering percentages or text.
+    const counts=Array.isArray(raw.counts)&&raw.counts.length===4?raw.counts.map(safeVoteCount):[0,0,0,0];
+    const tops=Array.isArray(raw.top)?raw.top:[],cold=Array.isArray(raw.cold)?raw.cold:[];
+    const total=counts.reduce((a,b)=>a+b,0);
     return `<div class="card section-gap"><h2 class="mini-heading">📊 全場民調：答案揭曉</h2>${q.a.map((a,i)=>`<div class="result-bar"><div class="bar-letter">${'ABCD'[i]}</div><div class="bar-track ${tops.includes(i)?'winner':cold.includes(i)?'coldest':''}"><div class="bar-fill" style="width:${total?counts[i]/total*100:0}%"></div><div class="bar-text">${esc(a)} ${tops.includes(i)?'👑 最多票':cold.includes(i)?'🧊 最少票':''}</div></div><div class="bar-votes">${counts[i]} 票</div></div>`).join('')}<p class="fineprint">共 ${total} 人作答；👑 並列最多票都算熱門，🧊 並列非零最少票都算冷門。零票選項不算冷門。</p></div>`;
   }
   function renderLeaderboard(compact=false){
     const sorted=scoresSorted(), map=state.room?.scores||{};
     const top=sorted.slice(0,3), pad=3-top.length;
-    const podium=p=>p?`<div class="podium ${sorted[0]?.uid===p.uid?'first':''}"><div class="medal">${sorted.indexOf(p)===0?'🥇':sorted.indexOf(p)===1?'🥈':'🥉'}</div><div class="person">${esc(p.emoji||emojiFor(p.uid))}</div><div class="name">${esc(p.name)}${p.uid===state.uid?' (你)':''}</div><div class="points">${map[p.uid]||0}</div><div class="fineprint">分</div></div>`:'<div></div>';
+    const podium=p=>p?`<div class="podium ${sorted[0]?.uid===p.uid?'first':''}"><div class="medal">${sorted.indexOf(p)===0?'🥇':sorted.indexOf(p)===1?'🥈':'🥉'}</div><div class="person">${esc(p.emoji||emojiFor(p.uid))}</div><div class="name">${esc(p.name)}${p.uid===state.uid?' (你)':''}</div><div class="points">${safeScore(map[p.uid])}</div><div class="fineprint">分</div></div>`:'<div></div>';
     const slots=[top[1]||null,top[0]||null,top[2]||null];
-    return `<section class="card section-gap"><div class="split"><h2 class="mini-heading tight">🏆 ${compact?'即時排行榜':'最終排行榜'}</h2><span class="chip yellow">${sorted.length} 位玩家</span></div><div class="leader-top">${slots.map(podium).join('')}</div><div class="rank-list">${sorted.map((p,i)=>`<div class="rank-item ${p.uid===state.uid?'me':''}"><span class="rank-index">${i+1}</span><span>${esc(p.emoji||emojiFor(p.uid))}</span><span class="rank-name">${esc(p.name)} ${p.uid===state.uid?'👈':''}</span><span class="rank-points">${map[p.uid]||0} 分</span></div>`).join('')}</div></section>`;
+    return `<section class="card section-gap"><div class="split"><h2 class="mini-heading tight">🏆 ${compact?'即時排行榜':'最終排行榜'}</h2><span class="chip yellow">${sorted.length} 位玩家</span></div><div class="leader-top">${slots.map(podium).join('')}</div><div class="rank-list">${sorted.map((p,i)=>`<div class="rank-item ${p.uid===state.uid?'me':''}"><span class="rank-index">${i+1}</span><span>${esc(p.emoji||emojiFor(p.uid))}</span><span class="rank-name">${esc(p.name)} ${p.uid===state.uid?'👈':''}</span><span class="rank-points">${safeScore(map[p.uid])} 分</span></div>`).join('')}</div></section>`;
   }
   // 平時只顯示前三名及自己的名次，完整名單在最後一頁（或玩家主動展開）查看。
   function renderQuickRanking(){
     const sorted=scoresSorted(), scores=state.room?.scores||{};
     const top=sorted.slice(0,3);
-    const rows=top.map((p,i)=>`<div class="quick-rank-line"><span>${['🥇','🥈','🥉'][i]} ${esc(p.emoji||emojiFor(p.uid))} ${esc(p.name)}</span><b>${scores[p.uid]||0} 分</b></div>`).join('');
+    const rows=top.map((p,i)=>`<div class="quick-rank-line"><span>${['🥇','🥈','🥉'][i]} ${esc(p.emoji||emojiFor(p.uid))} ${esc(p.name)}</span><b>${safeScore(scores[p.uid])} 分</b></div>`).join('');
     return `<section class="card quick-ranking section-gap"><div class="split"><h2 class="mini-heading tight">🏆 目前領先</h2><span class="chip yellow">你第 ${myRank()||'–'} 名</span></div>${rows}<details class="full-rank-toggle"><summary>想看完整排行榜？點這裡展開</summary>${renderLeaderboard(true)}</details></section>`;
   }
   function scoreBreakdown(g,v,q){
@@ -740,18 +760,18 @@
     if(!g)return '<div class="score-detail">本題沒有取得計分明細。</div>';
     if(!g.predictionType){
       // 兼容更新前已開獎的房間：歷史回合仍顯示其原計分方式。
-      return `<div class="score-detail">本題沿用舊版計分：猜中多數 +${g.guess||0} · 自選冷門 +${g.rare||0} · 連勝 +${g.streakBonus||0}</div>`;
+      return `<div class="score-detail">本題沿用舊版計分：猜中多數 +${safeScore(g.guess)} · 自選冷門 +${safeScore(g.rare)} · 連勝 +${safeScore(g.streakBonus)}</div>`;
     }
     const label=g.predictionType==='hot'?'🔥 猜中最多票':g.predictionType==='cold'?'🧊 猜中最少票':'➖ 沒猜中熱門或冷門';
     return `<div class="score-detail score-breakdown">
-      <div class="score-breakdown-line"><span>${label}<small>你猜：${esc(q.a[v.guess])}</small></span><strong>+${g.guess||0}</strong></div>
-      <div class="score-breakdown-line"><span>🔥 連勝獎勵${g.streak?'（連續命中 '+g.streak+' 次）':''}</span><strong>+${g.streakBonus||0}</strong></div>
+      <div class="score-breakdown-line"><span>${label}<small>你猜：${esc(q.a[v.guess])}</small></span><strong>+${safeScore(g.guess)}</strong></div>
+      <div class="score-breakdown-line"><span>🔥 連勝獎勵${safeScore(g.streak)?'（連續命中 '+safeScore(g.streak)+' 次）':''}</span><strong>+${safeScore(g.streakBonus)}</strong></div>
       ${g.doubleUsed?'<p class="score-breakdown-note">🃏 本題已使用雙倍王牌：只加倍猜中熱門／冷門的分數；猜錯也會消耗。</p>':''}
     </div>`;
   }
   function renderReveal(){
     const q=question(),last=state.room.lastResult||{},g=last.gains?.[state.uid],v=myVote();
-    const scoreText=g?`${g.total}`:'0';
+    const scoreText=safeScore(g?.total);
     return surface(`${roundHeader()}<section class="space-top question-card"><div class="q-label">🎉 答案開獎啦！</div><div class="question-text">${esc(q.q)}</div></section>${renderPoll()}
       <section class="talk-first section-gap"><span class="talk-eyebrow">🎤 最重要的 30–60 秒</span><h2>先抬頭聊聊吧！</h2><p>${esc(q.talk)}</p><small>主持人可以邀請 1–2 位自願分享，沒有標準答案，也不用強迫任何人表演。</small></section>
       <div class="score-highlight section-gap slim-score"><span class="eyebrow">本題得分</span><div class="split"><div><div class="score-big">+${scoreText}</div>${scoreBreakdown(g,v,q)}</div><span class="score-emote">${g?.total>=100?'😎':'🤪'}</span></div></div>
@@ -761,7 +781,7 @@
   }
   function renderFinished(){
     const sorted=scoresSorted(), winner=sorted[0],myPosition=myRank();
-    return surface(`<div class="eyebrow">遊戲結束・全場封神</div><section class="question-card section-gap" style="text-align:center"><div style="font-size:73px">🏆</div><h1 class="page-title" style="margin-top:0;color:#27213a">恭喜默契之王！</h1><div style="font-weight:900;font-size:28px;color:#292039">${esc(winner?.emoji||'🎉')} ${esc(winner?.name||'所有參加者')}</div><p style="font-weight:800;color:#2c253d">以 ${state.room.scores?.[winner?.uid]||0} 分勇奪第一！</p></section>
+    return surface(`<div class="eyebrow">遊戲結束・全場封神</div><section class="question-card section-gap" style="text-align:center"><div style="font-size:73px">🏆</div><h1 class="page-title" style="margin-top:0;color:#27213a">恭喜默契之王！</h1><div style="font-weight:900;font-size:28px;color:#292039">${esc(winner?.emoji||'🎉')} ${esc(winner?.name||'所有參加者')}</div><p style="font-weight:800;color:#2c253d">以 ${safeScore(state.room.scores?.[winner?.uid])} 分勇奪第一！</p></section>
       <div class="card section-gap"><h2 class="mini-heading">🙌 你的最後成績</h2><div class="split"><div><div class="score-big">#${myPosition||'–'}</div><div class="fineprint">個人名次／${state.players.length} 人</div></div><div style="text-align:right"><div class="score-big">${myScore()}</div><div class="fineprint">總分</div></div></div></div>${renderLeaderboard(false)}
       <section class="info-box section-gap"><strong>🗣 遊戲結束，再留 3 分鐘：</strong><div>找一位你今天最意外「原來你也這樣！」的朋友，分享一件剛才還沒說完的趣事。<br>或是全場選出「最荒謬但最有道理的答案」。</div></section>
       <div class="btn-row section-gap">${state.mode==='online'?`<button class="btn secondary" data-action="copy">🔗 複製活動網址</button>`:''}<button class="btn" data-action="leave">🔁 再開一局</button></div>
@@ -866,6 +886,23 @@
     const base='https://www.gstatic.com/firebasejs/11.10.0/';
     const [appLib,authLib,dbLib]=await Promise.all([import(base+'firebase-app.js'),import(base+'firebase-auth.js'),import(base+'firebase-firestore.js')]);
     const app=appLib.getApps().length?appLib.getApp():appLib.initializeApp(window.GAME_FIREBASE_CONFIG);
+    const siteKey=String(window.GAME_APP_CHECK_SITE_KEY||'').trim();
+    if(siteKey){
+      // Initialize App Check before *any* Firebase Auth / Firestore calls.
+      // Without a configured reCAPTCHA Enterprise site key, current gameplay
+      // stays fully unchanged until the owner deliberately opts in.
+      try{
+        const appCheckLib=await import(base+'firebase-app-check.js');
+        const appCheck=appCheckLib.initializeAppCheck(app,{
+          provider:new appCheckLib.ReCaptchaEnterpriseProvider(siteKey),
+          isTokenAutoRefreshEnabled:true
+        });
+        await appCheckLib.getToken(appCheck);
+      }catch(error){
+        console.error('Firebase App Check 初始化失敗：',error);
+        throw new Error('網站安全驗證暫時無法完成，請主持人檢查 Firebase App Check 設定。');
+      }
+    }
     const auth=authLib.getAuth(app);
     await new Promise((res,rej)=>{const un=authLib.onAuthStateChanged(auth,()=>{un();res();},rej);});
     if(!auth.currentUser)await authLib.signInAnonymously(auth);

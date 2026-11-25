@@ -7,6 +7,8 @@ on:
       - 'firebase.json'
       - 'package.json'
       - 'app.js'
+      - 'app-check-config.js'
+      - 'tests/client-security.cjs'
       - 'tests/firestore-rules-emulator.cjs'
       - '.github/workflows/firestore-rules.yml'
   pull_request:

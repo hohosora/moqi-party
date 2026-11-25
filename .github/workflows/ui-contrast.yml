@@ -13,6 +13,8 @@ on:
       - 'tests/browser-contrast.cjs'
       - 'tests/scoring-rules.cjs'
       - 'tests/quick-host.cjs'
+      - 'tests/client-security.cjs'
+      - 'app-check-config.js'
       - '.github/workflows/ui-contrast.yml'
   pull_request:
   workflow_dispatch:
@@ -40,6 +42,8 @@ jobs:
         env:
           NODE_PATH: ${{ runner.temp }}/moqi-contrast/node_modules
         run: node tests/browser-contrast.cjs
+      - name: Reject injected Firestore values and insecure room codes
+        run: node tests/client-security.cjs
       - name: Check hot and cold prediction scoring
         run: node tests/scoring-rules.cjs
       - name: Check 100 curated questions and quick-host flow
