@@ -29,7 +29,7 @@ Hosting 版本 `b37de4caf44294a0`，staging Rules release 指向 `e50786d0-8542-
 | 7 項清單 | identitytoolkit、securetoken、firebaseappcheck、firestore、datastore、firebase、logging（各加 .googleapis.com）。8 項另含 firebaserules。staging 最後為 7 項 |
 | 舊版相容 | 桌機 Edge 與獨立行動版面瀏覽器工作階段建立／加入、重新加入、8 題投票、提前揭曉及最終排行榜通過。首輪自動操作在第二題逾時，等待主持人揭曉寫入完成後完整重跑通過 |
 | V3 | 使用同一套候選 helpers，原子建房成功；關閉新建後既有房達到 20 人，第 21 人被拒絕。重新加入、8 題投票、揭曉及最終排行榜通過。這次驗收未量測 20 台實機同時作答延遲 |
-| 實體手機 | 尚待實體手機瀏覽器完成 7 項清單下的隔離驗收。行動版面模擬的結果獨立記錄 |
+| 實體手機 | 使用者回報桌機與手機測試流程皆順暢，退出後重加正常。未另回報瀏覽器版本或逐項計分數據 |
 
 ## 部署後獨立讀回
 
@@ -37,6 +37,10 @@ Hosting 版本 `b37de4caf44294a0`，staging Rules release 指向 `e50786d0-8542-
 
 ## 正式放行與還原
 
-目前部署限於 staging。正式金鑰、Rules、App Check、計費及 V3 開關保持預檢狀態。待 staging 實機回報後，再比對最新 main／CI、正式 release／etag、控制文件、App Check 和計費；任一有漂移即暫停重核。先只縮減正式 key 的 API targets，保留 referrer，確認自然流量與錯誤率，再只部署候選 firestore:rules。讀回正式 release 並核對來源雜湊，保持 V3 新建關閉，驗證舊房後再依證據處理警示。
+實機回報後，重新核對 main 與兩項 CI、現行 Rules 原文與 release、key etag、控制文件不存在、App Check 與停用計費。只將正式 Web key 的 API targets 從 25 項縮為通過 staging 的 7 項，讀回確認，原兩條 referrer 保留。
+
+正式 Pages 的全新自動 Edge 工作階段向 App Check 強制取證時收到 HTTP 403；該次驗證在匿名登入及 Firestore 讀取前停止。隨即比對現行限制，使用當下 etag 還原變更前的完整 restrictions，讀回與備份完全相同。原 25 項設定以全新瀏覽器複測也收到 403，服務回覆 PERMISSION_DENIED，訊息指出 attestation 遭拒。這兩次結果不足以判定移除某項 API 導致故障。無正式房間資料寫入。
+
+正式 Rules 未部署，讀回仍為上表原 release；Firestore ENFORCED、Authentication UNENFORCED、計費停用。V3 新建未開啟，Secret Scanning #1 未解除。下一步先以正式網站的正常實機流量建立可觀測的 25 項基準，確認 App Check 驗證成功；若也失敗，唯讀比對 Web App 註冊、reCAPTCHA 網域與驗證指標。再安排同裝置、同來源、可即時還原的 7 項複測，通過後才發布候選 Rules。
 
 若金鑰限制導致 403 或登入更新失敗，核對最新 etag 後按備份還原原有 targets／方法限制與 referrer，再驗證。Rules 回滾前先核對控制文件與是否已有 V3 房：有 V3 房時維持相容 Rules 和讀取路徑直到結束，禁止直接套回可能暴露 V3 資料的舊 Rules。無 V3 房且確認可安全還原時，使用已保存的 release/source。正式資料無需刪除。
