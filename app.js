@@ -965,18 +965,43 @@
   }
   async function p3JoinRoom(L,db,code,player){
     const r=p3Refs(L,db,code,player.uid);
-    await L.runTransaction(db,async tx=>{
-      if((await tx.get(r.self)).exists())return;
-      const gate=await tx.get(r.gate);
-      if(!gate.exists())throw new Error('找不到這個房間，請再確認代碼。');
-      const g=gate.data();
-      if(g.phase!=='lobby')throw new Error('這場已經開始，請向主持人索取新房間代碼。');
-      if(g.count>=20)throw new Error('這個房間已滿 20 人，請主持人另開一局。');
-      const seat=Array.from({length:20},(_,i)=>String(i+1)).find(x=>!g.seats[x]);
-      if(!seat)throw new Error('房間名額同步異常，請稍後重試。');
-      tx.update(r.gate,{count:g.count+1,seats:{...g.seats,[seat]:true}});
-      tx.set(r.self,{...player,seat});
-    },{maxAttempts:10});
+    // Some concurrent seat conflicts surface as permission-denied before the
+    // SDK observes its optimistic transaction precondition. Retry ONLY if a
+    // fresh server read proves another admission actually changed the count.
+    // Rules remain authoritative; a genuine unchanged-state denial is final.
+    const maxAttempts=5;
+    let joined=false;
+    for(let attempt=0;attempt<maxAttempts;attempt++){
+      let observedCount=null;
+      try{
+        await L.runTransaction(db,async tx=>{
+          observedCount=null;
+          if((await tx.get(r.self)).exists())return;
+          const gate=await tx.get(r.gate);
+          if(!gate.exists())throw new Error('找不到這個房間，請再確認代碼。');
+          const g=gate.data();
+          if(g.phase!=='lobby')throw new Error('這場已經開始，請向主持人索取新房間代碼。');
+          if(g.count>=20)throw new Error('這個房間已滿 20 人，請主持人另開一局。');
+          const seat=Array.from({length:20},(_,i)=>String(i+1)).find(x=>!g.seats[x]);
+          if(!seat)throw new Error('房間名額同步異常，請稍後重試。');
+          observedCount=g.count;
+          tx.update(r.gate,{count:g.count+1,seats:{...g.seats,[seat]:true}});
+          tx.set(r.self,{...player,seat});
+        },{maxAttempts:5});
+        joined=true;break;
+      }catch(err){
+        if(err?.code!=='permission-denied'||observedCount===null)throw err;
+        if((await L.getDocFromServer(r.self)).exists()){joined=true;break;}
+        const latest=await L.getDocFromServer(r.gate);
+        if(!latest.exists())throw err;
+        const g=latest.data();
+        if(g.phase!=='lobby')throw new Error('這場已經開始，請向主持人索取新房間代碼。');
+        if(g.count>=20)throw new Error('這個房間已滿 20 人，請主持人另開一局。');
+        if(!Number.isInteger(g.count)||g.count<=observedCount||attempt===maxAttempts-1)throw err;
+        await new Promise(resolve=>setTimeout(resolve,40*(attempt+1)));
+      }
+    }
+    if(!joined)throw new Error('房間名額同步異常，請稍後重試。');
     return L.getDocFromServer(r.room);
   }
   async function p3StartRoom(L,db,code,uid,patch){

@@ -23,7 +23,7 @@ jobs:
           distribution: temurin
           java-version: '21'
       - run: npm ci --no-audit --no-fund
-      - run: node --test tests/p3-auto/diagnostics.cjs
+      - run: node --test tests/p3-auto/diagnostics.cjs tests/p3-auto/admission-retry.cjs
       - run: npx --no-install firebase emulators:exec --project demo-moqi-party-p1 --only firestore "node tests/p3-auto/game-matrix.cjs"
   browser-matrix:
     runs-on: ubuntu-latest
