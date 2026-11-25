@@ -46,3 +46,71 @@ Google 官方參考：
 - **GitHub Pages 安全標頭**：純 GitHub Pages 沒有自行設定 HTTP 安全標頭的能力，不能把 HTML meta CSP 當作 `frame-ancestors`、HSTS 的等價替代。
 - **金鑰**：Firebase Web API Key 是用戶端公開設定；既有 GitHub secret scanning 警示須先確認 Google Cloud API restrictions 和用途後再依規則註記，不應誤刪會破壞登入的設定。
 - **Firestore Rules 部署**：GitHub PR 更新不會自動把規則發佈至 Firebase Console。本次 PR 不改 `firestore.rules`，因此**無需重新貼規則**。
+
+
+## P2-1／P2-2 執行追蹤（2026-11-25）
+
+### P2-1：App Check 強制驗證（正式開關仍待管理員）
+
+上次回報的 Firestore / Authentication 已驗證請求均為 100%，未驗證 0%；這是先前觀察值，不是本次重新讀取的即時指標。前端已改善 permission-denied 的中文指引，console 不再假定 Enforcement 未開啟。原有監控模式及匿名登入保留；未更動 site key、App Check token refresh 或規則。切勿將 App Check 改為前端自訂開關。
+
+| 環境 | 新開房 | 加入 | 投票、揭曉、排行榜 | 重開／重連 | 狀態 |
+|---|---|---|---|---|---|
+| Chrome 桌機 | 待測 | 待測 | 待測 | 待測 | 待確認 |
+| Edge 桌機 | 待測 | 待測 | 待測 | 待測 | 待確認 |
+| iPhone Safari | 待測 | 待測 | 待測 | 待測 | 待確認 |
+| Android Chrome | 待測 | 待測 | 待測 | 待測 | 待確認 |
+
+正式網址使用無痕或新瀏覽器工作階段重測。測試期間確認 App Check API 指標有實際請求量且合法請求已驗證；非零樣本才有意義。通過後由管理者在 Firebase Console → Security → App Check → APIs → Cloud Firestore → Enforce。先不要啟用 Authentication Enforcement。等待設定傳播後重跑上述流程，若合法玩家遭拒絕或驗證率異常則暫停 Firestore Enforcement、回到監控並排查，不改寬安全規則。
+
+### P2-2：舊房間資料保留與清理（Spark 友善）
+
+以下期限為建議的初始政策，未經正式遊戲運營驗證；依實際使用量調整。依 Firestore 伺服器文件 updateTime 及 players/votes 子文件 updateTime 取最近一次活動，避免信任用戶端可改動的 createdAt / joinedAt / at。清理工具僅讀取，不會自動刪除。
+
+| 階段 | 無活動至少 | 處置 |
+|---|---|---|
+| finished | 7 天 | 列為人工審核候選；確認無保留需求再刪除 |
+| lobby | 7 天 | 列為候選；確認無活動安排再刪除 |
+| voting / reveal | 30 天 | 列為候選；特別確認並非進行中的局 |
+| 未知階段或時間 | 不適用 | 跳過，人工檢查 |
+
+- 不使用付費 TTL 或 Cloud Functions，不自動升級 Blaze；普通 Firestore 讀取與刪除仍消耗每日免費配額，超過配額時停止。
+- 目前過期定義是「管理員清理候選」，不是服務端房間存取到期。舊房間在刪除前仍可依原規則重新加入。若要強制禁止過期房間存取，另規劃伺服器可信時間欄位、Rules 與舊房遷移的分階段部署，不用瀏覽器時間當安全邊界。
+- 一般玩家不得刪除 rooms、players、votes；維持現行規則，無需重新發布。
+- Firestore 刪除父文件不會自動刪除子集合。須遞迴刪除個別房間，避免孤兒玩家和投票文件；不得刪除整個 rooms 集合。
+- 管理員工具 admin/preview-old-rooms.cjs 預設每次最多掃描 50 個房間；候選每個已知子集合最多讀 501 筆，超限跳過。只列房號、階段、活動時間和候選理由，不輸出暱稱與投票內容；不掃描已無父文件的孤兒資料，另行人工檢查。管理員須在低流量維護時段確認無正在進行的遊戲，刪除前再次掃描指定房間。任何活動可能在讀取和刪除間發生，工具不是交易鎖。
+
+#### 本機管理員操作（非網站操作）
+
+在受信任本機 clone 專案，確認 Firebase 專案 ID 為 moqi-party。使用具有適當 Firestore 讀取權限的 Google 帳號建立 ADC（例如 gcloud auth application-default login）。管理員 SDK 繞過 Rules，切勿放在前端、GitHub Actions secrets 或公開網站，不要下載或提交私鑰。預覽用帳號優先採唯讀權限；實際刪除用另行授權的管理員身份。
+
+```bash
+npm install --no-save --package-lock=false firebase-admin
+node --test tests/room-retention.cjs
+node admin/preview-old-rooms.cjs --project moqi-party
+# 如果輸出 nextAfter，將實際值放在下列命令（不得使用示例作為刪除目標）
+node admin/preview-old-rooms.cjs --project moqi-party --after ABC234
+# 重新檢查已審核的單一房間
+node admin/preview-old-rooms.cjs --project moqi-party --room ABC234
+```
+
+預覽完成後只在人工確認、備份需求評估及維護窗口內執行個別房間遞迴刪除。下方 ROOM_CODE 必須替換成已確認的實際房號；不加 --force，保留 CLI 確認。刪除不可復原，若不確定則停止。
+
+```bash
+npx firebase-tools login
+npx firebase-tools firestore:delete rooms/ROOM_CODE --recursive --project moqi-party
+```
+
+刪除後在 Firebase Console 驗證該房間及 players / votes 均無殘留；記錄日期、房號、原因及結果，不保存玩家個資。若 CLI 部分失敗，檢查該房路徑是否有殘留子集合，再針對同一已核准路徑處理。
+
+| 追蹤項目 | 狀態 | 驗收 |
+|---|---|---|
+| App Check 初始化、自動刷新 | 程式碼確認 | 真實跨裝置重測 |
+| App Check 友善錯誤指引 | 本次修改 | Enforcement 開啟後重測 |
+| Firestore Enforcement | 待管理員 | Console 切換 + 測試 |
+| Authentication Enforcement | 暫不啟用 | 另行評估 |
+| 清理候選政策與唯讀工具 | 本次新增 | 合成資料測試 + 本機 ADC 預覽 |
+| 首次正式資料刪除 | 未執行 | 管理員審核及遞迴刪除 |
+| 自動封鎖過期房間／排程 | 待後續評估 | 不改寬現有規則 |
+
+官方參考：https://firebase.google.com/docs/app-check/enable-enforcement 、https://firebase.google.com/docs/firestore/manage-data/delete-data 、https://firebase.google.com/docs/firestore/quotas
