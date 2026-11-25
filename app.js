@@ -163,7 +163,7 @@
     page:new URLSearchParams(location.search).has('room')?'join':'home', hostMode:'custom', quickScene:'general', quickQuestions:[], voteStep:'choice', bankMode:localStorage.getItem('mqs_bank_mode')||'mixed', managerTab:'custom',
     customEditId:null, customDraft:null, geminiDirection:'trends', geminiScenePreset:'friends', geminiContext:'', geminiCount:8, aiText:'',
     aiPreview:[], aiPreviewSkipped:0, managerNotice:'', managerError:'',
-    heroImage:'', photoBusy:false, voteSubmitState:'idle', voteSyncFromCache:false, lastVisibleQuestionKey:null,
+    heroImage:'', photoBusy:false, voteSubmitState:'idle', voteSyncFromCache:false, hostVoteSync:null, lastVisibleQuestionKey:null,
     themeChoice:'party', // 每次新開網站預設經典像素風；房間中沿用主持人的主題
     minimalHue:normalizeMinimalHue(localStorage.getItem('mqs_minimal_hue_v1'))
   };
@@ -713,7 +713,7 @@
   function choiceButtons(field,selected,q){return `<div class="option-grid">${q.a.map((a,i)=>`<button type="button" class="option ${selected===i?(field==='choice'?'selected':'guess-selected'):''}" data-${field}="${i}" aria-pressed="${selected===i}"><span class="option-letter">${'ABCD'[i]}</span><span>${esc(a)}</span></button>`).join('')}</div>`;}
   function roundHeader(){return `<div class="round-header"><span class="chip yellow">第 ${state.room.roundIndex+1}／${state.room.totalRounds} 題</span><span class="rank-pill">🏅 第 ${myRank()||'–'} 名 · ${myScore()} 分</span></div><div class="progress" aria-label="題目進度"><div style="width:${Math.round(100*(state.room.roundIndex+1)/state.room.totalRounds)}%"></div></div>`;}
   function renderVote(){
-    const q=question(), v=myVote(), n=state.players.length, count=currentVoteCount(), remaining=Math.max(0,Math.ceil(((state.room.deadline||Date.now())-Date.now())/1000));
+    const q=question(), v=myVote(), n=state.players.length, count=displayVoteCount(), remaining=Math.max(0,Math.ceil(((state.room.deadline||Date.now())-Date.now())/1000));
     const step=state.choice===null?'choice':state.voteStep;
     const locked=Boolean(v)||state.voteSubmitState==='sent'||state.voteSubmitState==='sending';
     const confirmedVote=v||((state.voteSubmitState==='sent'||state.voteSubmitState==='sending')?{choice:state.choice,guess:state.guess}:null);
@@ -727,7 +727,7 @@
     }
     return surface(`${roundHeader()}<section class="space-top question-card voting-question"><div class="q-label">😈 靈魂拷問 • 第 ${state.room.roundIndex+1} 題</div><div class="question-text">${esc(q.q)}</div></section>
       <div class="poll-status"><span id="vote-count" aria-live="polite">📬 已答 ${count} / ${n} 人 ${state.mode==='demo'?'（含虛擬玩家）':''}</span><span class="timer ${remaining<=10?'urgent':''}" id="timer" role="timer" aria-label="倒數計時，剩餘 ${remaining} 秒"><span class="timer-caption" aria-hidden="true">倒數計時</span><strong class="timer-digits">⏱ ${remaining} 秒</strong></span></div>
-      <div class="vote-sync-indicator" id="vote-sync-indicator" role="status">${state.mode==='demo'?'🎭 示範模式':state.voteSyncFromCache?'📡 網路同步中，主持人數字可能稍有延遲':'☁️ 已連線，票數將自動更新'}</div>
+      <div class="vote-sync-indicator" id="vote-sync-indicator" role="status">${voteSyncMessage()}</div>
       ${locked?waiting:task}
       <details class="score-lookup"><summary>📘 不清楚分數？查看計分規則</summary>${scoringRules()}</details>
       ${isHost()?`<details class="host-vote-tools"><summary>🎤 主持人控制（<span id="host-vote-count">已作答 ${count}/${n}</span>）</summary><p class="fineprint">所有人完成或時間結束即可開獎；主持人網頁保持開啟，倒數結束會自動揭曉。</p><button class="btn secondary full" data-action="reveal" ${count===0?'disabled':''}>🎊 現在開獎</button></details>`:v?'<p class="look-up-note">👀 抬頭看看大家，猜猜誰跟你選得一樣！</p>':''}
@@ -864,7 +864,7 @@
     state.votes=[];state.choice=null;state.guess=null;state.double=false;state.voteStep='choice';state.voteSubmitState='idle';history.replaceState(null,'',location.pathname);render();
   }
   function validateName(){const s=state.nickname.trim().slice(0,14);if(!s){state.error='先填入暱稱，這樣排行榜才知道誰是誰。';render();return null;}state.nickname=s;localStorage.setItem('mqs_name',s);state.error='';return s;}
-  function clearListeners(){for(const f of state.unsubs){try{f();}catch{}}state.unsubs=[];if(state.voteUnsub){state.voteUnsub();state.voteUnsub=null;}state.watchedRound=null;}
+  function clearListeners(){state.hostVoteSync=null;for(const f of state.unsubs){try{f();}catch{}}state.unsubs=[];if(state.voteUnsub){state.voteUnsub();state.voteUnsub=null;}state.watchedRound=null;}
   function goHomeFromBrand(){
     // 標誌只負責導覽，絕不直接刪除 Firebase 房間、重置其他玩家或清空既有分數。
     if(state.room && state.mode){
@@ -970,7 +970,7 @@
     state.unsubs.push(offRoom,offPlayers);
   }
   function subscribeVotes(code,ri){
-    if(state.voteUnsub)state.voteUnsub();state.watchedRound=ri;
+    if(state.voteUnsub)state.voteUnsub();state.watchedRound=ri;state.hostVoteSync=null;
     const L=state.firebase.dbLib;
     state.voteUnsub=L.onSnapshot(L.query(votesCollection(code),L.where('roundIndex','==',ri)),{includeMetadataChanges:true},snap=>{
       if(state.room?.roundIndex!==ri)return;
@@ -981,11 +981,66 @@
       else updateVoteStatusUI();
     },err=>{state.error='讀取票數失敗：'+friendlyError(err);render();});
   }
+  // HOST_VOTE_SYNC_START
+  // Independent server aggregation bypasses the local watch/cache path.
+  // Only the active host polls; never use this count to settle scores.
+  const HOST_VOTE_POLL_MS=2000;
+  const HOST_VOTE_MAX_POLLS=24;
+  function activeHostVoteRound(){
+    return state.mode==='online'&&isHost()&&state.room?.phase==='voting'&&state.watchedRound===state.room.roundIndex;
+  }
+  function hostVoteSyncCurrent(sync){
+    return state.hostVoteSync===sync&&activeHostVoteRound()&&state.roomCode===sync.code&&state.room.roundIndex===sync.round;
+  }
+  function displayVoteCount(){
+    const watched=currentVoteCount(),sync=state.hostVoteSync;
+    if(!sync||!hostVoteSyncCurrent(sync))return watched;
+    // Votes are create-only; an older snapshot must not undo a confirmed count.
+    return Math.min(state.players.length,Math.max(watched,sync.confirmed));
+  }
+  function voteSyncMessage(){
+    if(state.mode==='demo')return '🎭 示範模式';
+    const sync=state.hostVoteSync;
+    if(sync&&hostVoteSyncCurrent(sync)){
+      if(sync.failed)return '📡 票數同步稍有延遲，將持續確認';
+      if(sync.lastSuccess!==null&&performance.now()-sync.lastSuccess<=5000)return '☁️ 票數已與伺服器確認';
+    }
+    return state.voteSyncFromCache?'📡 網路同步中，主持人數字可能稍有延遲':'☁️ 已連線，票數將自動更新';
+  }
+  async function refreshHostVoteCount(){
+    if(!activeHostVoteRound()||document.visibilityState==='hidden'||state.autoRevealing)return;
+    const total=state.players.length;
+    if(!total||displayVoteCount()>=total)return;
+    let sync=state.hostVoteSync;
+    if(!sync||!hostVoteSyncCurrent(sync)){
+      sync={code:state.roomCode,round:state.room.roundIndex,confirmed:0,lastAttempt:-Infinity,lastSuccess:null,pending:false,attempts:0,failed:false};
+      state.hostVoteSync=sync;
+    }
+    const now=performance.now();
+    if(sync.pending||sync.attempts>=HOST_VOTE_MAX_POLLS||now-sync.lastAttempt<HOST_VOTE_POLL_MS)return;
+    sync.lastAttempt=now;sync.attempts++;sync.pending=true;
+    try{
+      const L=state.firebase.dbLib;
+      const result=await L.getCountFromServer(L.query(votesCollection(sync.code),L.where('roundIndex','==',sync.round)));
+      if(!hostVoteSyncCurrent(sync))return;
+      const count=result.data().count;
+      if(!Number.isSafeInteger(count)||count<0||count>20)throw new Error('Unexpected vote count');
+      sync.confirmed=Math.max(sync.confirmed,count);sync.lastSuccess=performance.now();sync.failed=false;
+      updateVoteStatusUI();
+    }catch(error){
+      if(!hostVoteSyncCurrent(sync))return;
+      sync.failed=true;
+      // A fallback failure must not block the existing watch or the final server settlement.
+      console.warn('主持人票數備援同步失敗：',error?.code||'unknown');
+      updateVoteStatusUI();
+    }finally{sync.pending=false;}
+  }
+  // HOST_VOTE_SYNC_END
   // 票數變化僅更新畫面上的計數，避免答題介面被多次整頁重畫。
   function updateVoteStatusUI(){
     const el=document.getElementById('vote-count');
     if(!el)return;
-    const count=currentVoteCount(), total=state.players.length;
+    const count=displayVoteCount(), total=state.players.length;
     el.textContent=`📬 已答 ${count} / ${total} 人 ${state.mode==='demo'?'（含虛擬玩家）':''}`;
     decorateVisibleEmoji(el);
     const host=document.getElementById('host-vote-count');
@@ -993,7 +1048,7 @@
     const reveal=document.querySelector('[data-action="reveal"]');
     if(reveal)reveal.disabled=count===0;
     const sync=document.getElementById('vote-sync-indicator');
-    if(sync){sync.textContent=state.mode==='demo'?'🎭 示範模式':state.voteSyncFromCache?'📡 網路同步中，主持人數字可能稍有延遲':'☁️ 已連線，票數將自動更新';decorateVisibleEmoji(sync);}
+    if(sync){sync.textContent=voteSyncMessage();decorateVisibleEmoji(sync);}
   }
   async function beginRound(){
     if(!isHost())return;
@@ -1051,6 +1106,8 @@
   }
   function currentTimeTick(){
     if(state.room?.phase!=='voting')return;
+    // Host-only count aggregation is throttled independently from the timer.
+    void refreshHostVoteCount();
     const remaining=Math.max(0,Math.ceil(((state.room.deadline||Date.now())-Date.now())/1000));
     const t=document.getElementById('timer');if(t){const digits=t.querySelector('.timer-digits');if(digits)digits.textContent=`⏱ ${remaining} 秒`;else t.textContent=`⏱ ${remaining} 秒`;t.classList.toggle('urgent',remaining<=10);t.setAttribute('aria-label',`倒數計時，剩餘 ${remaining} 秒`);decorateVisibleEmoji(digits||t);}
     if(remaining===0 && Date.now()>=Number(state.room.deadline||0)+3500 && isHost() && !state.busy && !state.autoRevealing){

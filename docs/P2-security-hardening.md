@@ -114,3 +114,6 @@ npx firebase-tools firestore:delete rooms/ROOM_CODE --recursive --project moqi-p
 | 自動封鎖過期房間／排程 | 待後續評估 | 不改寬現有規則 |
 
 官方參考：https://firebase.google.com/docs/app-check/enable-enforcement 、https://firebase.google.com/docs/firestore/manage-data/delete-data 、https://firebase.google.com/docs/firestore/quotas
+
+## P2-4 實機回報：主持人已作答人數延遲（2026-11-25）
+使用者確認手機已成功送達，但桌機主持人票數常延遲至倒數 3–5 秒。尚未取得網路追蹤資料，不能確定 App Check 或 Firestore watch 是根因。保留 onSnapshot，增加主持人專用 getCountFromServer 聚合查詢，每 2 秒最多一次、每題最多 24 次、同時最多一個（同一題），不在示範、背景分頁、非主持人或結算時查詢，全員完成即停止；按房間與題號隔離結果。聚合只更新顯示，最終計分仍用 getDocsFromServer 投票文件。額外聚合查詢有最低讀取計費，20 人以內每場 12 題最多 288 次（實際通常較少；依索引讀取計費）。不修改安全規則或 App Check。驗收：30 秒題目，手機確認送達後紀錄主持人數字變化時間，至少連續 6 題，目標正常網路 1–3 秒內；再確認重連、提前揭曉與最終分數，未實測前不可宣稱延遲已根治。
