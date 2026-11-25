@@ -73,12 +73,11 @@ const scoreSamples={
   minimal:{surface:'#f4f1ed',quick:'#f4f1ed',podium:'#f4f1ed',rank:'#f4f1ed'}
 };
 for(const [theme,surfaces] of Object.entries(scoreSamples)){
-  const tokenMatch=scoreboardBlock.match(
-    new RegExp('html\\\\[data-theme="'+theme+'"\\\\]\\\\s*\\\\{([^}]+)\\\\}')
-  );
-  expect(Boolean(tokenMatch),'Missing in-game scoreboard palette: '+theme);
-  const fg=tokenMatch[1].match(/--score-live-ink:\\s*(#[0-9a-f]{6})/i);
-  const bg=tokenMatch[1].match(/--score-ranking-surface:\\s*(#[0-9a-f]{6})/i);
+  const startOfTheme=scoreboardBlock.indexOf('html[data-theme="'+theme+'"]{');
+  expect(startOfTheme>=0,'Missing in-game scoreboard palette: '+theme);
+  const themeDeclarations=scoreboardBlock.slice(startOfTheme,scoreboardBlock.indexOf('}',startOfTheme));
+  const fg=themeDeclarations.match(/--score-live-ink:\s*(#[0-9a-f]{6})/i);
+  const bg=themeDeclarations.match(/--score-ranking-surface:\s*(#[0-9a-f]{6})/i);
   expect(Boolean(fg)&&Boolean(bg),'Missing explicit score ink/surface pair: '+theme);
   expect(fg[1].toLowerCase()!==bg[1].toLowerCase(),'Score ink cannot equal background: '+theme);
   expect(contrast(rgb(fg[1]),rgb(bg[1]))>=7,'Score palette fails AAA contrast: '+theme);
