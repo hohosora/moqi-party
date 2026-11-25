@@ -787,6 +787,10 @@
       <div class="btn-row section-gap">${state.mode==='online'?`<button class="btn secondary" data-action="copy">🔗 複製活動網址</button>`:''}<button class="btn" data-action="leave">🔁 再開一局</button></div>
     `, `<span class="status-tag">${state.room.totalRounds} 題挑戰完成</span>`);
   }
+  function decorateVisibleEmoji(root){
+    // Graceful on browsers without Intl.Segmenter or the optional helper.
+    window.MOQI_EMOJI_COMPAT?.decorate(root);
+  }
   function render(){
     // 房間主題由主持人建立時寫入 Firestore，玩家不需自行設定。
     document.documentElement.setAttribute('data-theme',activeTheme());
@@ -794,7 +798,7 @@
     document.documentElement.style.setProperty('--m-hue',String(activeMinimalHue()));
     const metaThemeColor=document.querySelector('meta[name="theme-color"]');
     if(metaThemeColor)metaThemeColor.setAttribute('content',activeTheme()==='panel'?'#f76a12':'#121028');
-    if(!state.mode || !state.room) {$app.innerHTML=state.page==='manager'?renderManager():state.page==='host'?renderHost():state.page==='quick-host'?renderQuickHost():state.page==='host-choice'?renderHostChoice():state.page==='join'?renderJoin():renderHome();return;}
+    if(!state.mode || !state.room) {$app.innerHTML=state.page==='manager'?renderManager():state.page==='host'?renderHost():state.page==='quick-host'?renderQuickHost():state.page==='host-choice'?renderHostChoice():state.page==='join'?renderJoin():renderHome();decorateVisibleEmoji($app);return;}
     // 每次新題啟動時，先顯示題目，不沿用上一題或等候室留在頁面底部的位置。
     // 以「房間＋題號」辨識，只捲動一次；同一題收到其他玩家的票數時不干擾目前閱讀位置。
     const questionKey=state.room.phase==='voting'? `${state.mode}:${state.roomCode}:${state.room.roundIndex}` :null;
@@ -805,6 +809,7 @@
     else if(state.room.phase==='reveal') $app.innerHTML=renderReveal();
     else if(state.room.phase==='finished') $app.innerHTML=renderFinished();
     else $app.innerHTML=surface('<div class="loading-page">正在同步遊戲房間…</div>');
+    decorateVisibleEmoji($app);
     if(showQuestionTop){
       const resetToQuestion=()=>{
         if(state.room?.phase==='voting' && state.lastVisibleQuestionKey===questionKey){
@@ -982,12 +987,13 @@
     if(!el)return;
     const count=currentVoteCount(), total=state.players.length;
     el.textContent=`📬 已答 ${count} / ${total} 人 ${state.mode==='demo'?'（含虛擬玩家）':''}`;
+    decorateVisibleEmoji(el);
     const host=document.getElementById('host-vote-count');
     if(host)host.textContent=`已作答 ${count}/${total}`;
     const reveal=document.querySelector('[data-action="reveal"]');
     if(reveal)reveal.disabled=count===0;
     const sync=document.getElementById('vote-sync-indicator');
-    if(sync)sync.textContent=state.mode==='demo'?'🎭 示範模式':state.voteSyncFromCache?'📡 網路同步中，主持人數字可能稍有延遲':'☁️ 已連線，票數將自動更新';
+    if(sync){sync.textContent=state.mode==='demo'?'🎭 示範模式':state.voteSyncFromCache?'📡 網路同步中，主持人數字可能稍有延遲':'☁️ 已連線，票數將自動更新';decorateVisibleEmoji(sync);}
   }
   async function beginRound(){
     if(!isHost())return;
@@ -1046,7 +1052,7 @@
   function currentTimeTick(){
     if(state.room?.phase!=='voting')return;
     const remaining=Math.max(0,Math.ceil(((state.room.deadline||Date.now())-Date.now())/1000));
-    const t=document.getElementById('timer');if(t){const digits=t.querySelector('.timer-digits');if(digits)digits.textContent=`⏱ ${remaining} 秒`;else t.textContent=`⏱ ${remaining} 秒`;t.classList.toggle('urgent',remaining<=10);t.setAttribute('aria-label',`倒數計時，剩餘 ${remaining} 秒`);}
+    const t=document.getElementById('timer');if(t){const digits=t.querySelector('.timer-digits');if(digits)digits.textContent=`⏱ ${remaining} 秒`;else t.textContent=`⏱ ${remaining} 秒`;t.classList.toggle('urgent',remaining<=10);t.setAttribute('aria-label',`倒數計時，剩餘 ${remaining} 秒`);decorateVisibleEmoji(digits||t);}
     if(remaining===0 && Date.now()>=Number(state.room.deadline||0)+3500 && isHost() && !state.busy && !state.autoRevealing){
       state.autoRevealing=true;
       revealRound().catch(err=>{state.error='自動結算失敗：'+friendlyError(err);render();}).finally(()=>{state.autoRevealing=false;});
