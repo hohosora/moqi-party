@@ -1,0 +1,14 @@
+version: 2
+updates:
+  # Keep CI workflows and third-party actions current via reviewed PRs.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+  # Alert and propose updates to test-only Firebase dependencies.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
