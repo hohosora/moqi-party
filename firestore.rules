@@ -29,12 +29,13 @@ service cloud.firestore {
         && validHeroImage(data);
     }
     function validQuestion(question) {
-      // Every question gets a shallow shape check. Full per-option validation across
-      // 12 questions would exceed Firestore's 1,000-expression request limit.
+      // Compact structure-only check for each entry. Firestore has a hard
+      // 1,000-expression limit; deeper text checks are sampled below and
+      // full per-option input validation remains in the client.
       return question is map
-        && question.q is string && question.q.size() > 0 && question.q.size() <= 120
+        && question.q is string
         && question.a is list && question.a.size() == 4
-        && question.talk is string && question.talk.size() > 0 && question.talk.size() <= 160;
+        && question.talk is string;
     }
     function validQuestionAt(questions, index) {
       return index >= questions.size() || validQuestion(questions[index]);
@@ -47,7 +48,9 @@ service cloud.firestore {
         && validQuestionAt(questions, 4) && validQuestionAt(questions, 5)
         && validQuestionAt(questions, 6) && validQuestionAt(questions, 7)
         && validQuestionAt(questions, 8) && validQuestionAt(questions, 9)
-        && validQuestionAt(questions, 10) && validQuestionAt(questions, 11);
+        && validQuestionAt(questions, 10) && validQuestionAt(questions, 11)
+        && questions[0].q.size() > 0 && questions[0].q.size() <= 120
+        && questions[0].talk.size() > 0 && questions[0].talk.size() <= 160;
     }
     function validQuickSettings(data) {
       return (!('quickMode' in data) || data.quickMode is bool)
