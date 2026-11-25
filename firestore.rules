@@ -92,6 +92,23 @@ service cloud.firestore {
         && questions[0].q.size() > 0 && questions[0].q.size() <= 120
         && questions[0].talk.size() > 0 && questions[0].talk.size() <= 160;
     }
+    // The atomic V3 create requires BOTH room and invite writes. Split the same
+    // question checks across their rules to stay within the expression budget.
+    // Legacy rooms retain the original full validator.
+    function validV3QuestionsFirst(questions,count) {
+      return questions is list && questions.size() == count
+        && validQuestionAt(questions,0) && validQuestionAt(questions,1)
+        && validQuestionAt(questions,2) && validQuestionAt(questions,3)
+        && validQuestionAt(questions,4) && validQuestionAt(questions,5)
+        && questions[0].q.size() > 0 && questions[0].q.size() <= 120
+        && questions[0].talk.size() > 0 && questions[0].talk.size() <= 160;
+    }
+    function validV3QuestionsRest(questions) {
+      return questions is list
+        && validQuestionAt(questions,6) && validQuestionAt(questions,7)
+        && validQuestionAt(questions,8) && validQuestionAt(questions,9)
+        && validQuestionAt(questions,10) && validQuestionAt(questions,11);
+    }
     function validQuickSettings(data) {
       return (!('quickMode' in data) || data.quickMode is bool)
         && (!('quickScene' in data) || data.quickScene == null ||
@@ -114,7 +131,8 @@ service cloud.firestore {
         && data.totalRounds in [6, 8, 10, 12]
         && data.seconds in [15, 30, 45]
         && data.createdAt is int && data.createdAt > 0
-        && validQuestions(data.questions, data.totalRounds)
+        && (isV3(data) ? validV3QuestionsFirst(data.questions,data.totalRounds)
+          : validQuestions(data.questions,data.totalRounds))
         && data.scores is map && data.scores.size() == 0
         && data.streaks is map && data.streaks.size() == 0
         && data.usedDoubles is map && data.usedDoubles.size() == 0
@@ -189,6 +207,7 @@ service cloud.firestore {
         && !exists(roomPath(code)) && !exists(playerPath(code,request.auth.uid))
         && isV3(getAfter(roomPath(code)).data)
         && getAfter(roomPath(code)).data.hostUid == request.auth.uid
+        && validV3QuestionsRest(getAfter(roomPath(code)).data.questions)
         && getAfter(playerPath(code,request.auth.uid)).data.seat == '1';
       allow update: if signedIn() && isV3(get(roomPath(code)).data) && (
         (!isMember(code) && get(roomPath(code)).data.phase == 'lobby'
