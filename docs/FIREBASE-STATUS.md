@@ -1,5 +1,9 @@
 # Firebase 環境狀態
 
+## P2.5 · 30 天金鑰使用查核
+
+已核對 25 項 API targets，14 項服務已啟用。最近 30 天 94 次請求可歸屬此 Web key；建議先在隔離環境驗證 7 項清單，第三方 Rules REST 用途未排除時保留第 8 項。 [完整查核與修正方案](P25-KEY-REVIEW.md)
+
 ## 2026-11-25 · P2.5 金鑰查核
 
 GitHub Secret Scanning [#1](https://github.com/hohosora/moqi-party/security/secret-scanning/1) 唯讀查詢結果為 open。記憶體比對 Firebase Management 提供的正式 Web App SDK 設定與 `firebase-config.js:11` 相符。以該 Web App 的 apiKeyId 查詢 API Keys v2 中對應的金鑰中繼資料。瀏覽器限制為 `https://hohosora.github.io` 與 `https://hohosora.github.io/*`，同一來源其他 Pages 路徑也在範圍內。
