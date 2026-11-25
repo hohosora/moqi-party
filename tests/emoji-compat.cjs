@@ -49,10 +49,10 @@ const server=http.createServer((req,res)=>{
         await verify('vote count','#vote-count');
         await verify('timer','#timer');
         const timerBefore=await page.locator('#timer').getAttribute('aria-label');
-        await page.waitForTimeout(1350);
+        // setInterval is not aligned with the round start. Wait for the
+        // actual countdown change rather than assuming a fixed 1.35 s delay.
+        await page.waitForFunction(before=>document.getElementById('timer')?.getAttribute('aria-label')!==before,timerBefore,{timeout:5000});
         await verify('live timer','#timer');
-        const timerAfter=await page.locator('#timer').getAttribute('aria-label');
-        assert.notEqual(timerBefore,timerAfter,'Timer must tick with emoji fallback enabled');
         const duplicates=await page.evaluate(()=>{
           const root=document.getElementById('app');
           const count=root.querySelectorAll('bdi.emoji-glyph').length;
