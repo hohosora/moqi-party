@@ -1134,3 +1134,66 @@ html[data-theme="minimal"] .quick-host-tip{background:#edf2ed;color:#303e39;bord
   .quick-host-summary{grid-template-columns:1fr}
   .quick-host-summary span{min-height:0;display:flex;flex-wrap:wrap;justify-content:center;gap:5px;padding:9px}
 }
+
+/* v9 | Score legibility: protect live rankings from theme accent colors. */
+/* Accent greens/yellows are decorative only. Scores remain readable on each
+   theme's actual leaderboard surfaces, including mobile and expanded rankings. */
+html[data-theme="party"]{
+  --score-live-ink:#261435;
+  --score-ranking-surface:#ffffff;
+}
+html[data-theme="panel"]{
+  --score-live-ink:#fff3dd;
+  --score-ranking-surface:#101e12;
+}
+html[data-theme="minimal"]{
+  --score-live-ink:#243033;
+  --score-ranking-surface:#f4f1ed;
+}
+
+/* Fix: pixel theme neon yellow-green numbers were rendered on white cards. */
+html[data-theme="party"] .quick-ranking .quick-rank-line b,
+html[data-theme="party"] .leader-top .podium .points,
+html[data-theme="party"] .rank-list .rank-points{
+  color:var(--score-live-ink);
+  text-shadow:none;
+  font-variant-numeric:tabular-nums;
+}
+/* Pixel round score and reveal score already have light surfaces: explicitly
+   keep high-contrast dark ink without changing the pixel-frame decoration. */
+html[data-theme="party"] .round-header .rank-pill{
+  color:#131018;
+  background:#f5f3fb;
+}
+html[data-theme="party"] .score-highlight .score-big{
+  color:#4c139f;
+  text-shadow:none;
+}
+
+/* Mechanical leaderboard uses dark LCDs: warm, near-white numerals instead
+   of potentially low-legibility phosphor yellow-green. Keep all LCD gradients. */
+html[data-theme="panel"] .quick-ranking .quick-rank-line b,
+html[data-theme="panel"] .leader-top .podium .points,
+html[data-theme="panel"] .rank-list .rank-points{
+  color:var(--score-live-ink);
+  text-shadow:none;
+  font-variant-numeric:tabular-nums;
+}
+html[data-theme="panel"] .score-highlight .score-big{
+  color:#352014;
+  text-shadow:none;
+}
+
+/* Minimal uses soft, light surfaces even when the hue slider changes.
+   Numeric values must not inherit the bright accent. */
+html[data-theme="minimal"] .quick-ranking .quick-rank-line b,
+html[data-theme="minimal"] .leader-top .podium .points,
+html[data-theme="minimal"] .rank-list .rank-points{
+  color:var(--score-live-ink);
+  text-shadow:none;
+  font-variant-numeric:tabular-nums;
+}
+html[data-theme="minimal"] .score-highlight .score-big{
+  color:#23282a;
+  text-shadow:none;
+}
