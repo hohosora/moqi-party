@@ -1,5 +1,13 @@
 # Firebase 環境狀態
 
+## 2026-11-25 · P2.5 金鑰查核
+
+GitHub Secret Scanning [#1](https://github.com/hohosora/moqi-party/security/secret-scanning/1) 唯讀查詢結果為 open。記憶體比對 Firebase Management 提供的正式 Web App SDK 設定與 `firebase-config.js:11` 相符。以該 Web App 的 apiKeyId 查詢 API Keys v2 中對應的金鑰中繼資料。瀏覽器限制為 `https://hohosora.github.io` 與 `https://hohosora.github.io/*`，同一來源其他 Pages 路徑也在範圍內。
+
+金鑰設有 25 個 API targets。前端使用 Authentication、Secure Token、Firestore 與 App Check。准許的其他服務包括 Cloud SQL Admin、Firebase ML、Firebase AI Logic、App Hosting、Data Connect、Cloud Storage for Firebase、Cloud Logging。Service Usage 已啟用清單包含 Firestore、Identity Toolkit、Secure Token、App Check、Logging、BigQuery、Pub/Sub、Cloud Storage 和 reCAPTCHA Enterprise。已啟用的 BigQuery、Pub/Sub、reCAPTCHA Enterprise 不在金鑰清單；清單中的 Cloud SQL Admin、Firebase AI Logic、Data Connect 未列入已啟用服務。啟用狀態與金鑰可用範圍需分別審核。
+
+Cloud Billing 回覆 `billingEnabled=false`。本次僅查設定，沒有呼叫這些服務來測試計費能力，沒有存取正式房間。來源與用途已確認，API 清單仍需逐項證明必要性。維持警示開啟，處理條件見[任務清單](AI-TASKS.md)。
+
 ## 2026-11-25 · 正式環境
 
 使用者確認 Cloud Firestore 的 App Check 已強制執行，Authentication 維持監控。設定狀態依使用者回報記錄。第 5 階段唯讀預覽共掃描 12 間房間，候選 0、跳過 0、刪除 0。詳見[最終驗收紀錄](TEST-LOG.md#p2-最終驗收)。
