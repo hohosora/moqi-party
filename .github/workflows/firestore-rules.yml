@@ -6,6 +6,7 @@ on:
       - 'firestore.rules'
       - 'firebase.json'
       - 'package.json'
+      - 'package-lock.json'
       - 'app.js'
       - 'app-check-config.js'
       - 'tests/client-security.cjs'
@@ -23,12 +24,12 @@ jobs:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
         with:
-          node-version: '22'
+          node-version: '24'
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: '21'
       - name: Install test-only Firebase dependencies
-        run: npm install --no-save --no-package-lock --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - name: Verify room, player, vote and phase permissions
         run: npm run test:rules
