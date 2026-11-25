@@ -44,7 +44,7 @@ const server=http.createServer((req,res)=>{
         await page.locator('[name="nickname"]').fill('跨平台符號測試');
         await page.locator('[data-action="demo"]').click();
         await verify('lobby','.avatars');
-        assert.equal(await page.locator('.avatar-pill').count(),12,'Demo roster unchanged');
+        assert.equal(await page.locator('.avatar-pill').count(),13,'Twelve demo guests plus the host are unchanged');
         await page.locator('[data-action="start"]').click();
         await verify('vote count','#vote-count');
         await verify('timer','#timer');
