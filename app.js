@@ -911,6 +911,7 @@
   const diagnosticsEnabled=location.hostname==='moqi-party-staging.web.app'&&new URLSearchParams(location.search).get('diagnostics')==='1';
   const connectionDiagnostics=makeConnectionDiagnostics(diagnosticsEnabled,()=>performance.now());
   if(diagnosticsEnabled)window.__MOQI_CONNECTION_DIAGNOSTICS__=()=>connectionDiagnostics.snapshot();
+  const onlineRoomUrl=code=>`?room=${code}${diagnosticsEnabled?'&diagnostics=1':''}`;
   async function getFirebase(){
     if(state.firebase)return state.firebase;
     if(!CONFIGURED)throw new Error('尚未設定 Firebase。可先按「先玩示範局」，或依操作說明完成 Firebase 設定再使用多人連線。');
@@ -1014,7 +1015,7 @@
       await L.setDoc(playerRef(code,state.uid),player);
     }
     saveQuickHistory(preparedQuestions);
-    state.mode='online';state.roomCode=code;state.room=data;state.player=state.uid;history.replaceState(null,'',`?room=${code}`);
+    state.mode='online';state.roomCode=code;state.room=data;state.player=state.uid;history.replaceState(null,'',onlineRoomUrl(code));
     subscribeOnline(code);
   }
   async function joinOnline(){
@@ -1037,13 +1038,13 @@
       if(!selfExists)await connectionDiagnostics.measure('player-write',()=>L.setDoc(playerRef(code,state.uid),player));
     }
     if(!snap.exists())throw new Error('找不到這個房間，請再確認代碼。');
-    state.mode='online';state.roomCode=code;state.room=snap.data();state.player=state.uid;history.replaceState(null,'',`?room=${code}`);
+    state.mode='online';state.roomCode=code;state.room=snap.data();state.player=state.uid;history.replaceState(null,'',onlineRoomUrl(code));
     subscribeOnline(code);
   }
   function subscribeOnline(code){
     clearListeners();const L=state.firebase.dbLib,db=state.firebase.db;
     const roomFirst=connectionDiagnostics.first('room-first'),rosterFirst=connectionDiagnostics.first('roster-first');
-    const offRoom=L.onSnapshot(roomRef(code),snap=>{
+    const offRoom=L.onSnapshot(roomRef(code),{includeMetadataChanges:diagnosticsEnabled},snap=>{
       if(!snap.metadata?.fromCache)roomFirst('ok');
       if(!snap.exists()){state.error='房間已不存在。';leave();return;}
       const prevRound=state.room?.roundIndex, prevPhase=state.room?.phase;
@@ -1053,7 +1054,7 @@
       if(state.room.phase==='voting' && prevPhase==='voting' && prevRound===state.room.roundIndex && document.getElementById('vote-count'))updateVoteStatusUI();
       else render();
     },err=>{roomFirst('error');state.error='同步房間失敗：'+friendlyError(err);render();});
-    const offPlayers=L.onSnapshot(L.collection(db,'rooms',code,'players'),snap=>{
+    const offPlayers=L.onSnapshot(L.collection(db,'rooms',code,'players'),{includeMetadataChanges:diagnosticsEnabled},snap=>{
       if(!snap.metadata?.fromCache)rosterFirst('ok');
       state.players=snap.docs.map(d=>d.data()).sort((a,b)=>a.joinedAt-b.joinedAt);
       if(state.room?.phase==='voting' && document.getElementById('vote-count'))updateVoteStatusUI();
