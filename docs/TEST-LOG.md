@@ -1,5 +1,9 @@
 # 測試紀錄
 
+## 2026-11-25 · P2.5／P3-2 雲端驗收
+
+長期 Spark 測試站已部署 main `417c79a`。7 項 API 清單、舊房 8 題流程與 V3 的 20 人上限已在隔離雲端驗證；實體手機驗收與正式發布待完成。[版本、實際操作、證據與還原](P25-P32-CLOUD-ACCEPTANCE.md)。
+
 ## 2026-11-25 · P3-2 PR #41 整合驗收
 
 第一輪 [Rules CI](https://github.com/hohosora/moqi-party/actions/runs/45571812466) 於 V3 12 題原子建房達到 1,000 個 Rules expressions 上限。將原有題庫格式檢查拆分至必須同時提交的 room 與 invite 寫入；新增首題及末題不合法時拒絕全筆交易、無殘留 invite/player 驗證。第二輪 head `3b446a92a84b7f64d94e2b2b88a35d5d33c6ee72`：[Rules](https://github.com/hohosora/moqi-party/actions/runs/45575702160) 日誌明示 PASS: 91 Firestore security emulator assertions；[UI/計分](https://github.com/hohosora/moqi-party/actions/runs/45575702119) 成功。包括舊協定、V3 原子建立、非會員拒絕、20 席、並行最後名額、21 人拒絕、重連、開始與入房綁定、投票、揭曉、下一題。鎖定 head squash 合併為 `d2142df696d081dbe46ecfd6629562c1feb50a92`。合併後 CI、Pages 另行核對。前端兩開關仍 false；本次未部署正式 Rules、未啟用 V3、未重跑正式實機遊戲或 20 人投票壓測。
