@@ -29,12 +29,12 @@ service cloud.firestore {
         && validHeroImage(data);
     }
     function validQuestion(question) {
+      // Every question gets a shallow shape check. Full per-option validation across
+      // 12 questions would exceed Firestore's 1,000-expression request limit.
       return question is map
-        && question.keys().hasOnly(['q', 'a', 'talk'])
-        && question.keys().hasAll(['q', 'a', 'talk'])
         && question.q is string && question.q.size() > 0 && question.q.size() <= 120
-        && question.talk is string && question.talk.size() > 0 && question.talk.size() <= 160
-        && question.a is list && question.a.size() == 4;
+        && question.a is list && question.a.size() == 4
+        && question.talk is string && question.talk.size() > 0 && question.talk.size() <= 160;
     }
     function validQuestionAt(questions, index) {
       return index >= questions.size() || validQuestion(questions[index]);
