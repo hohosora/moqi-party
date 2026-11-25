@@ -1285,7 +1285,7 @@ html[data-theme="minimal"] .notice{
 }
 html[data-theme="minimal"] .field input::placeholder,
 html[data-theme="minimal"] .field textarea::placeholder{
-  color:#455153;
+  color:#30393c;
   opacity:1;
 }
 /* Keep text above pastel bars readable even when the 0–359 hue slider
