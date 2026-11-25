@@ -1,0 +1,13 @@
+{
+  "name": "moqi-party-rules-tests",
+  "private": true,
+  "description": "Security rules emulator checks; no production credentials",
+  "scripts": {
+    "test:rules": "firebase emulators:exec --project demo-moqi-party-p1 --only firestore \"node tests/firestore-rules-emulator.cjs\""
+  },
+  "devDependencies": {
+    "firebase": "^11.10.0",
+    "firebase-tools": "^14.0.0",
+    "@firebase/rules-unit-testing": "^4.0.0"
+  }
+}
