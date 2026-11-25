@@ -38,3 +38,17 @@
 | main `d4a0644` 的 P2-2 | 全部 1 頁，無後續頁 | 12 | 0 | 0 |
 
 以每頁最多 50 筆列出房間，只要求 `phase` 欄位與文件中繼資料。使用 Firestore 服務的 HTTP 日期作為判定時間（06:24:30 UTC），沿用 `admin/room-retention.cjs` 的 `assessRoom`。12 間房間的父文件 `updateTime` 全部在各自階段的保留期內（lobby、finished 為 7 天；voting、reveal 為 30 天）。依既有預覽工具的父文件初篩，沒有房間需要檢查 players 或 votes，子文件讀取數為 0。全程僅讀取正式資料，紀錄只保留彙總。
+
+## 2026-11-25 · #33、#32 合併與正式部署驗收
+
+| 階段 | 核對的提交 | 結果 |
+|---|---|---|
+| [#33](https://github.com/hohosora/moqi-party/pull/33) 合入 #32 分支 | head `cc292bbd4e0ab6f0e18febf9883f525858fd7df8`，base 為 #32 分支的 `f306c0a` | [UI 與計分](https://github.com/hohosora/moqi-party/actions/runs/45560477343)、[Firestore 規則](https://github.com/hohosora/moqi-party/actions/runs/45560477326) 均成功。合併時鎖定上述 head，產生 `c9213c931fd18bea4bb7931ca966fc3d2d0d4f23`。 |
+| 更新後的 [#32](https://github.com/hohosora/moqi-party/pull/32) 合入 main | head `c9213c931fd18bea4bb7931ca966fc3d2d0d4f23` | [UI 與計分](https://github.com/hohosora/moqi-party/actions/runs/45560858090)、[Firestore 規則](https://github.com/hohosora/moqi-party/actions/runs/45560858040) 均成功。以同一 head 合併，main 提交為 [e90d8b8](https://github.com/hohosora/moqi-party/commit/e90d8b8e6b905e928b289c890d122564fab5baac)。 |
+| 正式 Pages | `e90d8b8e6b905e928b289c890d122564fab5baac` | [建置與部署成功](https://github.com/hohosora/moqi-party/actions/runs/45561057609)。部署完成後從[正式站](https://hohosora.github.io/moqi-party/)讀回首頁及其直接引用的 3 份 CSS、4 份 JS，以 Git blob SHA-1 對照此提交，8/8 相符。 |
+
+正式首頁引用 `app.js?v=20261125-host-vote-sync-v1`，檔案 blob 為 `9e634eca85c8ed9aa827823b72f0b51c69c913f2`。主持人同步功能來自 [#31](https://github.com/hohosora/moqi-party/pull/31)，#32、#33 僅更新協作文件。
+
+**主持人票數同步：正式環境未量測，0 題。** 正式站開房、加入及投票會寫入 Firestore，因此只讀取公開靜態檔案。既有實機回報記載，改善前手機已確認送達，主持人有時到倒數剩 3–5 秒才看到票數。此數字是題目剩餘時間。每 2 秒最多一次是新版的查詢頻率；目前沒有本版手機送達至主持人畫面更新的成對時間戳。
+
+依 [P2-4](P2-security-hardening.md)，仍待在可寫入的獨立測試環境，以手機與桌機連測至少 6 題、每題 30 秒，核對正常網路的 1–3 秒目標，以及重連、提前揭曉與最終分數。既有第 5 階段唯讀掃描的 12 間、候選 0、跳過 0 沿用上節紀錄。
