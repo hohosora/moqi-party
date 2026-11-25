@@ -14,6 +14,7 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/rooms/$(code)/players/$(uid));
     }
 
+    // Never trust browser-side form limits. Keep all values bounded at the database.
     function validHeroImage(data) {
       return !('heroImage' in data) || (
         data.heroImage is string
@@ -21,54 +22,170 @@ service cloud.firestore {
         && (data.heroImage == '' || data.heroImage.matches('^data:image/jpeg;base64,[A-Za-z0-9+/=]+$'))
       );
     }
+    function validAppearance(data) {
+      return (!('theme' in data) || data.theme in ['party', 'panel', 'minimal'])
+        && (!('minimalHue' in data) ||
+          (data.minimalHue is int && data.minimalHue >= 0 && data.minimalHue <= 359))
+        && validHeroImage(data);
+    }
+    function validQuestion(question) {
+      return question is map
+        && question.keys().hasOnly(['q', 'a', 'talk'])
+        && question.keys().hasAll(['q', 'a', 'talk'])
+        && question.q is string && question.q.size() > 0 && question.q.size() <= 120
+        && question.talk is string && question.talk.size() > 0 && question.talk.size() <= 160
+        && question.a is list && question.a.size() == 4
+        && question.a[0] is string && question.a[0].size() > 0 && question.a[0].size() <= 100
+        && question.a[1] is string && question.a[1].size() > 0 && question.a[1].size() <= 100
+        && question.a[2] is string && question.a[2].size() > 0 && question.a[2].size() <= 100
+        && question.a[3] is string && question.a[3].size() > 0 && question.a[3].size() <= 100;
+    }
+    function validQuestionAt(questions, index) {
+      return index >= questions.size() || validQuestion(questions[index]);
+    }
+    function validQuestions(questions, count) {
+      return questions is list
+        && questions.size() == count
+        && validQuestionAt(questions, 0) && validQuestionAt(questions, 1)
+        && validQuestionAt(questions, 2) && validQuestionAt(questions, 3)
+        && validQuestionAt(questions, 4) && validQuestionAt(questions, 5)
+        && validQuestionAt(questions, 6) && validQuestionAt(questions, 7)
+        && validQuestionAt(questions, 8) && validQuestionAt(questions, 9)
+        && validQuestionAt(questions, 10) && validQuestionAt(questions, 11);
+    }
+    function validQuickSettings(data) {
+      return (!('quickMode' in data) || data.quickMode is bool)
+        && (!('quickScene' in data) || data.quickScene == null ||
+          data.quickScene in ['general', 'friends', 'church', 'company', 'school', 'family', 'community']);
+    }
+    function validRoomCreate(data, code) {
+      return code.matches('^[A-HJ-NP-Z2-9]{6}$')
+        && data.keys().hasOnly([
+          'hostUid', 'phase', 'roundIndex', 'totalRounds', 'seconds', 'questions',
+          'scores', 'streaks', 'usedDoubles', 'lastResult', 'deadline', 'createdAt',
+          'heroImage', 'theme', 'minimalHue', 'quickMode', 'quickScene'
+        ])
+        && data.keys().hasAll([
+          'hostUid', 'phase', 'roundIndex', 'totalRounds', 'seconds', 'questions',
+          'scores', 'streaks', 'usedDoubles', 'lastResult', 'deadline', 'createdAt'
+        ])
+        && data.hostUid == request.auth.uid
+        && data.phase == 'lobby'
+        && data.roundIndex == -1
+        && data.totalRounds in [6, 8, 10, 12]
+        && data.seconds in [15, 30, 45]
+        && data.createdAt is int && data.createdAt > 0
+        && validQuestions(data.questions, data.totalRounds)
+        && data.scores is map && data.scores.size() == 0
+        && data.streaks is map && data.streaks.size() == 0
+        && data.usedDoubles is map && data.usedDoubles.size() == 0
+        && data.lastResult == null && data.deadline == null
+        && validAppearance(data) && validQuickSettings(data);
+    }
+    function validDeadline(data) {
+      return data.deadline is int && data.deadline > 0;
+    }
+    function validRoundResult(data) {
+      return data.scores is map && data.scores.size() <= 20
+        && data.streaks is map && data.streaks.size() <= 20
+        && data.usedDoubles is map && data.usedDoubles.size() <= 20
+        && data.lastResult is map
+        && data.lastResult.keys().hasAll(['counts', 'top', 'cold', 'totalVotes', 'gains'])
+        && data.lastResult.keys().hasOnly(['counts', 'top', 'cold', 'totalVotes', 'gains'])
+        && data.lastResult.counts is list && data.lastResult.counts.size() == 4
+        && data.lastResult.top is list && data.lastResult.top.size() <= 4
+        && data.lastResult.cold is list && data.lastResult.cold.size() <= 4
+        && data.lastResult.totalVotes is int
+        && data.lastResult.totalVotes >= 0 && data.lastResult.totalVotes <= 20
+        && data.lastResult.gains is map && data.lastResult.gains.size() <= 20;
+    }
+    function onlyUpdated(fields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
+    }
+    function validRoomUpdate() {
+      return resource.data.hostUid == request.auth.uid
+        && request.resource.data.hostUid == resource.data.hostUid
+        && validAppearance(request.resource.data)
+        && (
+          // Host can change the look without changing gameplay or scores.
+          (request.resource.data.phase == resource.data.phase
+            && onlyUpdated(['heroImage', 'theme', 'minimalHue']))
+          // One-time lobby -> first round.
+          || (resource.data.phase == 'lobby' && request.resource.data.phase == 'voting'
+            && request.resource.data.roundIndex == 0
+            && validDeadline(request.resource.data)
+            && request.resource.data.scores is map
+            && request.resource.data.scores.size() <= 20
+            && request.resource.data.streaks is map
+            && request.resource.data.usedDoubles is map
+            && request.resource.data.lastResult == null
+            && onlyUpdated(['phase', 'roundIndex', 'deadline', 'scores', 'streaks', 'usedDoubles', 'lastResult']))
+          // Host's scoreboard is settled only at reveal.
+          || (resource.data.phase == 'voting' && request.resource.data.phase == 'reveal'
+            && request.resource.data.roundIndex == resource.data.roundIndex
+            && validRoundResult(request.resource.data)
+            && onlyUpdated(['phase', 'scores', 'streaks', 'usedDoubles', 'lastResult']))
+          // Advance to the next question without modifying previous scores.
+          || (resource.data.phase == 'reveal' && request.resource.data.phase == 'voting'
+            && request.resource.data.roundIndex == resource.data.roundIndex + 1
+            && request.resource.data.roundIndex < resource.data.totalRounds
+            && validDeadline(request.resource.data)
+            && request.resource.data.lastResult == null
+            && onlyUpdated(['phase', 'roundIndex', 'deadline', 'lastResult']))
+          // Finish only after the configured final question.
+          || (resource.data.phase == 'reveal' && request.resource.data.phase == 'finished'
+            && request.resource.data.roundIndex + 1 == resource.data.totalRounds
+            && request.resource.data.deadline == null
+            && onlyUpdated(['phase', 'deadline']))
+        );
+    }
 
     match /rooms/{code} {
-      // 知道房號且匿名登入的玩家，才可讀取房間；不提供房間總列表。
+      // Exact room-code lookup allowed for anonymous signed-in players, room listing disabled.
       allow get: if signedIn();
       allow list: if false;
-      allow create: if signedIn()
-        && code.matches('^[A-HJ-NP-Z2-9]{6}$')
-        && request.resource.data.hostUid == request.auth.uid
-        && request.resource.data.phase == 'lobby'
-        && request.resource.data.totalRounds in [6,8,10,12]
-        && request.resource.data.seconds in [15,30,45]
-        && validHeroImage(request.resource.data);
-      allow update: if signedIn()
-        && resource.data.hostUid == request.auth.uid
-        && request.resource.data.hostUid == resource.data.hostUid
-        && validHeroImage(request.resource.data);
+      allow create: if signedIn() && validRoomCreate(request.resource.data, code);
+      allow update: if signedIn() && validRoomUpdate();
       allow delete: if false;
 
       match /players/{uid} {
+        // Room joining reads the roster before the player document exists.
         allow read: if signedIn();
         allow create: if signedIn()
           && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['uid', 'name', 'emoji', 'joinedAt'])
+          && request.resource.data.keys().hasAll(['uid', 'name', 'emoji', 'joinedAt'])
           && request.resource.data.uid == uid
           && get(roomPath(code)).data.phase == 'lobby'
           && request.resource.data.name is string
           && request.resource.data.name.size() >= 1
-          && request.resource.data.name.size() <= 60
-          && request.resource.data.emoji is string;
+          && request.resource.data.name.size() <= 14
+          && request.resource.data.emoji is string
+          && request.resource.data.emoji.size() >= 1
+          && request.resource.data.emoji.size() <= 16
+          && request.resource.data.joinedAt is int
+          && request.resource.data.joinedAt > 0;
         allow update, delete: if false;
       }
 
       match /votes/{voteId} {
+        // Existing polling/answer-count listeners require this read access.
+        // Read isolation requires a separate protocol update in a later phase.
         allow read: if signedIn();
         allow create: if signedIn()
-          && playerExists(code,request.auth.uid)
+          && playerExists(code, request.auth.uid)
           && roomIsVoting(code)
           && request.resource.data.uid == request.auth.uid
           && request.resource.data.roundIndex == get(roomPath(code)).data.roundIndex
           && voteId == request.auth.uid + '_' + string(request.resource.data.roundIndex)
-          && request.resource.data.keys().hasOnly(['uid','roundIndex','choice','guess','double','at'])
-          && request.resource.data.keys().hasAll(['uid','roundIndex','choice','guess','double','at'])
+          && request.resource.data.keys().hasOnly(['uid', 'roundIndex', 'choice', 'guess', 'double', 'at'])
+          && request.resource.data.keys().hasAll(['uid', 'roundIndex', 'choice', 'guess', 'double', 'at'])
           && request.resource.data.choice is int
           && request.resource.data.guess is int
-          && request.resource.data.choice >= 0
-          && request.resource.data.choice <= 3
-          && request.resource.data.guess >= 0
-          && request.resource.data.guess <= 3
-          && request.resource.data.double is bool;
+          && request.resource.data.choice >= 0 && request.resource.data.choice <= 3
+          && request.resource.data.guess >= 0 && request.resource.data.guess <= 3
+          && request.resource.data.double is bool
+          && request.resource.data.at is int && request.resource.data.at > 0;
         allow update, delete: if false;
       }
     }
