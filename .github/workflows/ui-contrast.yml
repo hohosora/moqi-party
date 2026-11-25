@@ -13,16 +13,6 @@ on:
       - 'tests/quick-host.cjs'
       - '.github/workflows/ui-contrast.yml'
   pull_request:
-    paths:
-      - 'styles.css'
-      - 'retro-mechanical.css'
-      - 'ui-clarity.css'
-      - 'app.js'
-      - 'index.html'
-      - 'tests/theme-contrast.cjs'
-      - 'tests/scoring-rules.cjs'
-      - 'tests/quick-host.cjs'
-      - '.github/workflows/ui-contrast.yml'
   workflow_dispatch:
 permissions:
   contents: read
