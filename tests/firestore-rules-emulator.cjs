@@ -34,12 +34,18 @@ async function main(){
     await allow(setDoc(ref,room()),'Host creates valid quick-mode room');
     await allow(getDoc(doc(guest,path)),'Signed-in guest may look up invited room');
     await deny(getDocs(collection(host,'rooms')),'Room codes cannot be enumerated');
-    await deny(setDoc(doc(host,'rooms/CDEFGH'),{...room(),unused:'injected'}),'Unknown room fields blocked');
-    await deny(setDoc(doc(host,'rooms/DEFGHJ'),{...room(),theme:'unknown'}),'Unknown style blocked');
-    await deny(setDoc(doc(host,'rooms/EFGHJK'),{...room(),quickScene:'missing-scene'}),'Unknown quick scene blocked');
-    await deny(setDoc(doc(host,'rooms/FGHJKL'),{...room(),questions:questions.slice(0,5)}),'Incorrect question count blocked');
-    await deny(setDoc(doc(host,'rooms/GHJKLM'),{...room(),questions:questions.map((q,i)=>i? q:{...q,q:'A'.repeat(121)})}),'Oversized question blocked');
-    await deny(setDoc(doc(host,'rooms/HJKLMN'),{...room(),hostUid:'guestB'}),'Cannot claim another host ID');
+    // Explicitly cover every supported custom-host round count, not only quick start.
+    for(const num of [8,10,12]){
+      const roomCode={8:'BCDEFG',10:'CDEFGH',12:'DEFGHJ'}[num];
+      const completeQuestions=Array.from({length:num},(_,i)=>({...questions[0],q:'新題 '+num+'-'+i}));
+      await allow(setDoc(doc(host,'rooms/'+roomCode),{...room(),totalRounds:num,questions:completeQuestions}),'Valid '+num+'-question custom room');
+    }
+    await deny(setDoc(doc(host,'rooms/GHJKLN'),{...room(),unused:'injected'}),'Unknown room fields blocked');
+    await deny(setDoc(doc(host,'rooms/HJKLMN'),{...room(),theme:'unknown'}),'Unknown style blocked');
+    await deny(setDoc(doc(host,'rooms/JKLMNP'),{...room(),quickScene:'missing-scene'}),'Unknown quick scene blocked');
+    await deny(setDoc(doc(host,'rooms/KMNPQR'),{...room(),questions:questions.slice(0,5)}),'Incorrect question count blocked');
+    await deny(setDoc(doc(host,'rooms/MNPQRS'),{...room(),questions:questions.map((q,i)=>i? q:{...q,q:'A'.repeat(121)})}),'Oversized question blocked');
+    await deny(setDoc(doc(host,'rooms/NPQRST'),{...room(),hostUid:'guestB'}),'Cannot claim another host ID');
     await allow(updateDoc(ref,{theme:'panel',minimalHue:50}),'Host may change theme and hue');
     await deny(updateDoc(doc(guest,path),{theme:'minimal'}),'Guest cannot change host theme');
     await deny(updateDoc(ref,{createdAt:1}),'Host cannot rewrite creation time');
@@ -50,8 +56,8 @@ async function main(){
     await allow(setDoc(doc(host,path+'/players/hostA'),self),'Host adds own player document');
     await allow(setDoc(doc(guest,path+'/players/guestB'),{uid:'guestB',name:'小芳',emoji:'🐼',joinedAt:Date.now()}),'Guest joins lobby');
     await deny(setDoc(doc(guest,path+'/players/guestC'),{uid:'guestC',name:'冒名',emoji:'😎',joinedAt:Date.now()}),'Guest cannot forge identity');
-    await deny(setDoc(doc(host,path+'/players/hostC'),{uid:'hostC',name:'X'.repeat(30),emoji:'😎',joinedAt:Date.now()}),'Overlong nickname blocked');
-    await deny(setDoc(doc(host,path+'/players/hostD'),{uid:'hostD',name:'不合法',emoji:'😎',joinedAt:Date.now(),admin:true}),'Player document extra fields blocked');
+    await deny(setDoc(doc(env.authenticatedContext('hostC').firestore(),path+'/players/hostC'),{uid:'hostC',name:'X'.repeat(30),emoji:'😎',joinedAt:Date.now()}),'Overlong nickname blocked');
+    await deny(setDoc(doc(env.authenticatedContext('hostD').firestore(),path+'/players/hostD'),{uid:'hostD',name:'不合法',emoji:'😎',joinedAt:Date.now(),admin:true}),'Player document extra fields blocked');
     await allow(updateDoc(ref,{phase:'voting',roundIndex:0,deadline:Date.now()+30000,scores:{hostA:0,guestB:0},streaks:{},usedDoubles:{},lastResult:null}),'Host starts normal first round');
     await deny(updateDoc(ref,{roundIndex:3}),'Host cannot skip a live round');
     const vote={uid:'hostA',roundIndex:0,choice:1,guess:0,double:false,at:Date.now()};
