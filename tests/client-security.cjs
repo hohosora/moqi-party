@@ -32,7 +32,14 @@ ok(/^[A-HJ-NP-Z2-9]{6}$/.test(sample),'Room ID format');
 ok((()=>{try{create(undefined)();return false}catch(e){return e.message.includes('HTTPS')}})(),'Secure entropy required');
 ok(html.indexOf('firebase-config.js')<html.indexOf('app-check-config.js'),'Config order');
 ok(html.indexOf('app-check-config.js')<html.indexOf('app.js?'),'Runtime order');
-ok(/window\.GAME_APP_CHECK_SITE_KEY\s*=\s*''/.test(key),'Disabled unless explicitly configured');
+// Production now uses a registered PUBLIC reCAPTCHA Enterprise web site key.
+const registered=key.match(/window\.GAME_APP_CHECK_SITE_KEY\s*=\s*'([A-Za-z0-9_-]+)'/);
+ok(Boolean(registered),'App Check public site key must be configured');
+ok(registered[1].length===40,'Expected a 40-character reCAPTCHA Enterprise site key');
+ok(!/\b(secretKey|privateKey|debugToken)\s*=/.test(key),'Never put server credentials in the public web key config');
+ok(src.includes("console.warn('Firebase App Check 驗證未完成"),'Attestation failure should remain visible in console');
+ok(!src.includes("throw new Error('網站安全驗證暫時無法完成"),'Observe-only phase must not block gameplay');
+
 ok(src.includes("const siteKey=String(window.GAME_APP_CHECK_SITE_KEY||'').trim()"),'Opt-in site key');
 ok(src.indexOf('initializeAppCheck(app,')<src.indexOf('const auth=authLib.getAuth(app)'),'App Check before Auth');
 ok(src.includes('ReCaptchaEnterpriseProvider(siteKey)'),'Enterprise provider');

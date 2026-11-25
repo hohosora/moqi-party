@@ -898,9 +898,13 @@
           isTokenAutoRefreshEnabled:true
         });
         await appCheckLib.getToken(appCheck);
+        console.info('Firebase App Check 已取得驗證權杖；Firestore 強制驗證需另行於 Firebase Console 啟用。');
       }catch(error){
-        console.error('Firebase App Check 初始化失敗：',error);
-        throw new Error('網站安全驗證暫時無法完成，請主持人檢查 Firebase App Check 設定。');
+        // Observe-only rollout: do not break guest/host gameplay when a
+        // browser blocks reCAPTCHA or its token exchange. Firebase Console
+        // App Check metrics must confirm valid traffic BEFORE enforcement.
+        // Once enforcement is enabled, token failures will be rejected by Firebase.
+        console.warn('Firebase App Check 驗證未完成（尚未啟用強制驗證）：',error);
       }
     }
     const auth=authLib.getAuth(app);
