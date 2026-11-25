@@ -885,11 +885,37 @@
   }
   function leave(){clearListeners();state.page='home';state.room=null;state.mode=null;state.roomCode='';state.votes=[];state.players=[];state.choice=null;state.guess=null;state.double=false;state.voteStep='choice';state.voteSubmitState='idle';state.voteSyncFromCache=false;state.lastVisibleQuestionKey=null;state.error='';history.replaceState(null,'',location.pathname);render();}
   // ------ Firebase Web SDK：延後載入，離線示範模式不必連任何服務 ------
+  // CONNECTION_DIAGNOSTICS_START
+  // Opt-in staging only; bounded in-memory timings, no identifiers or telemetry.
+  function makeConnectionDiagnostics(enabled,clock){
+    const entries=[];
+    function record(stage,start,outcome){
+      if(!enabled)return;
+      if(!/^(sdk|appcheck-sdk|appcheck-token|auth-restore|auth-anonymous|room-read|roster-read|player-write|invite-read|v3-join|room-first|roster-first|votes-first)$/.test(stage))return;
+      entries.push({stage,ms:Math.max(0,Math.round(clock()-start)),outcome:outcome==='ok'?'ok':'error'});
+      if(entries.length>100)entries.shift();
+    }
+    async function measure(stage,work){
+      if(!enabled)return work();
+      const start=clock();
+      try{const result=await work();record(stage,start,'ok');return result;}
+      catch(err){record(stage,start,'error');throw err;}
+    }
+    function first(stage){
+      const start=enabled?clock():0;let done=false;
+      return outcome=>{if(done)return;done=true;record(stage,start,outcome);};
+    }
+    return {measure,first,snapshot:()=>entries.map(x=>({...x}))};
+  }
+  // CONNECTION_DIAGNOSTICS_END
+  const diagnosticsEnabled=location.hostname==='moqi-party-staging.web.app'&&new URLSearchParams(location.search).get('diagnostics')==='1';
+  const connectionDiagnostics=makeConnectionDiagnostics(diagnosticsEnabled,()=>performance.now());
+  if(diagnosticsEnabled)window.__MOQI_CONNECTION_DIAGNOSTICS__=()=>connectionDiagnostics.snapshot();
   async function getFirebase(){
     if(state.firebase)return state.firebase;
     if(!CONFIGURED)throw new Error('尚未設定 Firebase。可先按「先玩示範局」，或依操作說明完成 Firebase 設定再使用多人連線。');
     const base='https://www.gstatic.com/firebasejs/11.10.0/';
-    const [appLib,authLib,dbLib]=await Promise.all([import(base+'firebase-app.js'),import(base+'firebase-auth.js'),import(base+'firebase-firestore.js')]);
+    const [appLib,authLib,dbLib]=await connectionDiagnostics.measure('sdk',()=>Promise.all([import(base+'firebase-app.js'),import(base+'firebase-auth.js'),import(base+'firebase-firestore.js')]));
     const app=appLib.getApps().length?appLib.getApp():appLib.initializeApp(window.GAME_FIREBASE_CONFIG);
     const siteKey=String(window.GAME_APP_CHECK_SITE_KEY||'').trim();
     if(siteKey){
@@ -897,12 +923,12 @@
       // Without a configured reCAPTCHA Enterprise site key, current gameplay
       // stays fully unchanged until the owner deliberately opts in.
       try{
-        const appCheckLib=await import(base+'firebase-app-check.js');
+        const appCheckLib=await connectionDiagnostics.measure('appcheck-sdk',()=>import(base+'firebase-app-check.js'));
         const appCheck=appCheckLib.initializeAppCheck(app,{
           provider:new appCheckLib.ReCaptchaEnterpriseProvider(siteKey),
           isTokenAutoRefreshEnabled:true
         });
-        await appCheckLib.getToken(appCheck);
+        await connectionDiagnostics.measure('appcheck-token',async()=>{await appCheckLib.getToken(appCheck);});
         console.info('Firebase App Check 已取得驗證權杖；Firestore 強制驗證需另行於 Firebase Console 啟用。');
       }catch(error){
         // Observe-only rollout: do not break guest/host gameplay when a
@@ -913,8 +939,8 @@
       }
     }
     const auth=authLib.getAuth(app);
-    await new Promise((res,rej)=>{const un=authLib.onAuthStateChanged(auth,()=>{un();res();},rej);});
-    if(!auth.currentUser)await authLib.signInAnonymously(auth);
+    await connectionDiagnostics.measure('auth-restore',()=>new Promise((res,rej)=>{const un=authLib.onAuthStateChanged(auth,()=>{un();res();},rej);}));
+    if(!auth.currentUser)await connectionDiagnostics.measure('auth-anonymous',()=>authLib.signInAnonymously(auth));
     const db=dbLib.getFirestore(app);
     state.firebase={auth,db,dbLib};state.uid=auth.currentUser.uid;
     return state.firebase;
@@ -998,17 +1024,17 @@
     const f=await getFirebase(),L=f.dbLib;
     let snap;
     const player={uid:state.uid,name,emoji:emojiFor(state.uid),joinedAt:Date.now()};
-    const gate=P3_ADMISSION_READS_ENABLED?await L.getDocFromServer(p3Refs(L,f.db,code,state.uid).gate):null;
-    if(gate?.exists())snap=await p3JoinRoom(L,f.db,code,player);
+    const gate=P3_ADMISSION_READS_ENABLED?await connectionDiagnostics.measure('invite-read',()=>L.getDocFromServer(p3Refs(L,f.db,code,state.uid).gate)):null;
+    if(gate?.exists())snap=await connectionDiagnostics.measure('v3-join',()=>p3JoinRoom(L,f.db,code,player));
     else{
-      snap=await L.getDoc(roomRef(code));
+      snap=await connectionDiagnostics.measure('room-read',()=>L.getDoc(roomRef(code)));
       if(!snap.exists())throw new Error('找不到這個房間，請再確認代碼。');
       if(snap.data().protocol===3)throw new Error('請重新整理至最新版再加入房間。');
-      const current=await L.getDocs(L.collection(f.db,'rooms',code,'players'));
+      const current=await connectionDiagnostics.measure('roster-read',()=>L.getDocs(L.collection(f.db,'rooms',code,'players')));
       const selfExists=current.docs.some(d=>d.id===state.uid);
       if(snap.data().phase!=='lobby'&&!selfExists)throw new Error('這場已經開始，請向主持人索取新房間代碼。');
       if(current.size>=20&&!selfExists)throw new Error('這個房間已滿 20 人，請主持人另開一局。');
-      if(!selfExists)await L.setDoc(playerRef(code,state.uid),player);
+      if(!selfExists)await connectionDiagnostics.measure('player-write',()=>L.setDoc(playerRef(code,state.uid),player));
     }
     if(!snap.exists())throw new Error('找不到這個房間，請再確認代碼。');
     state.mode='online';state.roomCode=code;state.room=snap.data();state.player=state.uid;history.replaceState(null,'',`?room=${code}`);
@@ -1016,7 +1042,9 @@
   }
   function subscribeOnline(code){
     clearListeners();const L=state.firebase.dbLib,db=state.firebase.db;
+    const roomFirst=connectionDiagnostics.first('room-first'),rosterFirst=connectionDiagnostics.first('roster-first');
     const offRoom=L.onSnapshot(roomRef(code),snap=>{
+      if(!snap.metadata?.fromCache)roomFirst('ok');
       if(!snap.exists()){state.error='房間已不存在。';leave();return;}
       const prevRound=state.room?.roundIndex, prevPhase=state.room?.phase;
       state.room=snap.data();
@@ -1024,25 +1052,28 @@
       if(state.room.roundIndex>=0 && state.watchedRound!==state.room.roundIndex){subscribeVotes(code,state.room.roundIndex);}
       if(state.room.phase==='voting' && prevPhase==='voting' && prevRound===state.room.roundIndex && document.getElementById('vote-count'))updateVoteStatusUI();
       else render();
-    },err=>{state.error='同步房間失敗：'+friendlyError(err);render();});
+    },err=>{roomFirst('error');state.error='同步房間失敗：'+friendlyError(err);render();});
     const offPlayers=L.onSnapshot(L.collection(db,'rooms',code,'players'),snap=>{
+      if(!snap.metadata?.fromCache)rosterFirst('ok');
       state.players=snap.docs.map(d=>d.data()).sort((a,b)=>a.joinedAt-b.joinedAt);
       if(state.room?.phase==='voting' && document.getElementById('vote-count'))updateVoteStatusUI();
       else render();
-    },err=>{state.error='載入玩家名單失敗：'+friendlyError(err);render();});
+    },err=>{rosterFirst('error');state.error='載入玩家名單失敗：'+friendlyError(err);render();});
     state.unsubs.push(offRoom,offPlayers);
   }
   function subscribeVotes(code,ri){
     if(state.voteUnsub)state.voteUnsub();state.watchedRound=ri;state.hostVoteSync=null;
     const L=state.firebase.dbLib;
+    const votesFirst=connectionDiagnostics.first('votes-first');
     state.voteUnsub=L.onSnapshot(L.query(votesCollection(code),L.where('roundIndex','==',ri)),{includeMetadataChanges:true},snap=>{
+      if(!snap.metadata?.fromCache)votesFirst('ok');
       if(state.room?.roundIndex!==ri)return;
       const wasSubmitted=Boolean(myVote());
       state.votes=snap.docs.filter(d=>!d.metadata?.hasPendingWrites).map(d=>d.data());
       state.voteSyncFromCache=Boolean(snap.metadata?.fromCache);
       if(Boolean(myVote())!==wasSubmitted || !document.getElementById('vote-count'))render();
       else updateVoteStatusUI();
-    },err=>{state.error='讀取票數失敗：'+friendlyError(err);render();});
+    },err=>{votesFirst('error');state.error='讀取票數失敗：'+friendlyError(err);render();});
   }
   // HOST_VOTE_SYNC_START
   // Independent server aggregation bypasses the local watch/cache path.
