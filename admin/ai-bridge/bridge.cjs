@@ -52,7 +52,8 @@ function queue(thread,message,check=false){
  if(process.platform==='win32'){
   // No interpolation of GitHub text into the PowerShell program. Only a fixed
   // command receives validated UUID and locally generated fixed prompt via env.
-  const script=check?'& codex queue --help; exit $LASTEXITCODE':'& codex queue --thread $env:MOQ_BRIDGE_THREAD --message $env:MOQ_BRIDGE_MESSAGE; exit $LASTEXITCODE';
+  const preflight="$ErrorActionPreference = 'Stop'; $null = Get-Command codex -ErrorAction Stop; ";
+  const script=preflight+(check?'& codex queue --help':'& codex queue --thread $env:MOQ_BRIDGE_THREAD --message $env:MOQ_BRIDGE_MESSAGE')+'; if ($null -eq $LASTEXITCODE) { exit 1 }; exit $LASTEXITCODE';
   return cmd('powershell.exe',['-NoProfile','-NonInteractive','-Command',script],{env:{...process.env,MOQ_BRIDGE_THREAD:thread,MOQ_BRIDGE_MESSAGE:message}});
  }
  return cmd('codex',check?['queue','--help']:['queue','--thread',thread,'--message',message]);
@@ -68,7 +69,7 @@ function makeApi(thread){
 function readJobs(dir){
  return fs.readdirSync(dir).filter(n=>/^job-[1-9][0-9]*\.json$/.test(n)).map(n=>{
   const j=JSON.parse(fs.readFileSync(path.join(dir,n),'utf8'));
-  if(!UUID.test(j.id)||!Number.isSafeInteger(j.issue)||n!=='job-'+j.issue+'.json'||!['claimed','queued','uncertain','DONE','BLOCKED'].includes(j.status)||!Number.isFinite(Date.parse(j.createdAt)))throw Error('invalid local job record; stop and review');
+  if(!UUID.test(j.id)||!Number.isSafeInteger(j.issue)||n!=='job-'+j.issue+'.json'||!['probe','status','audit','staging'].includes(j.type)||!['claimed','queued','uncertain','DONE','BLOCKED'].includes(j.status)||!Number.isFinite(Date.parse(j.createdAt)))throw Error('invalid local job record; stop and review');
   return j;
  });
 }
@@ -88,7 +89,10 @@ function tick(api,store,allowStaging,dispatch){
   return {status:j.status==='queued'?'waiting-for-ack':'uncertain-no-retry',issue:j.issue};
  }
  const seen=new Set(jobs.map(j=>j.issue));
- const choices=api.issues().map(x=>taskFor(x,allowStaging)).filter(x=>x&&!seen.has(x.issue)).sort((a,b)=>(a.type==='probe'?0:1)-(b.type==='probe'?0:1)||a.issue-b.issue);
+ // A staging opt-in alone is not sufficient: the selected local dispatcher
+ // must have recorded a real acknowledgement for its initial probe.
+ const stagingReady=allowStaging&&jobs.some(j=>j.type==='probe'&&j.status==='DONE');
+ const choices=api.issues().map(x=>taskFor(x,stagingReady)).filter(x=>x&&!seen.has(x.issue)).sort((a,b)=>(a.type==='probe'?0:1)-(b.type==='probe'?0:1)||a.issue-b.issue);
  for(const t of choices){
   if(hasRemoteClaim(api.comments(t.issue)))continue;
   if(!dispatch)return {status:'dry-run',...t};

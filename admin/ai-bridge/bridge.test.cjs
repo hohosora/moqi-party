@@ -35,7 +35,11 @@ test('uncertain delivery never automatically retries',()=>{const f=fixture();try
 test('remote claim prevents repeat on a new local ledger',()=>{const f=fixture();try{
  f.comments.set(48,[comment(claimMarker('00000000-0000-4000-8000-000000000000'))]);assert.equal(tick(f.api,f.store,false,true).status,'idle');assert.equal(f.sent.length,0);
  }finally{f.clean();}});
-test('staging disabled unless explicitly opted in',()=>{const f=fixture([staging]);try{assert.equal(tick(f.api,f.store,false,true).status,'idle');assert.equal(f.sent.length,0);}finally{f.clean();}});
+test('staging disabled without explicit opt-in AND acknowledged local probe',()=>{const f=fixture([staging]);try{
+ assert.equal(tick(f.api,f.store,false,true).status,'idle');
+ assert.equal(tick(f.api,f.store,true,true).status,'idle');
+ assert.equal(f.sent.length,0);
+ }finally{f.clean();}});
 test('ack rejects wrong task, old timestamps, and marker not on first line',()=>{
  const j={id:'00000000-0000-4000-8000-000000000000',createdAt:new Date().toISOString()};
  assert.equal(getAck([comment('other\n'+ackMarker(j.id,'DONE')),comment(ackMarker(j.id,'DONE'),{created_at:'2000-01-01T00:00:00Z'})],j),null);

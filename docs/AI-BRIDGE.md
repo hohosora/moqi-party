@@ -25,7 +25,7 @@ node admin/ai-bridge/bridge.cjs --once
 node admin/ai-bridge/bridge.cjs --once --dispatch
 ```
 
-`--configure` 一次寫入本機 LOCALAPPDATA（其他系統為 home）下 moqi-ai-bridge-v1/config.json，不覆蓋舊設定；最後一行只允許 probe/status/audit，staging 預設不啟用。確認 probe 的 CLI 送達、既有 session 實際收到訊息、沒有 Firebase 操作，並由該 session 回寫 DONE marker。再次 `--once --dispatch` 讀回完成狀態，才進入下一階段。
+`--configure` 一次寫入本機 LOCALAPPDATA（其他系統為 home）下 moqi-ai-bridge-v1/config.json，不覆蓋舊設定；最後一行只允許 probe/status/audit，staging 預設不啟用。先確認既有 session 已空閒、沒有待執行正式變更或未處理的授權；再確認 probe 的 CLI 送達、既有 session 實際收到訊息、沒有 Firebase 操作，並由該 session 回寫 DONE marker。再次 `--once --dispatch` 讀回完成狀態，才進入下一階段。
 
 5. 本人確認 staging 工作階段的 IAM／專案限制及正常 approval policy，才開始自動化 staging。正式專案的憑證若同時存在，提示詞不是 IAM 隔離；推薦另外使用 staging-only IAM 帳號，或保留互動核准並不授權無人正式操作。不能確認安全範圍則維持只允許 probe/status/audit。啟用後預設 60 秒輪詢，前景 PowerShell 必須保持開啟，電腦不得休眠：
 
@@ -42,7 +42,7 @@ Ctrl+C 停止輪詢；不會撤銷已送達的 Codex 工作。請在首次完整
 - [AI-QUEUE:PROBE]：只測訊息送達及 issue ack。
 - [AI-QUEUE:STATUS]：唯讀版本與 CI 狀態。
 - [AI-QUEUE:AUDIT]：唯讀相依審查。
-- [AI-QUEUE:STAGING]：需本機 --allow-staging，僅 staging 自動化驗收；既有 issue #46 也可作為此固定類型。
+- [AI-QUEUE:STAGING]：需本機 --allow-staging，僅 staging 自動化驗收；既有 issue #46 也可作為此固定類型。本機 ledger 必須先記錄已確認 DONE 的 probe，即使傳入 --allow-staging 亦不能跳過。
 未設 production 任務類型。Issue #46 的正式部分一律不能由自動調度器執行。任何正式 API Key、Rules、App Check、計費、發布旗標變更仍走人工授權和既有發布關卡。
 
 本機每次只處理一個任務，先寫入不可覆蓋的 job 檔，再張貼 owner claim marker，才呼叫 CLI。CLI 接受後記錄 QUEUED。實際 Codex 必須在同一 issue 的首行回覆精確的 DONE 或 BLOCKED + task UUID。橋接器只讀 owner 留言、匹配 token，且只信任 claim 後的時間；完成仍是 Codex 自報，須由 ChatGPT 驗收 evidence/CI/PR。未知送達、崩潰、失去權限不自動重送；同一 issue 不重複執行。遠端 claim 也阻止新本機 ledger 再派。GitHub comment 不是分散式原子鎖，v1 僅支援單桌機單實例，不允許同時在第二台電腦啟動。發生 stale dispatcher.lock 時先確認程序確實停止、Codex 是否收到及是否回報，再人工處理；不得為重試盲目刪除 job/lock。所有任務重試以新 issue 建立並審核，舊 issue 保留。
