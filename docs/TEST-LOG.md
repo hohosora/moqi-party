@@ -1,5 +1,26 @@
 # 測試紀錄
 
+## 2026-11-25 · P2.5 依賴與安全性驗證
+
+P2 結案 PR #34 合併於 `36e5c47`。[Rules](https://github.com/hohosora/moqi-party/actions/runs/45563186274) 與 [UI／計分](https://github.com/hohosora/moqi-party/actions/runs/45563186194) 皆成功。下方六題實測屬 P2 正式版驗收。
+
+| 更新 | 合併版本 | main 上成功的工作 |
+| --- | --- | --- |
+| #26 firebase-tools 14.27.0 → 15.37.0 | caed4e7 | [Rules](https://github.com/hohosora/moqi-party/actions/runs/45563961010)、[Pages](https://github.com/hohosora/moqi-party/actions/runs/45563960586) |
+| #24 checkout v4/v5 → v7 | 01c6711 | [Rules](https://github.com/hohosora/moqi-party/actions/runs/45564141894)、[UI](https://github.com/hohosora/moqi-party/actions/runs/45564141880)、[Pages](https://github.com/hohosora/moqi-party/actions/runs/45564141002) |
+| #22 setup-java v5 → v6，Temurin 21 | 381766c | [Rules](https://github.com/hohosora/moqi-party/actions/runs/45564349858)、[Pages](https://github.com/hohosora/moqi-party/actions/runs/45564348927) |
+| #35 取代 #23，setup-node v4/v5 → v7 | 92df403 | [Rules](https://github.com/hohosora/moqi-party/actions/runs/45564734423)、[UI](https://github.com/hohosora/moqi-party/actions/runs/45564734341)、[Pages](https://github.com/hohosora/moqi-party/actions/runs/45564733638) |
+
+#36 合併版本為 `790f6a2`。PR 的 [UI／計分](https://github.com/hohosora/moqi-party/actions/runs/45564854644) 與 [Rules](https://github.com/hohosora/moqi-party/actions/runs/45564854675) 均成功（39 項模擬器權限斷言）。main 合併後通過 [Rules](https://github.com/hohosora/moqi-party/actions/runs/45565075347) 與 [Pages](https://github.com/hohosora/moqi-party/actions/runs/45565075007)。UI 工作在這次 push 依路徑篩選未觸發。
+
+CI 使用 GitHub 管理的 Ubuntu runner。#26 的發布說明列出 MCP SDK、undici 與 proxy-addr 的安全修補。三個 Actions 均核對上游公告頁與 PR diff，沒有將例行版本升級認定為特定 CVE 修補。#26 和 #22 合併時，main 的路徑篩選只觸發 Rules 與 Pages；原 PR 的 UI 也通過。
+
+#25 的 [job 138940429128](https://github.com/hohosora/moqi-party/actions/runs/45535336444/job/138940429128) 顯示 rules-unit-testing 4.0.1 要求 firebase ^11；#27 的 [job 138940600192](https://github.com/hohosora/moqi-party/actions/runs/45535386833/job/138940600192) 顯示 6.0.0 要求 firebase ^13。兩者均在 npm 安裝時 ERESOLVE。6.0.0 另要求 Node >=24.12.0。此前工作使用 Node 22、無鎖定檔，每次重新解析依賴。
+
+#36 的 [Rules job](https://github.com/hohosora/moqi-party/actions/runs/45564854675/job/139037048713) 已用 Node 24.22.3、Java 21 與 npm ci 通過。測試端使用 firebase 13.4.0、rules-unit-testing 6.0.0、CLI 15.37.0，正式站仍從 gstatic 載入 11.10.0。鎖檔中 713 個含下載來源的項目均來自官方 npm registry 且有 integrity。舊版組合與單純配對新版皆有 5 個 high、14 個 moderate、0 個 critical 的套件項目。針對 Firestore Node 相依指定已修補的 gRPC 1.14.7 後，high 與 critical 均為 0。
+
+尚有 14 個 moderate 套件項目（含上層相依），涵蓋 [OpenTelemetry](https://github.com/advisories/GHSA-8988-4f7v-96qf)、[glob](https://github.com/advisories/GHSA-3g3m-2fjr-6pw4)、[minimatch](https://github.com/advisories/GHSA-g3hv-75wg-m249)、[uuid](https://github.com/advisories/GHSA-w5hq-g745-h8pq)。這是 npm 測試依賴樹的稽核範圍。後續應分支驗證上游升級，重新執行 npm audit、npm ci、完整 Rules 與 UI 工作，並於 Firestore 上游支援修補版後檢視 gRPC override。前端 CDN 與瀏覽器測試工具各自獨立於此鎖檔。
+
 ## P2 最終驗收
 
 2026-11-25，P2 結案。驗收版本為 main [e90d8b8](https://github.com/hohosora/moqi-party/commit/e90d8b8e6b905e928b289c890d122564fab5baac)，[正式 Pages 建置與部署成功](https://github.com/hohosora/moqi-party/actions/runs/45561057609)。

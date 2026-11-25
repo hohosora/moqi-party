@@ -1,5 +1,11 @@
 # 專案狀態
 
+## 2026-11-25 · P2.5 供應鏈修正已合併，金鑰警示待審
+
+#26、#24、#22 已依序合併。#23 與當時 main 衝突，以 [#35](https://github.com/hohosora/moqi-party/pull/35) 取代。[#36](https://github.com/hohosora/moqi-party/pull/36) 聯合取代 #25、#27；三個舊 PR 均已關閉，未直接合併。測試端使用 firebase 13.4.0、rules-unit-testing 6.0.0 與 firebase-tools 15.37.0。詳細版本、回歸與剩餘中度公告見[測試紀錄](TEST-LOG.md)。
+
+從 P2 結案版本至 #36，程式差異只在兩個 GitHub Actions 工作流程、package.json 與新增的 npm 鎖定檔。正式前端、計分與 firestore.rules 相同。本次使用 demo 模擬器回歸。Cloud Billing 回報未啟用計費。金鑰用途已核實，但 API 清單超出遊戲直接使用範圍，[警示 #1](https://github.com/hohosora/moqi-party/security/secret-scanning/1) 仍開啟。[下一步與驗收條件](AI-TASKS.md)。
+
 ## 2026-11-25 · P2 已結案
 
 驗收版本為 main [e90d8b8](https://github.com/hohosora/moqi-party/commit/e90d8b8e6b905e928b289c890d122564fab5baac)，[正式 Pages 建置與部署成功](https://github.com/hohosora/moqi-party/actions/runs/45561057609)。使用者回報六題同步均達標，重新加入、提前揭曉及最終計分正常。詳見[最終驗收紀錄](TEST-LOG.md#p2-最終驗收)。
