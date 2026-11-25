@@ -50,7 +50,8 @@ const selectors={
     '.rank-list .rank-index','.host-vote-tools > summary',
     '.host-vote-tools .fineprint','.how-to-play li',
     '.card .mint-text','.card .accent-text','.host-mode-footnote',
-    '.quick-host-card .fineprint','.quick-host-card .field span'
+    '.quick-host-card .fineprint','.quick-host-card .field span',
+    '.avatar-pill .host-badge'
   ],
   minimal:[
     '.landing-note','.muted','.fineprint','.vote-tip','.look-up-note',
@@ -70,6 +71,8 @@ for(const [theme,items] of Object.entries(selectors)){
 // Fixed backgrounds on game views: AA at 4.5:1 for standard-size copy.
 for(const [ink,background,name] of [
   ['#291934','#ffffff','Pixel points and details'],
+  ['#17101f','#f1efda','Pixel player badges'],
+  ['#202729','#fcfbf8','Minimal player badges'],
   ['#291934','#f8f5ff','Pixel breakdown'],
   ['#271b31','#ffffff','Pixel rank and podium'],
   ['#211b27','#f8f5ff','Pixel host helper'],
@@ -99,7 +102,7 @@ for(const className of [
   'score-highlight','score-detail','full-rank-toggle','host-vote-tools',
   'how-to-play','landing-note','vote-tip','look-up-note','podium',
   'rank-index','quick-ranking','score-big','mint-text','accent-text',
-  'host-mode-footnote','quick-host-card','notice'
+  'host-mode-footnote','quick-host-card','notice','host-badge'
 ]){
   expect(app.includes(className),'Missing actual game/UI surface: '+className);
 }
