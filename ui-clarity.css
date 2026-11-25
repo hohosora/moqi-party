@@ -1337,3 +1337,22 @@ html[data-theme="minimal"] .avatar-pill .host-badge{
   line-height:1.35;
   text-shadow:none;
 }
+
+/* v11 | Desktop/mobile Unicode emoji compatibility.
+   Keep each theme's text font and pictorial styling intact. Windows
+   desktop needs an explicit Segoe UI Emoji fallback; Apple and Linux
+   use the matching native color glyph font instead. */
+#app bdi.emoji-glyph{
+  font-family:"Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji","Twemoji Mozilla","Segoe UI Symbol",sans-serif !important;
+  font-variant-emoji:emoji;
+  font-weight:400 !important;
+  font-style:normal !important;
+  font-synthesis:none;
+  line-height:inherit;
+  text-transform:none;
+  letter-spacing:normal;
+  white-space:nowrap;
+  unicode-bidi:isolate;
+}
+/* Keep ornamental pixel stars and the mechanical circuitry in their
+   original typographic font: only pictographic glyph clusters are wrapped. */
