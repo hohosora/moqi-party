@@ -89,6 +89,22 @@ async function main(){
     const outsider=env.authenticatedContext('outsider').firestore(),po=p3Refs(L,outsider,code,'outsider');
     const player=uid=>({uid,name:'玩家',emoji:'😎',joinedAt:Date.now()});
     const v3room={...room(),questions:Array.from({length:12},()=>questions[0]),totalRounds:12};
+    // Only a privileged test setup can enable new V3 rooms. The control
+    // document must not be accessible through authenticated client SDKs.
+    const control='rolloutControls/p3Admission';
+    await deny(setDoc(doc(host,control),{createEnabled:true}),'V3 rollout control cannot be written by host');
+    await deny(getDoc(doc(guest,control)),'V3 rollout control cannot be read by guest');
+    await deny(p3CreateRoom(L,host,code,v3room,player('hostA')),'V3 disabled by default without control');
+    assert.equal((await getDoc(ph.gate)).exists(),false);checks++;
+    assert.equal((await getDoc(ph.self)).exists(),false);checks++;
+    await env.withSecurityRulesDisabled(async ctx=>{
+      await setDoc(doc(ctx.firestore(),control),{createEnabled:'true'});
+    });
+    await deny(p3CreateRoom(L,host,code,v3room,player('hostA')),'V3 string flag cannot enable creation');
+    await env.withSecurityRulesDisabled(async ctx=>{
+      await setDoc(doc(ctx.firestore(),control),{createEnabled:true});
+    });
+    await deny(updateDoc(doc(guest,control),{createEnabled:false}),'V3 rollout control cannot be changed by guest');
     await deny(setDoc(ph.room,{...v3room,protocol:3}),'V3 room without gate/host denied');
     await deny(setDoc(ph.gate,{phase:'lobby',count:1,seats:{'1':true}}),'V3 gate alone denied');
     // Both halves remain mandatory: invalid first or last question must reject
@@ -139,6 +155,17 @@ async function main(){
     await allow(updateDoc(ph.room,{phase:'reveal',scores:patch.scores,streaks:{hostA:0},usedDoubles:{},lastResult}),'V3 existing reveal');
     await allow(updateDoc(ph.room,{phase:'voting',roundIndex:1,deadline:Date.now()+30000,lastResult:null}),'V3 next question');
     await deny(getDoc(po.room),'V3 outsider still denied');
+    // Rolling back new creation must not strand an existing V3 game.
+    await env.withSecurityRulesDisabled(async ctx=>{
+      await setDoc(doc(ctx.firestore(),control),{createEnabled:false});
+    });
+    const closedCode='TUVWXY';
+    await deny(p3CreateRoom(L,host,closedCode,v3room,player('hostA')),'V3 creation disabled after rollback');
+    assert.equal((await getDoc(p3Refs(L,host,closedCode,'hostA').gate)).exists(),false);checks++;
+    await allow(p3JoinRoom(L,guest,code,player('guestB')),'V3 existing rejoin survives creation disable');
+    await allow(setDoc(doc(guest,'rooms',code,'votes','guestB_1'),{...vote,uid:'guestB',roundIndex:1}),'V3 existing voting survives creation disable');
+    await deny(getDocs(collection(outsider,'rooms',code,'votes')),'V3 outsider still denied after rollback');
+    await allow(setDoc(doc(host,'rooms','UVWXYZ'),room()),'Legacy creation survives V3 disable');
     console.log('PASS: '+checks+' Firestore security emulator assertions');
   } finally{
     await env.cleanup();

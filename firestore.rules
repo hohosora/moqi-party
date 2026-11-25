@@ -20,6 +20,12 @@ service cloud.firestore {
     function playerPath(code,uid) { return /databases/$(database)/documents/rooms/$(code)/players/$(uid); }
     function isMember(code) { return playerExists(code,request.auth.uid); }
     function validSeat(seat) { return seat is string && seat.matches('^([1-9]|1[0-9]|20)$'); }
+    // Admin-only rollout control. Missing, false or invalid values fail closed.
+    // Client rules intentionally grant no access to rolloutControls.
+    function v3CreationEnabled() {
+      let control = /databases/$(database)/documents/rolloutControls/p3Admission;
+      return exists(control) && get(control).data.createEnabled == true;
+    }
     function validGate(g) {
       return g.keys().hasOnly(['phase','count','seats'])
         && g.keys().hasAll(['phase','count','seats'])
@@ -203,6 +209,7 @@ service cloud.firestore {
       allow get: if signedIn();
       allow list: if false;
       allow create: if signedIn() && code.matches('^[A-HJ-NP-Z2-9]{6}$')
+        && v3CreationEnabled()
         && initialGate(request.resource.data)
         && !exists(roomPath(code)) && !exists(playerPath(code,request.auth.uid))
         && isV3(getAfter(roomPath(code)).data)
