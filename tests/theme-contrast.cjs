@@ -62,4 +62,45 @@ expect(ui.includes('html[data-theme="minimal"] .bank-counter'),'Minimal bank cou
 expect(styles.includes('html[data-theme="party"] .bank-list .bank-counter'),'Pixel bank counters must have a dark badge');
 expect(html.indexOf('ui-clarity.css')>html.indexOf('retro-mechanical.css'),'Contrast overrides must load last');
 expect(app.includes('首頁設定：<strong>'+String.fromCharCode(36)+'{state.rounds} 題</strong>｜Gemini'),'Question count must remain highlighted without detached punctuation');
+
+// Score-critical text is intentionally decoupled from each theme's neon
+// accent. Audit actual score surfaces, not just the general body text.
+const scoreboardBlock=ui.slice(ui.indexOf('/* v9 | Score legibility:'));
+expect(scoreboardBlock.length>100,'Score contrast overrides must load in final stylesheet');
+const scoreSamples={
+  party:{surface:'#ffffff',quick:'#ffffff',podium:'#ffffff',rank:'#ffffff'},
+  panel:{surface:'#101e12',quick:'#101e12',podium:'#0d180e',rank:'#111e13'},
+  minimal:{surface:'#f4f1ed',quick:'#f4f1ed',podium:'#f4f1ed',rank:'#f4f1ed'}
+};
+for(const [theme,surfaces] of Object.entries(scoreSamples)){
+  const tokenMatch=scoreboardBlock.match(
+    new RegExp('html\\\\[data-theme="'+theme+'"\\\\]\\\\s*\\\\{([^}]+)\\\\}')
+  );
+  expect(Boolean(tokenMatch),'Missing in-game scoreboard palette: '+theme);
+  const fg=tokenMatch[1].match(/--score-live-ink:\\s*(#[0-9a-f]{6})/i);
+  const bg=tokenMatch[1].match(/--score-ranking-surface:\\s*(#[0-9a-f]{6})/i);
+  expect(Boolean(fg)&&Boolean(bg),'Missing explicit score ink/surface pair: '+theme);
+  expect(fg[1].toLowerCase()!==bg[1].toLowerCase(),'Score ink cannot equal background: '+theme);
+  expect(contrast(rgb(fg[1]),rgb(bg[1]))>=7,'Score palette fails AAA contrast: '+theme);
+  for(const [location,surface] of Object.entries(surfaces)){
+    expect(contrast(rgb(fg[1]),rgb(surface))>=7,
+      theme+' '+location+' scoreboard contrast below 7:1');
+  }
+  for(const selector of [
+    '.quick-ranking .quick-rank-line b',
+    '.leader-top .podium .points',
+    '.rank-list .rank-points',
+    '.score-highlight .score-big'
+  ]){
+    expect(scoreboardBlock.includes('html[data-theme="'+theme+'"] '+selector),
+      'No per-theme override for '+theme+' '+selector);
+  }
+}
+const pixelBg=rgb('#ffffff'),pixelScore=rgb('#4c139f');
+expect(contrast(pixelScore,pixelBg)>=7,'Pixel reveal score needs AAA legibility');
+const panelScore=rgb('#352014');
+for(const bg of ['#f9e2bb','#d8bc8d','#ac895c']){
+  expect(contrast(panelScore,rgb(bg))>=4.5,'Mechanical warm reveal contrast '+bg);
+}
+
 console.log('PASS: '+checks+' accessibility contrast regression assertions across party, panel and minimal (360 adjustable hues).');
