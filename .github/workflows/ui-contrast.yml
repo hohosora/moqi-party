@@ -16,6 +16,9 @@ on:
       - 'tests/scoring-rules.cjs'
       - 'tests/quick-host.cjs'
       - 'tests/client-security.cjs'
+      - 'tests/host-vote-sync.cjs'
+      - 'tests/room-retention.cjs'
+      - 'admin/room-retention.cjs'
       - 'app-check-config.js'
       - '.github/workflows/ui-contrast.yml'
   pull_request:
@@ -50,6 +53,10 @@ jobs:
         run: node tests/emoji-compat.cjs
       - name: Reject injected Firestore values and insecure room codes
         run: node tests/client-security.cjs
+      - name: Verify host vote synchronization fallback
+        run: node --test tests/host-vote-sync.cjs
+      - name: Verify room retention policy
+        run: node --test tests/room-retention.cjs
       - name: Check hot and cold prediction scoring
         run: node tests/scoring-rules.cjs
       - name: Check 100 curated questions and quick-host flow
