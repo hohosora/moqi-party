@@ -11,6 +11,7 @@ on:
       - 'tests/theme-contrast.cjs'
       - 'tests/surface-text-contrast.cjs'
       - 'tests/browser-contrast.cjs'
+      - 'tests/host-create-browser.cjs'
       - 'tests/emoji-compat.cjs'
       - 'emoji-compat.js'
       - 'tests/scoring-rules.cjs'
@@ -47,6 +48,10 @@ jobs:
         env:
           NODE_PATH: ${{ runner.temp }}/moqi-contrast/node_modules
         run: node tests/browser-contrast.cjs
+      - name: Verify online host preparation, server acknowledgement and room-code legibility (mock SDK)
+        env:
+          NODE_PATH: ${{ runner.temp }}/moqi-contrast/node_modules
+        run: node tests/host-create-browser.cjs
       - name: Validate Unicode emoji fallbacks on desktop and mobile screens
         env:
           NODE_PATH: ${{ runner.temp }}/moqi-contrast/node_modules

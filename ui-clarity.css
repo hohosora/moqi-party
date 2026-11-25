@@ -1356,3 +1356,21 @@ html[data-theme="minimal"] .avatar-pill .host-badge{
 }
 /* Keep ornamental pixel stars and the mechanical circuitry in their
    original typographic font: only pictographic glyph clusters are wrapped. */
+
+/* Room codes: fixed dark ink, independent of the pixel neon accent. */
+html[data-theme="party"] .lobby-code .code-digits{
+  color:#111015;background:#f8f5ff;text-shadow:none;
+  font-size:clamp(25px,7.3vw,46px);letter-spacing:.10em;
+  font-variant-numeric:tabular-nums;font-weight:900;line-height:1.25;
+}
+html[data-theme="party"] .lobby-code .eyebrow{color:#30243d;background:#f8f5ff;text-shadow:none}
+html[data-theme="party"] .header-room-status > .status-tag{color:#111015;background:#efff44;text-shadow:none;border-color:#111015}
+html[data-theme="party"] .lobby-code{flex-wrap:wrap;min-width:0}
+html[data-theme="party"] .lobby-code > div{min-width:0;max-width:100%}
+html[data-theme="party"] .lobby-code .code-digits{overflow-wrap:anywhere}
+/* Explicit, accessible server-acknowledgement feedback; no fake room code. */
+.host-create-progress[hidden]{display:none}
+.host-create-progress{margin:12px 0;padding:12px 14px;display:grid;gap:5px;min-width:0;border:2px solid #34303a;border-radius:8px;background:#fffdf6;color:#17151b;text-shadow:none;text-align:left;overflow-wrap:anywhere}
+.host-create-progress strong,.host-create-progress span,.host-create-progress small{color:#17151b;text-shadow:none;line-height:1.5;font-size:14px}
+.host-create-progress strong{font-size:16px;font-weight:800}
+.host-create-elapsed{font-variant-numeric:tabular-nums}
