@@ -1,5 +1,13 @@
 # P2 security hardening — 默契失控局（2026-11-25）
 
+## P2 結案（2026-11-25）
+
+使用者確認 Cloud Firestore 的 App Check 已強制執行，Authentication 維持監控。第 5 階段唯讀預覽共掃描 12 間房間，候選 0、跳過 0、刪除 0。主持人票數同步六題均達標，重新加入、提前揭曉及最終計分正常。詳見[最終驗收紀錄](TEST-LOG.md#p2-最終驗收)。
+
+P2.5 待處理 API Key 警示及相依套件更新。P3 待處理投票保密、匿名濫用防護、硬性人數限制及 10–20 人壓測。
+
+以下保留推行過程、操作說明與原始驗收條件。早期「觀察階段」、「待管理員」與 P2-4 待測狀態已由上述結果取代。使用者未分別回報各瀏覽器的測試結果。
+
 ## App Check 現況（2026-11-25）
 - Firebase Console 的網頁應用「默契失控局」已由管理者完成 Fraud Defense / reCAPTCHA Enterprise 註冊。
 - Google Cloud 的 reCAPTCHA Enterprise Web site key 已建立，綁定正式網域 hohosora.github.io。

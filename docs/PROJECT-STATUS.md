@@ -1,5 +1,15 @@
 # 專案狀態
 
+## 2026-11-25 · P2 已結案
+
+驗收版本為 main [e90d8b8](https://github.com/hohosora/moqi-party/commit/e90d8b8e6b905e928b289c890d122564fab5baac)，[正式 Pages 建置與部署成功](https://github.com/hohosora/moqi-party/actions/runs/45561057609)。使用者回報六題同步均達標，重新加入、提前揭曉及最終計分正常。詳見[最終驗收紀錄](TEST-LOG.md#p2-最終驗收)。
+
+第 5 階段唯讀預覽共掃描 12 間房間，候選 0、跳過 0、刪除 0。使用者確認 Cloud Firestore 的 App Check 已強制執行，Authentication 維持監控。
+
+P2.5 待處理 API Key 警示及相依套件更新。P3 待處理投票保密、匿名濫用防護、硬性人數限制及 10–20 人壓測。
+
+## 歷史狀態 · d4a0644（待驗收狀態已由上述結果取代）
+
 2026-11-25 核對 `hohosora/moqi-party` 的 main，基準為 [d4a0644](https://github.com/hohosora/moqi-party/commit/d4a0644e334287d98f2c48e391b0f4151fbaa19e)。
 
 - [PR #31](https://github.com/hohosora/moqi-party/pull/31) 已合併。主持人畫面保留即時監聽，另以有限次數的伺服器票數查詢更新已答人數。手機送出後的實際顯示延遲仍待驗收。
