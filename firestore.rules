@@ -34,11 +34,7 @@ service cloud.firestore {
         && question.keys().hasAll(['q', 'a', 'talk'])
         && question.q is string && question.q.size() > 0 && question.q.size() <= 120
         && question.talk is string && question.talk.size() > 0 && question.talk.size() <= 160
-        && question.a is list && question.a.size() == 4
-        && question.a[0] is string && question.a[0].size() > 0 && question.a[0].size() <= 100
-        && question.a[1] is string && question.a[1].size() > 0 && question.a[1].size() <= 100
-        && question.a[2] is string && question.a[2].size() > 0 && question.a[2].size() <= 100
-        && question.a[3] is string && question.a[3].size() > 0 && question.a[3].size() <= 100;
+        && question.a is list && question.a.size() == 4;
     }
     function validQuestionAt(questions, index) {
       return index >= questions.size() || validQuestion(questions[index]);
