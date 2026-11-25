@@ -11,6 +11,8 @@ on:
       - 'tests/theme-contrast.cjs'
       - 'tests/surface-text-contrast.cjs'
       - 'tests/browser-contrast.cjs'
+      - 'tests/emoji-compat.cjs'
+      - 'emoji-compat.js'
       - 'tests/scoring-rules.cjs'
       - 'tests/quick-host.cjs'
       - 'tests/client-security.cjs'
@@ -42,6 +44,10 @@ jobs:
         env:
           NODE_PATH: ${{ runner.temp }}/moqi-contrast/node_modules
         run: node tests/browser-contrast.cjs
+      - name: Validate Unicode emoji fallbacks on desktop and mobile screens
+        env:
+          NODE_PATH: ${{ runner.temp }}/moqi-contrast/node_modules
+        run: node tests/emoji-compat.cjs
       - name: Reject injected Firestore values and insecure room codes
         run: node tests/client-security.cjs
       - name: Check hot and cold prediction scoring
