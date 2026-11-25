@@ -308,7 +308,7 @@
   function friendlyError(err){
     const code=String(err?.code || '');
     const map={
-      'permission-denied':'房間存取權限不足，請確認資料庫安全規則已發布。',
+      'permission-denied':'暫時無法存取房間。請從正式遊戲網址重新開啟，允許網站安全驗證後再試；若仍失敗，請主持人檢查 Firebase App Check 與安全規則。',
       'unavailable':'目前無法連上遊戲資料庫，請檢查網路後再試一次。',
       'unauthenticated':'登入狀態已失效，請重新開啟網頁。',
       'deadline-exceeded':'連線逾時，請檢查網路後再試一次。',
@@ -909,7 +909,7 @@
         // browser blocks reCAPTCHA or its token exchange. Firebase Console
         // App Check metrics must confirm valid traffic BEFORE enforcement.
         // Once enforcement is enabled, token failures will be rejected by Firebase.
-        console.warn('Firebase App Check 驗證未完成（尚未啟用強制驗證）：',error);
+        console.warn('Firebase App Check 驗證未完成（強制驗證狀態請查 Firebase Console）：',error);
       }
     }
     const auth=authLib.getAuth(app);
