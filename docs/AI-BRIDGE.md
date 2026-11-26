@@ -56,3 +56,17 @@ CI Windows/Ubuntu 只跑本地 mock 測試，不連 GitHub 或 Firebase，不呼
 ## Windows 安裝排錯（2026-11-26）
 
 實機 GitHub CLI 登入成功、Codex CLI 0.172.0 登入成功、7 項 mock 測試通過；`--configure` 已儲存 UUID，但 `--check` 因 npm 的 codex.ps1 遭 PowerShell 限制而失敗。使用 `codex.cmd queue --help` 的子 PowerShell 測試 exit 0。修正為明確選擇 codex.cmd（無則 codex.exe），不修改執行政策；新增 Windows 假 CLI 子程序回歸測試。這僅修正指令呼叫，尚未解決本機 daemon 發布目錄 Access Denied；不要因 help 成功就派發，先確認 daemon 與既有 session 可連線。保留本機 config，不重複 configure。不可輸出授權碼或原始憑證。
+
+## Exec 連線備援試行（2026-11-26）
+
+實機 Windows Codex CLI 0.172.0 使用 `exec --sandbox read-only` 成功回傳 BRIDGE_EXEC_OK、exit 0；daemon 仍於套件發布報 os error 5。新增明確選擇的 Exec pilot，沿用原設定與單機鎖，但建立新工作階段。只接受固定 probe 類型，要求每個任務專屬的精確回覆、成功退出、獨立暫存 final message 檔及 GitHub ACK 讀回。回寫由本機調度器完成，不是 Codex 既有 session 的回寫；不保留原始模型日誌或任意輸出。未確認交付不重試、不自動改用 Queue。Exec 的 DONE 不可解鎖 Queue staging，亦禁止 Exec staging、watch、其他任務。Read-only sandbox 不是外掛 IAM 隔離；試行不要求使用任何工具、Firebase 或現有 session 權限。
+
+```powershell
+node --test admin/ai-bridge/bridge.test.cjs
+node admin/ai-bridge/bridge.cjs --check --exec-probe
+node admin/ai-bridge/bridge.cjs --once --exec-probe
+# 僅在 dry-run 顯示 probe issue 且本人確認時，執行：
+node admin/ai-bridge/bridge.cjs --once --exec-probe --dispatch
+```
+
+若 Issue #48 已被 claim，不盲目重送；需由管理者查明後建立新的 probe。後續需另驗證新 session 的唯讀 GitHub／Firebase staging 工具能力，以及受控執行策略；不能從簡單回覆推論雲端寫入權限。CLI 官方文件：https://learn.chatgpt.com/docs/non-interactive-mode
