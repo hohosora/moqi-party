@@ -1146,13 +1146,13 @@
   // Firebase writes cannot be cancelled by a local timeout. Never resend an
   // ambiguous write: a fixed vote ID is settled only by ACK/server snapshot.
   function makeVoteDelivery({write,active,report,schedule=setTimeout,cancel=clearTimeout,timeout=5000}){
-    let closed=false,confirmed=false,timer;
+    let closed=false,confirmed=false,started=false,timer;
     const current=()=>!closed&&active();
     function stop(){if(timer!==undefined){cancel(timer);timer=undefined;}}
     function confirm(){if(!current()||confirmed)return;confirmed=true;stop();report('sent');}
     function reject(err){if(!current()||confirmed)return;stop();report(['permission-denied','unauthenticated','invalid-argument'].includes(err?.code)?'rejected':'unknown');}
     return {
-      start(){if(!current())return;report('sending');timer=schedule(()=>{timer=undefined;if(current()&&!confirmed)report('unknown');},timeout);
+      start(){if(!current()||started)return;started=true;report('sending');timer=schedule(()=>{timer=undefined;if(current()&&!confirmed)report('unknown');},timeout);
         try{Promise.resolve(write()).then(confirm,reject);}catch(err){reject(err);}},
       confirm,dispose(){closed=true;stop();}
     };
@@ -1188,6 +1188,7 @@
     return {
       watch(key,subscribe,accept){this.remove(key);if(disposed)return;const s={key,subscribe,accept,status:'new',since:now(),attempts:0,generation:0,timer:null,off:null};slots.set(key,s);connect(s);},
       remove(key){const s=slots.get(key);if(s){slots.delete(key);detach(s);}},
+      offline(){if(disposed)return;for(const s of slots.values())if(s.status==='live')status(s,'cached');},
       resume(){if(disposed||!isOnline())return;for(const s of slots.values()){
         if(s.status==='retrying'&&s.timer===null)retry(s);
         else if(['cached','connecting'].includes(s.status)&&now()-s.since>=12000){detach(s);retry(s);}
@@ -1268,6 +1269,7 @@
   }
   function voteSyncMessage(){
     if(state.mode==='demo')return '🎭 示範模式';
+    if(state.recovery&&!state.recovery.ready(['votes']))return '📡 票數同步中，請等待伺服器確認';
     const sync=state.hostVoteSync;
     if(sync&&hostVoteSyncCurrent(sync)){
       if(sync.failed)return '📡 票數同步稍有延遲，將持續確認';
@@ -1367,7 +1369,7 @@
   }
   async function revealRound(){
     if(!isHost()||state.room.phase!=='voting')return;
-    if(!onlineReady(true))throw new Error('尚未同步完整房間與票數，請稍候再開獎。');
+    if(!onlineReady(false))throw new Error('尚未同步房間與玩家名單，請稍候再開獎。');
     state.autoRevealing=true;
     try{
       let votes=state.votes;
@@ -1382,12 +1384,14 @@
   }
   function currentTimeTick(){
     if(state.createProgress)updateCreateProgress();
+    // Give the SDK its own recovery window; only stale/failed streams are rebuilt.
+    resumeOnline();
     if(state.room?.phase!=='voting')return;
     // Host-only count aggregation is throttled independently from the timer.
     if(onlineReady(true))void refreshHostVoteCount();
     const remaining=Math.max(0,Math.ceil(((state.room.deadline||Date.now())-Date.now())/1000));
     const t=document.getElementById('timer');if(t){const digits=t.querySelector('.timer-digits');if(digits)digits.textContent=`⏱ ${remaining} 秒`;else t.textContent=`⏱ ${remaining} 秒`;t.classList.toggle('urgent',remaining<=10);t.setAttribute('aria-label',`倒數計時，剩餘 ${remaining} 秒`);decorateVisibleEmoji(digits||t);}
-    if(remaining===0 && Date.now()>=Number(state.room.deadline||0)+3500 && isHost() && !state.busy && !state.autoRevealing && onlineReady(true)){
+    if(remaining===0 && Date.now()>=Number(state.room.deadline||0)+3500 && isHost() && !state.busy && !state.autoRevealing && onlineReady(false)){
       state.autoRevealing=true;
       revealRound().catch(err=>{state.error='自動結算失敗：'+friendlyError(err);render();}).finally(()=>{state.autoRevealing=false;});
     }
@@ -1503,7 +1507,7 @@
     finally{state.createProgress=null;state.busy=false;render();}
   });
   window.addEventListener('online',resumeOnline);
-  window.addEventListener('offline',updateConnectionStatus);
+  window.addEventListener('offline',()=>{state.recovery?.offline();updateConnectionStatus();});
   document.addEventListener('visibilitychange',resumeOnline);
   window.addEventListener('unhandledrejection',e=>{console.error('Unhandled game error:',e.reason);});
   window.setInterval(currentTimeTick,1000);

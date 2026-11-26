@@ -11,7 +11,7 @@ const optimistic={metadata:{fromCache:false,hasPendingWrites:true}};
 test('lost/delayed ACK releases UI call, reports unknown, never resends; server confirms',async()=>{
  const t=clock(),reports=[];let resolve,writes=0;
  const v=makeVoteDelivery({...t,write:()=>{writes++;return new Promise(r=>resolve=r)},active:()=>true,report:x=>reports.push(x)});
- assert.equal(v.start(),undefined);t.advance(5000);
+ assert.equal(v.start(),undefined);v.start();t.advance(5000);
  assert.deepEqual(reports,['sending','unknown']);assert.equal(writes,1);v.confirm();resolve();await flush();
  assert.deepEqual(reports,['sending','unknown','sent']);assert.equal(t.size(),0);
 });
@@ -62,4 +62,11 @@ test('production wiring uses same vote ID, never awaits ACK in submitVote and ga
  assert.doesNotMatch(submit,/await L\.setDoc/);assert.match(submit,/delivery\.start\(\)/);
  assert.match(src,/visibilitychange',resumeOnline/);assert.match(src,/disposePendingVote\(\);state\.choice=null/);
  assert.match(src,/if\(!onlineReady\(true\)\)throw new Error/);
+});
+
+test('offline invalidates last known live status; healthy server event restores it',()=>{
+ const x=watches();x.watch('room');x.attempts[0].next(server);assert.equal(x.r.ready(['room']),true);
+ x.setOnline(false);x.r.offline();assert.equal(x.r.ready(['room']),false);
+ x.setOnline(true);x.r.resume();assert.equal(x.r.ready(['room']),false);
+ x.attempts[0].next(server);assert.equal(x.r.ready(['room']),true);x.t.advance(60000);x.r.resume();assert.equal(x.attempts.length,1);
 });
