@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
-const {taskFor,claimMarker,ackMarker,getAck,hasRemoteClaim,prompt,tick,makeStore,queue,execProbe}=require('./bridge.cjs');
+const {taskFor,claimMarker,ackMarker,getAck,hasRemoteClaim,prompt,tick,makeStore,queue,execProbe,statusReport}=require('./bridge.cjs');
 const owner={login:'hohosora',id:359014506,type:'User'};
 const issue=(number=48,title='[AI-QUEUE:PROBE]',extra={})=>({number,title,state:'open',user:owner,author_association:'OWNER',...extra});
 const comment=(body,extra={})=>({body,user:owner,author_association:'OWNER',created_at:new Date().toISOString(),...extra});
@@ -80,4 +80,24 @@ test('ambiguous exec failure is not replayed or silently switched to queue',()=>
  assert.equal(tick(f.api,f.store,false,true,'exec').status,'uncertain-no-retry');
  assert.equal(tick(f.api,f.store,false,true,'queue').status,'uncertain-no-retry');
  assert.equal(calls,1);assert.equal(f.sent.length,0);
+}finally{f.clean();}});
+
+test('status-only selects only status, never invokes AI or staging, and reads back acknowledgement',()=>{const f=fixture([issue(),staging,issue(52,'[AI-QUEUE:STATUS]',{body:'UNTRUSTED'})]);try{
+ let reports=0;f.api.statusReport=()=>{reports++;return 'Fixed status evidence';};f.api.execProbe=()=>{throw Error('must not call Exec');};
+ assert.equal(tick(f.api,f.store,false,false,'status-only').issue,52);assert.equal(reports,0);
+ assert.deepEqual(tick(f.api,f.store,false,true,'status-only'),{status:'DONE',issue:52,transport:'status-only'});
+ assert.equal(reports,1);assert.equal(f.sent.length,0);assert.equal(tick(f.api,f.store,false,true,'status-only').status,'idle');
+ assert.throws(()=>tick(f.api,f.store,true,true,'status-only'),/cannot authorize staging/);
+}finally{f.clean();}});
+test('status report uses exact revision, known workflow names and sanitized fields only',()=>{
+ const sha='a'.repeat(40),name='AI bridge safety tests';
+ const r=statusReport({object:{sha}},[{name,head_sha:sha,id:123,status:'completed',conclusion:'success',display_title:'SECRET'},{name,head_sha:'b'.repeat(40),id:124,status:'completed',conclusion:'failure'},{name:'INJECT',head_sha:sha,id:125,status:'completed',conclusion:'success'}]);
+ assert.match(r,/actions\/runs\/123/);assert.match(r,/completed \/ success/);assert.ok(!r.includes('SECRET')&&!r.includes('INJECT')&&!r.includes('/124'));
+ assert.match(statusReport({object:{sha}},[]),/no matching run/);
+ assert.throws(()=>statusReport({object:{sha:'bad'}},[]),/invalid status metadata/);
+});
+test('status-only failure is uncertain and not retried',()=>{const f=fixture([issue(52,'[AI-QUEUE:STATUS]')]);try{
+ let n=0;f.api.statusReport=()=>{n++;throw Error('network');};
+ assert.equal(tick(f.api,f.store,false,true,'status-only').status,'uncertain-no-retry');
+ assert.equal(tick(f.api,f.store,false,true,'status-only').status,'uncertain-no-retry');assert.equal(n,1);
 }finally{f.clean();}});
