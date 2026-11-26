@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
-const {taskFor,claimMarker,ackMarker,getAck,hasRemoteClaim,prompt,tick,makeStore}=require('./bridge.cjs');
+const {taskFor,claimMarker,ackMarker,getAck,hasRemoteClaim,prompt,tick,makeStore,queue}=require('./bridge.cjs');
 const owner={login:'hohosora',id:359014506,type:'User'};
 const issue=(number=48,title='[AI-QUEUE:PROBE]',extra={})=>({number,title,state:'open',user:owner,author_association:'OWNER',...extra});
 const comment=(body,extra={})=>({body,user:owner,author_association:'OWNER',created_at:new Date().toISOString(),...extra});
@@ -44,4 +44,18 @@ test('ack rejects wrong task, old timestamps, and marker not on first line',()=>
  const j={id:'00000000-0000-4000-8000-000000000000',createdAt:new Date().toISOString()};
  assert.equal(getAck([comment('other\n'+ackMarker(j.id,'DONE')),comment(ackMarker(j.id,'DONE'),{created_at:'2000-01-01T00:00:00Z'})],j),null);
  assert.equal(getAck([comment(ackMarker(j.id,'BLOCKED'))],j),'BLOCKED');
+});
+
+// Real Windows subprocess, fake CLI only. Do not contact any Codex server.
+test('Windows preflight uses codex.cmd instead of npm PowerShell shim and propagates failure',{skip:process.platform!=='win32'},()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'moqi-cli-test-')),oldPath=process.env.PATH;
+ try{
+  fs.writeFileSync(path.join(dir,'codex.ps1'),"throw 'PowerShell shim must not run'\n");
+  fs.writeFileSync(path.join(dir,'codex.cmd'),'@echo off\r\nif "%1"=="queue" if "%2"=="--help" (echo MOCK-CODEX-CMD-OK & exit /b 0)\r\nexit /b 7\r\n');
+  process.env.PATH=dir+path.delimiter+oldPath;
+  const id='00000000-0000-4000-8000-000000000000';
+  assert.match(queue(id,'',true),/MOCK-CODEX-CMD-OK/);
+  fs.writeFileSync(path.join(dir,'codex.cmd'),'@echo off\r\nexit /b 7\r\n');
+  assert.throws(()=>queue(id,'',true),{message:'command failed: powershell.exe (7)'});
+ }finally{process.env.PATH=oldPath;fs.rmSync(dir,{recursive:true,force:true});}
 });

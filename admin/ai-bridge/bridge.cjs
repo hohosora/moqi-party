@@ -52,8 +52,10 @@ function queue(thread,message,check=false){
  if(process.platform==='win32'){
   // No interpolation of GitHub text into the PowerShell program. Only a fixed
   // command receives validated UUID and locally generated fixed prompt via env.
-  const preflight="$ErrorActionPreference = 'Stop'; $null = Get-Command codex -ErrorAction Stop; ";
-  const script=preflight+(check?'& codex queue --help':'& codex queue --thread $env:MOQ_BRIDGE_THREAD --message $env:MOQ_BRIDGE_MESSAGE')+'; if ($null -eq $LASTEXITCODE) { exit 1 }; exit $LASTEXITCODE';
+  // npm installs both codex.ps1 and codex.cmd. A restricted PowerShell
+  // can reject the former; choose the application shim explicitly.
+  const preflight="$ErrorActionPreference = 'Stop'; $cli = Get-Command codex.cmd -CommandType Application -ErrorAction SilentlyContinue | Select-Object -First 1; if (-not $cli) { $cli = Get-Command codex.exe -CommandType Application -ErrorAction Stop | Select-Object -First 1 }; ";
+  const script=preflight+(check?'& $cli.Source queue --help':'& $cli.Source queue --thread $env:MOQ_BRIDGE_THREAD --message $env:MOQ_BRIDGE_MESSAGE')+'; if ($null -eq $LASTEXITCODE) { exit 1 }; exit $LASTEXITCODE';
   return cmd('powershell.exe',['-NoProfile','-NonInteractive','-Command',script],{env:{...process.env,MOQ_BRIDGE_THREAD:thread,MOQ_BRIDGE_MESSAGE:message}});
  }
  return cmd('codex',check?['queue','--help']:['queue','--thread',thread,'--message',message]);
@@ -140,4 +142,4 @@ function main(){
  if(args.includes('--watch')){if(run())timer=setInterval(run,60000);}else{try{run();}finally{stop();}}
 }
 if(require.main===module){try{main();}catch(e){console.error('Bridge stopped: '+e.message);process.exitCode=1;}}
-module.exports={taskFor,claimMarker,ackMarker,getAck,hasRemoteClaim,prompt,tick,makeStore};
+module.exports={taskFor,claimMarker,ackMarker,getAck,hasRemoteClaim,prompt,tick,makeStore,queue};
