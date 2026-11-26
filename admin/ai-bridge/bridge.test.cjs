@@ -1,7 +1,7 @@
 'use strict';
 const {test}=require('node:test'),assert=require('node:assert/strict');
 const fs=require('node:fs'),os=require('node:os'),path=require('node:path');
-const {taskFor,claimMarker,ackMarker,getAck,hasRemoteClaim,prompt,tick,makeStore,queue}=require('./bridge.cjs');
+const {taskFor,claimMarker,ackMarker,getAck,hasRemoteClaim,prompt,tick,makeStore,queue,execProbe}=require('./bridge.cjs');
 const owner={login:'hohosora',id:359014506,type:'User'};
 const issue=(number=48,title='[AI-QUEUE:PROBE]',extra={})=>({number,title,state:'open',user:owner,author_association:'OWNER',...extra});
 const comment=(body,extra={})=>({body,user:owner,author_association:'OWNER',created_at:new Date().toISOString(),...extra});
@@ -59,3 +59,25 @@ test('Windows preflight uses codex.cmd instead of npm PowerShell shim and propag
   assert.throws(()=>queue(id,'',true),{message:'command failed: powershell.exe (7)'});
  }finally{process.env.PATH=oldPath;fs.rmSync(dir,{recursive:true,force:true});}
 });
+
+test('exec validates exact task-specific final file and refuses non-probe jobs',()=>{
+ const j={id:'00000000-0000-4000-8000-000000000000',type:'probe'};
+ assert.equal(execProbe(j,(message,out)=>{assert.match(message,/Do not use tools/);fs.writeFileSync(out,'BRIDGE_EXEC_OK '+j.id+'\n');}),true);
+ assert.throws(()=>execProbe(j,(_,out)=>fs.writeFileSync(out,'wrong')),/response mismatch/);
+ assert.throws(()=>execProbe(j,()=>{}));
+ assert.throws(()=>execProbe({...j,type:'staging'},()=>{}),/only an identified probe/);
+});
+test('exec pilot completes only exact probe with verified comment, never unlocks staging',()=>{const f=fixture([staging,issue()]);try{
+ let calls=0;f.api.execProbe=j=>{calls++;assert.equal(j.type,'probe');return true;};
+ assert.equal(tick(f.api,f.store,false,false,'exec').status,'dry-run');assert.equal(calls,0);
+ assert.equal(tick(f.api,f.store,false,true,'exec').status,'DONE');assert.equal(calls,1);
+ assert.equal(f.store.jobs()[0].transport,'exec');assert.equal(f.sent.length,0);
+ assert.equal(tick(f.api,f.store,true,true,'queue').status,'idle');
+ assert.throws(()=>tick(f.api,f.store,true,true,'exec'),/cannot authorize staging/);
+}finally{f.clean();}});
+test('ambiguous exec failure is not replayed or silently switched to queue',()=>{const f=fixture();try{
+ let calls=0;f.api.execProbe=()=>{calls++;throw Error('timeout');};
+ assert.equal(tick(f.api,f.store,false,true,'exec').status,'uncertain-no-retry');
+ assert.equal(tick(f.api,f.store,false,true,'queue').status,'uncertain-no-retry');
+ assert.equal(calls,1);assert.equal(f.sent.length,0);
+}finally{f.clean();}});
