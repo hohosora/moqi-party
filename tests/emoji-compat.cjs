@@ -46,7 +46,7 @@ const server=http.createServer((req,res)=>{
         await page.locator('[data-action="manage"]').click();
         await verify('question bank','.manager-heading');
         await page.locator('[data-action="manager-back"]').click();
-        await page.locator('[name="nickname"]').fill('跨平台符號測試');
+        await page.locator('[data-action="open-home"]').click();
         await page.locator('[data-action="demo"]').click();
         await verify('lobby','.avatars');
         assert.equal(await page.locator('.avatar-pill').count(),13,'Twelve demo guests plus the host are unchanged');
