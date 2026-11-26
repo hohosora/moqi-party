@@ -49,8 +49,8 @@ const server=http.createServer((req,res)=>{
         await page.locator('[data-action="open-home"]').click();
         await page.locator('[data-action="demo"]').click();
         await verify('lobby','.avatars');
-        assert.equal(await page.locator('.avatar-pill').count(),13,'Twelve demo guests plus the host are unchanged');
-        await page.locator('[data-action="start"]').click();
+        assert.equal(await page.locator('.avatar-pill').count(),13,'Twelve virtual players plus the learner');
+        await page.locator('[data-action="tutorial-skip-all"]').click();
         await verify('vote count','#vote-count');
         await verify('timer','#timer');
         const timerBefore=await page.locator('#timer').getAttribute('aria-label');

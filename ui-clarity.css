@@ -1374,3 +1374,23 @@ html[data-theme="party"] .lobby-code .code-digits{overflow-wrap:anywhere}
 .host-create-progress strong,.host-create-progress span,.host-create-progress small{color:#17151b;text-shadow:none;line-height:1.5;font-size:14px}
 .host-create-progress strong{font-size:16px;font-weight:800}
 .host-create-elapsed{font-variant-numeric:tabular-nums}
+
+/* Local tutorial: non-modal guidance and clear focus ring. */
+.tutorial-guide{position:relative;z-index:1;margin:0 0 18px;padding:16px;border:3px solid #f4b52e;border-radius:14px;background:#252039;color:#fff5df;box-shadow:0 4px 14px #0004;overflow-wrap:anywhere}
+.tutorial-guide .tutorial-kicker{font-size:15px;font-weight:800;color:#ffdb7f}
+.tutorial-guide h2{font-size:21px;line-height:1.4;color:#fff5df;margin:10px 0 8px}
+.tutorial-guide p{font-size:16px;line-height:1.65;color:#fff5df;margin:0 0 8px}
+.tutorial-guide small{display:block;color:#ffdf99;font-size:14px;line-height:1.5}
+.tutorial-progress{height:6px;border-radius:8px;background:#5d526e;margin:8px 0}
+.tutorial-progress span{display:block;height:100%;background:#ffdb7f;border-radius:8px}
+.tutorial-actions,.tutorial-tools{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+.tutorial-guide .tutorial-actions button,.tutorial-tools button{min-height:44px;max-width:100%;white-space:normal;overflow-wrap:anywhere;font-size:15px;line-height:1.45}
+.tutorial-guide .tutorial-actions button{background:#ffdb7f!important;color:#241b2c!important;border:2px solid #ffdb7f!important;text-shadow:none!important;box-shadow:none!important}
+.tutorial-guide .tutorial-actions button.tertiary{background:#322940!important;color:#fff5df!important;border:2px solid #bdb1d3!important}
+.tutorial-guide button:focus-visible,.tutorial-tools button:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.tutorial-tools{margin:0 0 12px;padding:10px;border:1px solid #b9a8d1;border-radius:10px;background:#252039;color:#fff5df;font-size:15px}
+.tutorial-tools button{background:#322940!important;color:#fff5df!important;border:1px solid #b9a8d1!important;text-shadow:none!important;box-shadow:none!important}
+.tutorial-focus{outline:3px solid #f4b52e!important;outline-offset:3px!important;border-radius:12px;scroll-margin:14px}
+@media(max-width:380px){.tutorial-guide{padding:12px}.tutorial-actions button{flex:1 1 100%}}
+/* Post-release contrast regression: text over blue/purple result bars. */
+html[data-theme="minimal"] .result-bar .bar-track .bar-text{color:#101416}
