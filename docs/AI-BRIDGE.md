@@ -4,15 +4,15 @@ GitHub Issue → 單一 Windows 桌機輪詢 → 官方 Codex CLI `codex queue -
 
 ## Windows 第一次設定（必須由本人在桌機完成）
 
-1. 確認 Node.js 22+、Git、GitHub CLI（`gh --version`）、Codex CLI（`codex --version`）。缺少 gh 可用 `winget install --id GitHub.cli -e`，缺少 Codex CLI 可依官方文件安裝 `npm install -g @openai/codex`，不要另建付費 API key。重新開 PowerShell 後檢查。以 `gh auth login` 登入 github.com，使用瀏覽器核准，`gh api user --jq .login` 必須是 repository owner。
+1. 確認 Node.js 22+、Git、GitHub CLI（`gh --version`）、Codex CLI（`codex --version`）。缺少 gh 可用 `winget install --id GitHub.cli -e`，缺少 Codex CLI 可依官方文件安裝 `npm.cmd install -g @openai/codex`，不要另建付費 API key。重新開 PowerShell 後檢查。以 `gh auth login` 登入 github.com，使用瀏覽器核准，`gh api user --jq .login` 必須是 repository owner。
 2. 在專用目錄 clone 本 repo，檢查並測試已審核的 main 版本；不要自動 pull 後直接執行新腳本。現有工作樹勿強制 reset。
 
 ```powershell
 git clone https://github.com/hohosora/moqi-party.git moqi-ai-bridge
 cd moqi-ai-bridge
 node --test admin/ai-bridge/bridge.test.cjs
-codex login status
-codex queue --help
+codex.cmd login status
+codex.cmd queue --help
 ```
 
 3. 於 Codex 桌機找出具 Firebase 工作權限之既有 session 的 UUID，核對專案、工作目錄、帳號與權限。可用 CLI `codex resume` 查看 session，勿選錯 session，勿把 UUID 寫到 GitHub。若 CLI 看不到桌機 session 或 queue 不存在，停止；不要切換到危險 sandbox 或任意以新 session 取代。官方 CLI 說明：https://learn.chatgpt.com/docs/developer-commands
@@ -52,3 +52,7 @@ Ctrl+C 停止輪詢；不會撤銷已送達的 Codex 工作。請在首次完整
 ## 驗收
 
 CI Windows/Ubuntu 只跑本地 mock 測試，不連 GitHub 或 Firebase，不呼叫 Codex CLI。真正的 CLI 語法支援、桌機 session 可達性、owner auth、Firebase stage scope 和回寫需首次桌機 probe 驗證。此 PR 不修改遊戲前端、Rules、正式金鑰、計費或 App Check；未開始桌機工作。
+
+## Windows 安裝排錯（2026-11-26）
+
+實機 GitHub CLI 登入成功、Codex CLI 0.172.0 登入成功、7 項 mock 測試通過；`--configure` 已儲存 UUID，但 `--check` 因 npm 的 codex.ps1 遭 PowerShell 限制而失敗。使用 `codex.cmd queue --help` 的子 PowerShell 測試 exit 0。修正為明確選擇 codex.cmd（無則 codex.exe），不修改執行政策；新增 Windows 假 CLI 子程序回歸測試。這僅修正指令呼叫，尚未解決本機 daemon 發布目錄 Access Denied；不要因 help 成功就派發，先確認 daemon 與既有 session 可連線。保留本機 config，不重複 configure。不可輸出授權碼或原始憑證。
