@@ -10,6 +10,16 @@ const {p3Refs,p3CreateRoom,p3JoinRoom,p3StartRoom}=new Function(helpers+';return
 const score=src.slice(src.indexOf('  function evaluateRound('),src.indexOf('  function simulateBots('));
 const evaluateRound=new Function(score+';return evaluateRound;')();
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+// A failed or stalled cleanup must fail CI, not print a misleading success.
+async function bounded(label,work,ms=30000){
+ let timer;try{return await Promise.race([Promise.resolve().then(work),new Promise((_,reject)=>{timer=setTimeout(()=>reject(Error(label+' timed out')),ms);})]);}
+ finally{clearTimeout(timer);}
+}
+async function cleanup(env,label){
+ console.log('CLEANUP START '+label);
+ await bounded(label+' cleanup',()=>env.cleanup());
+ console.log('CLEANUP COMPLETE '+label);
+}
 function waitFor(ref,accept,ms=15000){
  return new Promise((resolve,reject)=>{
   let stop=()=>{};const timer=setTimeout(()=>{stop();reject(Error('snapshot timeout'));},ms);
@@ -30,7 +40,7 @@ async function legacyRecovery(env){
  await Promise.all(offline.map(db=>L.disableNetwork(db)));
  const votes=ids.map((uid,i)=>({uid,roundIndex:0,choice:i%4,guess:0,double:false,at:Date.now()}));
  const deliveryReports=Array.from({length:n},()=>[]);
- const writes=[];
+ const writes=[];let resumed=false;
  const deliveries=dbs.map((db,i)=>makeVoteDelivery({timeout:250,active:()=>true,report:s=>deliveryReports[i].push(s),write:()=>{
   const p=L.setDoc(L.doc(db,'rooms',code,'votes',ids[i]+'_0'),votes[i]);p.catch(()=>{});writes.push(p);return p;
  }}));
@@ -41,7 +51,7 @@ async function legacyRecovery(env){
   assert.equal((await L.getDocsFromServer(q)).size,15);
   for(let i=1;i<6;i++)assert.ok(deliveryReports[i].includes('unknown'),'offline vote stays unconfirmed');
   const before=performance.now();
-  await Promise.all(offline.map(db=>L.enableNetwork(db)));
+  await Promise.all(offline.map(db=>L.enableNetwork(db)));resumed=true;
   await Promise.all(writes);
   const elapsed=Math.round(performance.now()-before);
   const snap=await L.getDocsFromServer(q);
@@ -56,14 +66,16 @@ async function legacyRecovery(env){
   await L.updateDoc(rr,{phase:'voting',roundIndex:1,deadline:Date.now()+45000,lastResult:null});
   for(let i=1;i<6;i++){const s=await L.getDocFromServer(L.doc(dbs[i],'rooms',code,'players',ids[i]));assert.equal(s.exists(),true);}
   console.log(JSON.stringify({protocol:'legacy',players:n,offlinePlayers:5,votes:snap.size,reconnectAndAckLocalMs:elapsed,status:'PASS'}));
- }finally{deliveries.forEach(d=>d.dispose());await Promise.allSettled(offline.map(db=>L.enableNetwork(db)));}
+ }finally{deliveries.forEach(d=>d.dispose());if(!resumed)await bounded('restore offline clients',()=>Promise.all(offline.map(db=>L.enableNetwork(db))));}
 }
 
 async function main(){
- const env=await initializeTestEnvironment({projectId:'demo-moqi-party-p1',firestore:{host:'127.0.0.1',port:8081,rules:fs.readFileSync('firestore.rules','utf8')}});
+ const config={projectId:'demo-moqi-party-p1',firestore:{host:'127.0.0.1',port:8081,rules:fs.readFileSync('firestore.rules','utf8')}};
+ const env=await initializeTestEnvironment(config);
+ let voteTotal=0,roundTotal=0;
  try{
   await env.withSecurityRulesDisabled(ctx=>L.setDoc(L.doc(ctx.firestore(),'rolloutControls/p3Admission'),{createEnabled:true}));
-  const counts=[2,5,10,15,20], codes=['ABCDE2','ABCDE3','ABCDE4','ABCDE5','ABCDE6'];let voteTotal=0,roundTotal=0;
+  const counts=[2,5,10,15,20], codes=['ABCDE2','ABCDE3','ABCDE4','ABCDE5','ABCDE6'];
   for(let k=0;k<counts.length;k++){
    const n=counts[k],code=codes[k],ids=Array.from({length:n},(_,i)=>'matrix-'+k+'-'+i), dbs=ids.map(uid=>env.authenticatedContext(uid).firestore()), host=dbs[0],hr=p3Refs(L,host,code,ids[0]);
    const player=uid=>({uid,name:'測試',emoji:'😎',joinedAt:Date.now()});
@@ -115,8 +127,14 @@ async function main(){
    const finished=await L.getDocFromServer(hr.room);assert.equal(finished.data().phase,'finished');assert.equal(Object.keys(finished.data().scores).length,n);
    console.log(JSON.stringify({players:n,rounds:6,votes:n*6,localSnapshotMs:times,maxLocalMs:Math.max(...times),status:'PASS'}));
   }
-  await legacyRecovery(env);
-  console.log('PASS: '+roundTotal+' complete emulator rounds; '+voteTotal+' votes; 21st player denied; no production requests');
- }finally{await env.cleanup();}
+ }finally{await cleanup(env,'V3 matrix');}
+ // Keep the five offline SDK clients in a separate test environment so
+ // cleanup does not have to terminate both batches of transports at once.
+ const legacy=await initializeTestEnvironment(config);
+ try{await legacyRecovery(legacy);}finally{await cleanup(legacy,'legacy recovery');}
+ console.log('PASS: '+roundTotal+' complete emulator rounds; '+voteTotal+' votes; 21st player denied; legacy 20/20 recovery; both environments cleaned; no production requests');
 }
-main().catch(e=>{console.error(e);process.exitCode=1;});
+// Once every assertion AND awaited cleanup succeeds, terminate this isolated
+// test child; gRPC SDK handles must not keep firebase emulators:exec alive.
+// Any rejection (including cleanup timeout) exits nonzero, never false PASS.
+main().then(()=>{process.exitCode=0;setImmediate(()=>process.exit(0));},e=>{console.error(e);process.exitCode=1;setImmediate(()=>process.exit(1));});
