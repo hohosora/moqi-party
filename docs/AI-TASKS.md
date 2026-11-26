@@ -68,3 +68,10 @@ PR #41 已合併為 `d2142df`，第二輪 Rules emulator 91 項、UI/計分皆�
 2026-11-25 已嘗試最多 3 筆的正式資料查詢。獨立 MCP 程序在登入檢查即停止，尚未進入第一頁。待同一程序具備有效授權與查詢工具後，從第 1 步重試。詳見[測試紀錄](TEST-LOG.md)。
 
 2026-11-25 14:24（臺北）完成。官方 MCP 唯讀試查取得 3 筆；全量預覽 1 頁共 12 間，候選 0、跳過 0。見[測試紀錄](TEST-LOG.md)。
+
+## Level 2.1｜固定工程任務（2026-11-26）
+
+- [ ] GitHub-hosted `[AI-CI:TEST]` owner 新 issue → 實際 UI／Rules 測試 → bot 回寫 SHA/run 結果。
+- [ ] `[AI-CI:AUDIT]` owner 新 issue → 只讀 npm audit/outdated → bot 回寫，AI 依實際公告分析相容修正，另提 PR。
+- [ ] 反向驗收：非白名單 issue 不執行、既有本機調度器不執行新 CI 任務、失敗不重送。
+- [ ] AI 分析與受控修正以 PR、CI、人工核准重大變更；獨立隔離後再考慮本機任意 AI 任務。#46 Firebase 雲端驗收仍獨立。

@@ -14,15 +14,23 @@ on:
       - 'package.json'
       - 'package-lock.json'
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      audit_only:
+        type: boolean
+        default: false
 permissions:
   contents: read
 jobs:
   admission-lab:
+    if: inputs.audit_only != true
     name: Isolated admission emulator
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
@@ -39,8 +47,10 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
-      - run: npm ci --no-audit --no-fund
+      - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: node tests/p3-lab/audit-report.cjs

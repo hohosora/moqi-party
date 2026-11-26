@@ -1,0 +1,121 @@
+name: Level 2 engineering queue
+run-name: Engineering queue issue #${{ github.event.issue.number }}
+on:
+  issues:
+    types: [opened]
+permissions: {}
+concurrency:
+  group: moqi-engineering-issue-${{ github.event.issue.number }}
+  cancel-in-progress: false
+jobs:
+  claim:
+    if: >-
+      github.repository == 'hohosora/moqi-party' &&
+      github.ref == 'refs/heads/main' &&
+      github.event.action == 'opened' &&
+      github.run_attempt == '1' &&
+      github.actor_id == '359014506' &&
+      github.event.issue.user.id == 359014506 &&
+      github.event.issue.user.type == 'User' &&
+      github.event.issue.author_association == 'OWNER' &&
+      github.event.issue.pull_request == null &&
+      (github.event.issue.title == '[AI-CI:TEST]' || github.event.issue.title == '[AI-CI:AUDIT]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      issues: write
+    outputs:
+      accepted: ${{ steps.claim.outputs.accepted }}
+      kind: ${{ steps.claim.outputs.kind }}
+    steps:
+      - id: claim
+        name: Verify fixed owner task and reserve once
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ github.event.issue.number }}
+          TITLE: ${{ github.event.issue.title }}
+        run: |
+          set -euo pipefail
+          [[ "$ISSUE" =~ ^[1-9][0-9]*$ ]]
+          [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$GITHUB_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          case "$TITLE" in
+            '[AI-CI:TEST]') kind=test ;;
+            '[AI-CI:AUDIT]') kind=audit ;;
+            *) exit 1 ;;
+          esac
+          api="repos/hohosora/moqi-party/issues/$ISSUE/comments"
+          marker='<!-- moqi-engineering-v1 claim -->'
+          prior=$(gh api --paginate "$api?per_page=100" --jq '.[] | select(.user.id == 41898282 and (.body | startswith("<!-- moqi-engineering-v1 claim -->"))) | .id')
+          if [[ -n "$prior" ]]; then
+            echo 'Existing bot claim; never re-run this issue.'
+            exit 0
+          fi
+          body=$(printf '%s\nEngineering task %s reserved at commit %s. Run: https://github.com/hohosora/moqi-party/actions/runs/%s\nNo completion is implied.' "$marker" "$kind" "$GITHUB_SHA" "$GITHUB_RUN_ID")
+          id=$(gh api --method POST "$api" -f "body=$body" --jq '.id')
+          [[ "$id" =~ ^[1-9][0-9]*$ ]]
+          actual=$(gh api "repos/hohosora/moqi-party/issues/comments/$id" --jq '.body')
+          [[ "$actual" == "$body" ]]
+          printf 'accepted=yes\nkind=%s\n' "$kind" >> "$GITHUB_OUTPUT"
+  ui:
+    needs: claim
+    if: needs.claim.outputs.accepted == 'yes' && needs.claim.outputs.kind == 'test'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/ui-contrast.yml
+  rules:
+    needs: claim
+    if: needs.claim.outputs.accepted == 'yes' && needs.claim.outputs.kind == 'test'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/firestore-rules.yml
+  audit:
+    needs: claim
+    if: needs.claim.outputs.accepted == 'yes' && needs.claim.outputs.kind == 'audit'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/p3-lab.yml
+    with:
+      audit_only: true
+  receipt:
+    needs: [claim, ui, rules, audit]
+    if: always() && needs.claim.result == 'success' && needs.claim.outputs.accepted == 'yes'
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    permissions:
+      issues: write
+    steps:
+      - name: Publish bounded verified run result
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE: ${{ github.event.issue.number }}
+          KIND: ${{ needs.claim.outputs.kind }}
+          UI: ${{ needs.ui.result }}
+          RULES: ${{ needs.rules.result }}
+          AUDIT: ${{ needs.audit.result }}
+        run: |
+          set -euo pipefail
+          [[ "$ISSUE" =~ ^[1-9][0-9]*$ ]]
+          [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$GITHUB_RUN_ID" =~ ^[1-9][0-9]*$ ]]
+          for result in "$UI" "$RULES" "$AUDIT"; do
+            case "$result" in success|failure|cancelled|skipped) ;; *) exit 1 ;; esac
+          done
+          verdict=BLOCKED
+          case "$KIND" in
+            test)
+              [[ "$UI" == success && "$RULES" == success && "$AUDIT" == skipped ]] && verdict=DONE
+              scope='UI/scoring and demo Firestore emulator regressions; not real cloud or devices.'
+              ;;
+            audit)
+              [[ "$AUDIT" == success && "$UI" == skipped && "$RULES" == skipped ]] && verdict=DONE
+              scope='Read-only dependency review; DONE does not mean zero moderate findings.'
+              ;;
+            *) exit 1 ;;
+          esac
+          body=$(printf '<!-- moqi-engineering-v1 result -->\n%s %s at %s\nUI: %s; rules: %s; audit: %s.\n%s\nEvidence: https://github.com/hohosora/moqi-party/actions/runs/%s\nNo AI model, local credentials, production changes or deployment invoked.' "$verdict" "$KIND" "$GITHUB_SHA" "$UI" "$RULES" "$AUDIT" "$scope" "$GITHUB_RUN_ID")
+          id=$(gh api --method POST "repos/hohosora/moqi-party/issues/$ISSUE/comments" -f "body=$body" --jq '.id')
+          [[ "$id" =~ ^[1-9][0-9]*$ ]]
+          actual=$(gh api "repos/hohosora/moqi-party/issues/comments/$id" --jq '.body')
+          [[ "$actual" == "$body" ]]
+          [[ "$verdict" == DONE ]]

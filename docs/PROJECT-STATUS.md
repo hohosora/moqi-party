@@ -1,5 +1,9 @@
 # 專案狀態
 
+## 2026-11-26 · Level 2 自動化工程
+
+PR #52 已合併；#53/#54 Windows 固定 GitHub-only 自動查核回寫成功，各約 2 秒，#54 不需人工操作。#48 Codex Exec no-tools probe 通過；原管理者 Firebase MCP 身分未隔離。#46 獨立服務帳戶 staging metadata 查詢成功、正式 metadata 拒絕，非完整執行環境隔離。Level 2.1 新增 GitHub-hosted 固定測試與稽核佇列，實際新任務需合併後驗收，不增加本機權限。正式 Firebase 與 App Check 不變。
+
 ## 正式實機第二輪結果
 
 7 項設定下票數更新正常，但手機重新整理後重加延遲；正式金鑰已回復 25 項並讀回核實。正式 Rules 暫緩發布。[實機回報與 staging 對照](P25-P32-CLOUD-ACCEPTANCE.md)。
