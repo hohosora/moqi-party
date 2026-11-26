@@ -86,3 +86,15 @@ node admin/ai-bridge/bridge.cjs --watch --dispatch --status-only
 ```
 
 每 60 秒輪詢，Ctrl+C 停止。此模式只提供固定查核自動化，不是任意 AI 工程執行器。Mac 不得同時輪詢。完成實機 status 回寫後再規劃固定 CI 測試任務與無高權限憑證的執行環境。
+
+## Level 2.1｜隔離式工程測試與安全稽核
+
+採用既有 GitHub-hosted Actions 作為固定測試執行端（Research/Reuse First），不擴張 Windows 調度器的憑證或呼叫本機 AI。維持 `--status-only` 原樣，無需桌機更新。
+
+新建 owner 本人、精確標題的 issue（只接受 opened）：
+- `[AI-CI:TEST]`：實際執行 UI／計分回歸與 demo Firestore emulator rules 回歸。重用 ui-contrast / firestore-rules workflows。
+- `[AI-CI:AUDIT]`：實際執行既有 npm audit/outdated 只讀檢查；不更新依賴，安裝時忽略 lifecycle scripts。DONE 不代表零中度風險；高／重大風險會令 audit job 失敗。
+
+僅限本 repo owner 數字 ID、OWNER association、main 及第一次 run attempt。外部 issue 內容與留言不作為指令，未知任務拒絕。每 issue concurrency + GitHub Actions bot claim 去重；claim、receipt 使用最小 issues:write 且不 checkout；測試 jobs 僅 contents:read，checkout 不持久化憑證，不繼承 secrets，無 Firebase 正式／staging 憑證。失敗或取消不自動重派；同一 issue 不重新打開或 rerun，需核對後新建。回寫 commit SHA、run URL、各 job 結果，DONE 只表示對應固定測試成功，BLOCKED 表示未達驗收。若整個 workflow 被取消或 API 失敗，可能只有 claim，必須查 run，不假設完成。
+
+只使用公開 repo 的標準 GitHub-hosted runners，固定每個 job 2–15 分鐘上限，不排程、不啟用額外付費資源。這是確定性工程執行，不是模型自主開發；AI 分析由 ChatGPT 讀取 CI、建立審核分支 PR；任意 Codex 命令、無人值守 Firebase 操作仍禁止。先以新 issue 實機驗收兩種類型，再擴充範圍。

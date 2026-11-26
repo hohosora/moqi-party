@@ -101,3 +101,14 @@ test('status-only failure is uncertain and not retried',()=>{const f=fixture([is
  assert.equal(tick(f.api,f.store,false,true,'status-only').status,'uncertain-no-retry');
  assert.equal(tick(f.api,f.store,false,true,'status-only').status,'uncertain-no-retry');assert.equal(n,1);
 }finally{f.clean();}});
+
+// Cloud-hosted CI task types are intentionally not executable by the local bridge.
+test('engineering CI tasks cannot reach any existing local transport',()=>{
+ for(const title of ['[AI-CI:TEST]','[AI-CI:AUDIT]']){
+  const f=fixture([issue(99,title,{body:'malicious local command'})]);try{
+   assert.equal(taskFor(issue(99,title),true),null);
+   for(const transport of ['queue','exec','status-only'])assert.equal(tick(f.api,f.store,false,true,transport).status,'idle');
+   assert.equal(f.sent.length,0);assert.equal(f.store.jobs().length,0);
+  }finally{f.clean();}
+ }
+});
