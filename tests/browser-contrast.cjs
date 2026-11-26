@@ -88,10 +88,11 @@ async function main(){
       await page.locator('[data-action="bank-tab"][data-tab="classic"]').click();
       await audit('manager-classic');
       await page.locator('[data-action="manager-back"]').click();
-      // Verify error messages too, before entering demo mode.
-      await page.locator('[data-action="demo"]').click();
+      // Online host validation remains unchanged; demo is only on home.
+      await page.locator('[data-action="host"]').click();
       await audit('host-error');
-      await page.locator('[name="nickname"]').fill('對比測試主持');
+      if(await page.locator('[data-action="demo"]').count())throw Error('Demo must not appear in host settings');
+      await home();
       await page.locator('[data-action="demo"]').click();
       await audit('lobby');
       await page.locator('[data-action="start"]').click();

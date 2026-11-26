@@ -163,6 +163,7 @@
     page:new URLSearchParams(location.search).has('room')?'join':'home', hostMode:'custom', quickScene:'general', quickQuestions:[], voteStep:'choice', bankMode:localStorage.getItem('mqs_bank_mode')||'mixed', managerTab:'custom',
     customEditId:null, customDraft:null, geminiDirection:'trends', geminiScenePreset:'friends', geminiContext:'', geminiCount:8, aiText:'',
     aiPreview:[], aiPreviewSkipped:0, managerNotice:'', managerError:'',
+    recovery:null, pendingVote:null, sessionGeneration:0,
     heroImage:'', photoBusy:false, voteSubmitState:'idle', voteSyncFromCache:false, hostVoteSync:null, lastVisibleQuestionKey:null,
     themeChoice:'party', // 每次新開網站預設經典像素風；房間中沿用主持人的主題
     minimalHue:normalizeMinimalHue(localStorage.getItem('mqs_minimal_hue_v1'))
@@ -630,7 +631,7 @@
   function myRank(){const sorted=scoresSorted();return sorted.findIndex(p=>p.uid===state.uid)+1;}
   function myScore(){return safeScore(state.room?.scores?.[state.uid]);}
   function hasDouble(){return !state.room?.usedDoubles?.[state.uid];}
-  function surface(content, right=''){return `<main class="container"><div class="topbar"><button type="button" class="brand brand-home" data-action="brand-home" aria-label="默契失控局，點擊回首頁" title="回首頁"><span class="brand-mark" aria-hidden="true"><span>✦</span></span><span class="brand-title">默契失控局</span></button></div>${right ? `<div class="header-room-status">${right}</div>` : ''}<div class="retro-pcb-backplane" aria-hidden="true"><i class="retro-pcb-channel left"></i><i class="retro-pcb-channel right"></i><i class="retro-pcb-chip upper"></i><i class="retro-pcb-chip lower"></i></div><div class="retro-circuit-deck" aria-hidden="true"><span class="retro-deck-switches"><i></i><i></i><i></i></span><span class="retro-deck-pipes"><i></i><i></i><i></i><i></i></span><span class="retro-deck-chip"><b></b><i></i><i></i><i></i></span><span class="retro-deck-leds"><i></i><i></i><i></i></span></div>${state.room && safeHero(state.room.heroImage)?`<div class="room-look ${state.room.phase==='lobby'?'lobby-look':''}"><img class="room-look-image" src="${esc(state.room.heroImage)}" alt="本場活動主視覺"><span>🎉 本場活動主視覺</span></div>`:''}${state.error?`<div class="notice" role="alert">${esc(state.error)}</div>`:''}${state.toast?`<div class="chip mint" style="margin-bottom:12px">✓ ${esc(state.toast)}</div>`:''}${content}<div class="footer">適合 10–20 人 ✦ 有笑點的社交，不是尷尬的面試<br>先笑出來，再慢慢認識彼此 ✨</div></main>`;}
+  function surface(content, right=''){return `<main class="container"><div class="topbar"><button type="button" class="brand brand-home" data-action="brand-home" aria-label="默契失控局，點擊回首頁" title="回首頁"><span class="brand-mark" aria-hidden="true"><span>✦</span></span><span class="brand-title">默契失控局</span></button></div>${right ? `<div class="header-room-status">${right}</div>` : ''}<div class="retro-pcb-backplane" aria-hidden="true"><i class="retro-pcb-channel left"></i><i class="retro-pcb-channel right"></i><i class="retro-pcb-chip upper"></i><i class="retro-pcb-chip lower"></i></div><div class="retro-circuit-deck" aria-hidden="true"><span class="retro-deck-switches"><i></i><i></i><i></i></span><span class="retro-deck-pipes"><i></i><i></i><i></i><i></i></span><span class="retro-deck-chip"><b></b><i></i><i></i><i></i></span><span class="retro-deck-leds"><i></i><i></i><i></i></span></div>${state.room && safeHero(state.room.heroImage)?`<div class="room-look ${state.room.phase==='lobby'?'lobby-look':''}"><img class="room-look-image" src="${esc(state.room.heroImage)}" alt="本場活動主視覺"><span>🎉 本場活動主視覺</span></div>`:''}${state.error?`<div class="notice" role="alert">${esc(state.error)}</div>`:''}${state.toast?`<div class="chip mint" style="margin-bottom:12px">✓ ${esc(state.toast)}</div>`:''}${state.mode==='online'?`<div id="room-connection-status" class="info-box" role="status">${esc(connectionMessage())}</div>`:''}${content}<div class="footer">適合 10–20 人 ✦ 有笑點的社交，不是尷尬的面試<br>先笑出來，再慢慢認識彼此 ✨</div></main>`;}
   // 首頁只做角色分流；進階設定全部放進主持人頁面。
   // 玩家只從「猜大家」得分：最熱門 +100、非零最冷門 +40；選自己不計分。
   function scoringRules(){
@@ -654,6 +655,7 @@
       <section class="role-choices section-gap" aria-label="選擇你的身分">
         <button class="role-choice" data-action="open-join"><span class="role-icon">🙋</span><span><strong>我要加入遊戲</strong><small>有房號或朋友的邀請連結</small></span><span class="role-arrow" aria-hidden="true">→</span></button>
         <button class="role-choice role-host" data-action="open-host"><span class="role-icon">🎤</span><span><strong>我是主持人</strong><small>選題目、設時間，開一場新的局</small></span><span class="role-arrow" aria-hidden="true">→</span></button>
+        <button class="role-choice" data-action="demo"><span class="role-icon">🎭</span><span><strong>先玩示範局</strong><small>不用房號，與虛擬玩家立即體驗</small></span><span class="role-arrow" aria-hidden="true">→</span></button>
       </section>
       <p class="landing-note">不用下載 App｜適合 10–20 人一起玩｜繁體中文</p>
       <details class="how-to-play"><summary>第一次玩？30 秒看懂玩法與計分</summary><ol><li><b>選自己：</b>選你真正想選的答案，這一步不直接得分。</li><li><b>猜大家：</b>選一個你預測會是「最多票」或「最少票」的答案。</li><li><b>確認送出：</b>完成兩步並送出答案，等全場開獎。</li><li><b>開獎聊聊：</b>看看誰最懂大家，分享最意外的選擇！</li></ol>${scoringRules()}</details>
@@ -718,7 +720,6 @@
         <button class="btn tertiary full space-top" data-action="quick-reshuffle">🔀 換一組題目</button>
         <div class="divider"></div>
         <button class="btn full" data-action="host" ${state.createProgress?'disabled aria-busy="true"':''}>🚀 建立多人房間</button>${hostCreateStatus()}
-        <button class="btn tertiary full space-top" data-action="demo">🎭 先玩示範局</button>
         <p class="fineprint">新手提示會隨遊戲進度出現，幫你記得何時邀請、開始與開獎。想調整題庫、風格或時間？返回改用「自訂主持」。</p>
       </section>`);
   }
@@ -729,7 +730,7 @@
         <label class="field space-top"><span>本場題庫</span><select name="bankMode"><option value="mixed" ${state.bankMode==='mixed'?'selected':''}>🎲 三種混合｜笑點不重複</option><option value="classic" ${state.bankMode==='classic'?'selected':''}>📚 內建精選｜${QUESTIONS.length} 題</option><option value="custom" ${state.bankMode==='custom'?'selected':''}>✏️ 主持人自訂｜${bank.custom.length} 題</option><option value="ai" ${state.bankMode==='ai'?'selected':''}>✨ Gemini 生成｜${bank.ai.length} 題</option></select></label>
         <div class="host-bank-help"><span>這套題庫目前可用 ${selectedQuestions().length} 題</span><button class="btn dark small-btn" data-action="manage">⚙️ 管理題庫</button></div>
         ${themePicker()}
-        <button class="btn full space-top" data-action="host" ${state.createProgress?'disabled aria-busy="true"':''}>🚀 建立多人房間</button>${hostCreateStatus()}<button class="btn tertiary full space-top" data-action="demo">🎭 先玩示範局</button>
+        <button class="btn full space-top" data-action="host" ${state.createProgress?'disabled aria-busy="true"':''}>🚀 建立多人房間</button>${hostCreateStatus()}
         <p class="fineprint">${CONFIGURED?'🟢 已填入 Firebase 連線設定；多人功能仍需 Firestore 權限正常。':'⚠️ 尚未設定 Firebase；目前僅可玩示範局。'}</p>
       </section>
       <details class="host-extra section-gap"><summary>進階設定：更換活動主視覺照片</summary>${heroControls(false)}</details>
@@ -739,16 +740,16 @@
   function playerPills(){return state.players.map(p=>`<div class="avatar-pill"><span class="avatar-circle">${esc(p.emoji||emojiFor(p.uid))}</span>${esc(p.name)}${p.uid===state.room?.hostUid?'<span class="host-badge">房主</span>':''}${p.uid===state.uid?'<span class="host-badge">你</span>':''}</div>`).join('');}
   function renderLobby(){
     const n=state.players.length, host=isHost();
-    return surface(`${title(state.mode==='demo'?'歡迎來到示範局！':'人都到齊了嗎？',state.mode==='demo'?'12 位虛擬玩家已到場。先試試荒謬投票和排行榜，正式活動再開多人房間。':'分享房間網址，讓大家用手機填入暱稱一起加入。')}<div class="card section-gap">${state.mode==='demo'?`<div class="info-box">🎭 <strong>這是單人示範模式</strong>，不能邀請朋友加入；正式版請先設定 Firebase，再建立可共用的房間。</div>`:`<div class="lobby-code"><div><div class="eyebrow">房間代碼</div><div class="code-digits">${esc(state.roomCode)}</div></div><button class="btn dark small-btn" data-action="copy">🔗 複製邀請</button></div><p class="share-link space-top">${esc(inviteUrl())}</p>`}<div class="split space-top"><h2 class="mini-heading tight">👋 已到場 ${n} 人</h2><span class="chip ${n>=10?'mint':'yellow'}">建議 10–20 人</span></div><div class="avatars space-top">${playerPills()||'<p class="empty">正在等待大家加入…</p>'}</div>${host?`${themePicker(true)}${heroControls(true)}`:`<p class="room-theme-label">🎨 本房間風格：${esc(THEME_NAMES[normalizeTheme(state.room.theme)])}</p>`}<div class="divider"></div><div class="split"><span class="muted">${state.room.totalRounds} 題 × 每題 ${state.room.seconds} 秒</span><span class="chip">${state.mode==='demo'?'🎭 示範模式':'🌐 即時連線'}</span></div><div class="space-top">${host?`${state.room.quickMode?'<p class="quick-host-tip">🎤 主持小提醒：先把邀請連結傳給大家，確認人數到齊，再按開始。遊戲會自動計時，開獎後記得邀請自願分享。</p>':''}<button class="btn full" data-action="start" ${n<2?'disabled':''}>🔥 開始荒謬挑戰（${n} 人）</button><p class="fineprint">主持人也能參賽。開始後不接受新玩家加入；玩家中途離開會保留原有分數。</p>`:`<div class="info-box">⏳ 房主正在準備中！先看看今天會與誰展開默契大戰。</div>`}</div></div><div class="space-top"><button class="btn tertiary full" data-action="leave">← 回首頁</button></div>`, `<span class="status-tag">${esc(state.roomCode)}</span>`);
+    return surface(`${title(state.mode==='demo'?'歡迎來到示範局！':'人都到齊了嗎？',state.mode==='demo'?'12 位虛擬玩家已到場。先試試荒謬投票和排行榜，正式活動再開多人房間。':'分享房間網址，讓大家用手機填入暱稱一起加入。')}<div class="card section-gap">${state.mode==='demo'?`<div class="info-box">🎭 <strong>這是單人示範模式</strong>，不能邀請朋友加入；正式多人遊戲請回首頁，選擇主持或加入遊戲。</div>`:`<div class="lobby-code"><div><div class="eyebrow">房間代碼</div><div class="code-digits">${esc(state.roomCode)}</div></div><button class="btn dark small-btn" data-action="copy">🔗 複製邀請</button></div><p class="share-link space-top">${esc(inviteUrl())}</p>`}<div class="split space-top"><h2 class="mini-heading tight">👋 已到場 ${n} 人</h2><span class="chip ${n>=10?'mint':'yellow'}">建議 10–20 人</span></div><div class="avatars space-top">${playerPills()||'<p class="empty">正在等待大家加入…</p>'}</div>${host?`${themePicker(true)}${heroControls(true)}`:`<p class="room-theme-label">🎨 本房間風格：${esc(THEME_NAMES[normalizeTheme(state.room.theme)])}</p>`}<div class="divider"></div><div class="split"><span class="muted">${state.room.totalRounds} 題 × 每題 ${state.room.seconds} 秒</span><span class="chip">${state.mode==='demo'?'🎭 示範模式':'🌐 即時連線'}</span></div><div class="space-top">${host?`${state.room.quickMode?'<p class="quick-host-tip">🎤 主持小提醒：先把邀請連結傳給大家，確認人數到齊，再按開始。遊戲會自動計時，開獎後記得邀請自願分享。</p>':''}<button class="btn full" data-action="start" ${n<2?'disabled':''}>🔥 開始荒謬挑戰（${n} 人）</button><p class="fineprint">主持人也能參賽。開始後不接受新玩家加入；玩家中途離開會保留原有分數。</p>`:`<div class="info-box">⏳ 房主正在準備中！先看看今天會與誰展開默契大戰。</div>`}</div></div><div class="space-top"><button class="btn tertiary full" data-action="leave">← 回首頁</button></div>`, `<span class="status-tag">${esc(state.roomCode)}</span>`);
   }
   function choiceButtons(field,selected,q){return `<div class="option-grid">${q.a.map((a,i)=>`<button type="button" class="option ${selected===i?(field==='choice'?'selected':'guess-selected'):''}" data-${field}="${i}" aria-pressed="${selected===i}"><span class="option-letter">${'ABCD'[i]}</span><span>${esc(a)}</span></button>`).join('')}</div>`;}
   function roundHeader(){return `<div class="round-header"><span class="chip yellow">第 ${state.room.roundIndex+1}／${state.room.totalRounds} 題</span><span class="rank-pill">🏅 第 ${myRank()||'–'} 名 · ${myScore()} 分</span></div><div class="progress" aria-label="題目進度"><div style="width:${Math.round(100*(state.room.roundIndex+1)/state.room.totalRounds)}%"></div></div>`;}
   function renderVote(){
     const q=question(), v=myVote(), n=state.players.length, count=displayVoteCount(), remaining=Math.max(0,Math.ceil(((state.room.deadline||Date.now())-Date.now())/1000));
     const step=state.choice===null?'choice':state.voteStep;
-    const locked=Boolean(v)||state.voteSubmitState==='sent'||state.voteSubmitState==='sending';
-    const confirmedVote=v||((state.voteSubmitState==='sent'||state.voteSubmitState==='sending')?{choice:state.choice,guess:state.guess}:null);
-    const waiting=locked?`<section class="card section-gap submitted"><div class="icon">📨</div><strong>${state.voteSubmitState==='sending'&&!v?'⏳ 正在送出答案，請保持網頁開啟…':'✅ 答案已成功送達，等大家一起開獎！'}</strong><p class="muted">你選：${esc(q.a[confirmedVote.choice])}<br>你猜大家：${esc(q.a[confirmedVote.guess])}</p><span class="chip mint">✓ 答案已鎖定</span></section>`:'';
+    const locked=voteInputLocked();
+    const confirmedVote=v||(locked?{choice:state.choice,guess:state.guess}:null);
+    const waiting=locked?`<section class="card section-gap submitted"><div class="icon">📨</div><strong>${v||state.voteSubmitState==='sent'?'✅ 答案已成功送達，等大家一起開獎！':state.voteSubmitState==='sending'?'⏳ 正在送出答案，請保持網頁開啟…':state.voteSubmitState==='rejected'?'⚠️ 伺服器拒絕本次送出，請等待本題結束。':'📡 送達尚未確認，正在等待同步；仍可跟隨主持人進入下一題。'}</strong><p class="muted">你選：${esc(q.a[confirmedVote.choice])}<br>你猜大家：${esc(q.a[confirmedVote.guess])}</p><span class="chip mint">${v||state.voteSubmitState==='sent'?'✓ 答案已鎖定':'答案已保留，不會重複送出'}</span></section>`:'';
     let task='';
     if(!locked&&step==='choice'){
       task=`<section class="vote-area one-step vote-step-choice"><div class="answer-stepper" aria-label="第一步：選自己的答案"><span class="current" aria-current="step">① 選自己</span><span>② 猜大家</span></div><h2 class="vote-label">如果是你，你會選哪一個？</h2><p class="vote-tip">選自己不直接得分，放心選你真正喜歡的答案。點一下進入下一步。</p>${choiceButtons('choice',state.choice,q)}</section>`;
@@ -886,16 +887,17 @@
     state.votes=state.players.filter(p=>p.uid!==state.uid).map(p=>({uid:p.uid,roundIndex,choice:pick(),guess:Math.random()<.55?favored:Math.floor(Math.random()*4),double:roundIndex===4 && Math.random()<.4,at:Date.now()}));
   }
   function beginDemo(){
-    const name=validateName();if(!name)return;
-    const preparedQuestions=buildRoomQuestions();
+    // Demo is independent of the online host form and never writes its preferences.
+    if(state.page!=='home'||state.room||state.mode)return;
+    const name=state.nickname.trim().slice(0,14)||'示範玩家';
+    const preparedQuestions=makeQuickQuestions('general',QUICK_SIZE).map(questionClean);
     clearListeners();state.mode='demo';state.uid='demo-me';state.roomCode='DEMO88';
     state.players=[{uid:state.uid,name,emoji:'😎',joinedAt:0},...BOT_NAMES.map((name,i)=>({uid:'bot'+i,name,emoji:EMOJIS[i],joinedAt:i+1}))];
-    state.room={hostUid:state.uid,phase:'lobby',roundIndex:-1,totalRounds:state.rounds,seconds:state.seconds,questions:preparedQuestions,scores:{},streaks:{},usedDoubles:{},lastResult:null,deadline:null,heroImage:state.heroImage,theme:state.themeChoice,minimalHue:state.minimalHue,quickMode:state.hostMode==='quick',quickScene:state.hostMode==='quick'?state.quickScene:null};
-    saveQuickHistory(preparedQuestions);
+    state.room={hostUid:state.uid,phase:'lobby',roundIndex:-1,totalRounds:preparedQuestions.length,seconds:30,questions:preparedQuestions,scores:{},streaks:{},usedDoubles:{},lastResult:null,deadline:null,heroImage:'',theme:state.themeChoice,minimalHue:state.minimalHue,quickMode:false,quickScene:null};
     state.votes=[];state.choice=null;state.guess=null;state.double=false;state.voteStep='choice';state.voteSubmitState='idle';history.replaceState(null,'',location.pathname);render();
   }
   function validateName(){const s=state.nickname.trim().slice(0,14);if(!s){state.error='先填入暱稱，這樣排行榜才知道誰是誰。';render();return null;}state.nickname=s;localStorage.setItem('mqs_name',s);state.error='';return s;}
-  function clearListeners(){state.hostVoteSync=null;for(const f of state.unsubs){try{f();}catch{}}state.unsubs=[];if(state.voteUnsub){state.voteUnsub();state.voteUnsub=null;}state.watchedRound=null;}
+  function clearListeners(){state.sessionGeneration++;disposePendingVote();state.recovery?.dispose();state.recovery=null;state.hostVoteSync=null;for(const f of state.unsubs){try{f();}catch{}}state.unsubs=[];if(state.voteUnsub){state.voteUnsub();state.voteUnsub=null;}state.watchedRound=null;}
   function goHomeFromBrand(){
     // 標誌只負責導覽，絕不直接刪除 Firebase 房間、重置其他玩家或清空既有分數。
     if(state.room && state.mode){
@@ -1141,40 +1143,113 @@
     state.mode='online';state.roomCode=code;state.room=snap.data();state.player=state.uid;history.replaceState(null,'',onlineRoomUrl(code));
     subscribeOnline(code);
   }
+  // RECOVERY_HELPERS_START
+  // Firebase writes cannot be cancelled by a local timeout. Never resend an
+  // ambiguous write: a fixed vote ID is settled only by ACK/server snapshot.
+  function makeVoteDelivery({write,active,report,schedule=setTimeout,cancel=clearTimeout,timeout=5000}){
+    let closed=false,confirmed=false,started=false,timer;
+    const current=()=>!closed&&active();
+    function stop(){if(timer!==undefined){cancel(timer);timer=undefined;}}
+    function confirm(){if(!current()||confirmed)return;confirmed=true;stop();report('sent');}
+    function reject(err){if(!current()||confirmed)return;stop();report(['permission-denied','unauthenticated','invalid-argument'].includes(err?.code)?'rejected':'unknown');}
+    return {
+      start(){if(!current()||started)return;started=true;report('sending');timer=schedule(()=>{timer=undefined;if(current()&&!confirmed)report('unknown');},timeout);
+        try{Promise.resolve(write()).then(confirm,reject);}catch(err){reject(err);}},
+      confirm,dispose(){closed=true;stop();}
+    };
+  }
+  function makeSnapshotRecovery({onState=()=>{},isOnline=()=>true,now=Date.now,schedule=setTimeout,cancel=clearTimeout,random=Math.random}={}){
+    const slots=new Map();let disposed=false;
+    const transient=new Set(['unavailable','deadline-exceeded','aborted','internal','unknown']);
+    function status(s,value){if(s.status!==value){s.status=value;s.since=now();onState();}}
+    function detach(s){s.generation++;if(s.timer!==null){cancel(s.timer);s.timer=null;}const off=s.off;s.off=null;try{off?.();}catch{}}
+    function retry(s){
+      if(disposed||slots.get(s.key)!==s||s.timer!==null)return;
+      if(s.attempts>=3){status(s,'blocked');return;}
+      if(!isOnline()){status(s,'retrying');return;}
+      s.attempts++;status(s,'retrying');const delay=1000*2**(s.attempts-1)+Math.floor(random()*500);
+      s.timer=schedule(()=>{s.timer=null;if(!disposed&&slots.get(s.key)===s){if(isOnline())connect(s);else status(s,'retrying');}},delay);
+    }
+    function connect(s){
+      detach(s);status(s,'connecting');const generation=s.generation;
+      const current=()=>!disposed&&slots.get(s.key)===s&&s.generation===generation;
+      const next=snap=>{
+        if(!current())return;
+        // Ignore cached/optimistic data: preserve last server-confirmed state.
+        if(snap.metadata?.fromCache!==false||snap.metadata?.hasPendingWrites){status(s,'cached');return;}
+        s.attempts=0;status(s,'live');s.accept(snap);
+      };
+      const fail=err=>{
+        if(!current())return;
+        detach(s);
+        if(transient.has(err?.code))retry(s);else status(s,'blocked');
+      };
+      try{const off=s.subscribe(next,fail);if(current())s.off=off;else off?.();}catch(err){fail(err);}
+    }
+    return {
+      watch(key,subscribe,accept){this.remove(key);if(disposed)return;const s={key,subscribe,accept,status:'new',since:now(),attempts:0,generation:0,timer:null,off:null};slots.set(key,s);connect(s);},
+      remove(key){const s=slots.get(key);if(s){slots.delete(key);detach(s);}},
+      offline(){if(disposed)return;for(const s of slots.values())if(s.status==='live')status(s,'cached');},
+      resume(){if(disposed||!isOnline())return;for(const s of slots.values()){
+        if(s.status==='retrying'&&s.timer===null)retry(s);
+        else if(['cached','connecting'].includes(s.status)&&now()-s.since>=12000){detach(s);retry(s);}
+      }onState();},
+      ready(keys){return !disposed&&isOnline()&&keys.every(k=>slots.get(k)?.status==='live');},
+      state(){return [...slots.values()].map(s=>s.status);},
+      dispose(){disposed=true;for(const s of slots.values())detach(s);slots.clear();}
+    };
+  }
+  // RECOVERY_HELPERS_END
+  function onlineReady(includeVotes=false){
+    return state.mode!=='online'||Boolean(state.recovery?.ready(includeVotes?['room','players','votes']:['room','players']));
+  }
+  function connectionMessage(){
+    if(navigator.onLine===false)return '📡 網路暫時中斷，保留本場遊戲，恢復後會同步。';
+    const states=state.recovery?.state()||[];
+    if(states.includes('blocked'))return '⚠️ 部分同步暫停，請保留原房號與瀏覽器；若持續無法恢復，請從原邀請連結重新加入。';
+    if(!onlineReady(state.room?.phase==='voting'))return '📡 正在與伺服器同步，請稍候，不需要重新開房。';
+    return '☁️ 房間已同步';
+  }
+  function updateConnectionStatus(){
+    const el=document.getElementById('room-connection-status');
+    if(el){const msg=connectionMessage();if(el.textContent!==msg){el.textContent=msg;decorateVisibleEmoji(el);}}
+  }
+  function resumeOnline(){if(state.mode==='online'&&document.visibilityState!=='hidden'){state.recovery?.resume();updateConnectionStatus();}}
+  function disposePendingVote(){state.pendingVote?.dispose();state.pendingVote=null;}
+  function voteInputLocked(){return Boolean(myVote())||['sending','unknown','rejected','sent'].includes(state.voteSubmitState);}
   function subscribeOnline(code){
     clearListeners();const L=state.firebase.dbLib,db=state.firebase.db;
+    const recovery=makeSnapshotRecovery({isOnline:()=>navigator.onLine!==false,onState:updateConnectionStatus});
+    state.recovery=recovery;
     const roomFirst=connectionDiagnostics.first('room-first'),rosterFirst=connectionDiagnostics.first('roster-first');
-    const offRoom=L.onSnapshot(roomRef(code),{includeMetadataChanges:diagnosticsEnabled},snap=>{
-      if(!snap.metadata?.fromCache)roomFirst('ok');
-      if(!snap.exists()){state.error='房間已不存在。';leave();return;}
+    recovery.watch('room',(next,fail)=>L.onSnapshot(roomRef(code),{includeMetadataChanges:true},next,err=>{roomFirst('error');fail(err);}),snap=>{
+      roomFirst('ok');
+      if(!snap.exists()){leave();state.error='房間已不存在。';render();return;}
       const prevRound=state.room?.roundIndex, prevPhase=state.room?.phase;
       state.room=snap.data();
-      if(state.room.roundIndex!==prevRound){state.choice=null;state.guess=null;state.double=false;state.voteStep='choice';state.votes=[];state.voteSubmitState='idle';state.voteSyncFromCache=false;}
-      if(state.room.roundIndex>=0 && state.watchedRound!==state.room.roundIndex){subscribeVotes(code,state.room.roundIndex);}
-      if(state.room.phase==='voting' && prevPhase==='voting' && prevRound===state.room.roundIndex && document.getElementById('vote-count'))updateVoteStatusUI();
+      if(state.room.roundIndex!==prevRound){disposePendingVote();state.choice=null;state.guess=null;state.double=false;state.voteStep='choice';state.votes=[];state.voteSubmitState='idle';state.voteSyncFromCache=false;}
+      if(state.room.roundIndex>=0&&state.watchedRound!==state.room.roundIndex)subscribeVotes(code,state.room.roundIndex);
+      if(state.room.phase==='voting'&&prevPhase==='voting'&&prevRound===state.room.roundIndex&&document.getElementById('vote-count'))updateVoteStatusUI();
       else render();
-    },err=>{roomFirst('error');state.error='同步房間失敗：'+friendlyError(err);render();});
-    const offPlayers=L.onSnapshot(L.collection(db,'rooms',code,'players'),{includeMetadataChanges:diagnosticsEnabled},snap=>{
-      if(!snap.metadata?.fromCache)rosterFirst('ok');
-      state.players=snap.docs.map(d=>d.data()).sort((a,b)=>a.joinedAt-b.joinedAt);
-      if(state.room?.phase==='voting' && document.getElementById('vote-count'))updateVoteStatusUI();
+    });
+    recovery.watch('players',(next,fail)=>L.onSnapshot(L.collection(db,'rooms',code,'players'),{includeMetadataChanges:true},next,err=>{rosterFirst('error');fail(err);}),snap=>{
+      rosterFirst('ok');state.players=snap.docs.map(d=>d.data()).sort((a,b)=>a.joinedAt-b.joinedAt);
+      if(state.room?.phase==='voting'&&document.getElementById('vote-count'))updateVoteStatusUI();
       else render();
-    },err=>{rosterFirst('error');state.error='載入玩家名單失敗：'+friendlyError(err);render();});
-    state.unsubs.push(offRoom,offPlayers);
+    });
   }
   function subscribeVotes(code,ri){
-    if(state.voteUnsub)state.voteUnsub();state.watchedRound=ri;state.hostVoteSync=null;
-    const L=state.firebase.dbLib;
-    const votesFirst=connectionDiagnostics.first('votes-first');
-    state.voteUnsub=L.onSnapshot(L.query(votesCollection(code),L.where('roundIndex','==',ri)),{includeMetadataChanges:true},snap=>{
-      if(!snap.metadata?.fromCache)votesFirst('ok');
-      if(state.room?.roundIndex!==ri)return;
+    state.watchedRound=ri;state.hostVoteSync=null;
+    const L=state.firebase.dbLib,votesFirst=connectionDiagnostics.first('votes-first');
+    state.recovery.watch('votes',(next,fail)=>L.onSnapshot(L.query(votesCollection(code),L.where('roundIndex','==',ri)),{includeMetadataChanges:true},next,err=>{votesFirst('error');fail(err);}),snap=>{
+      votesFirst('ok');if(state.room?.roundIndex!==ri)return;
       const wasSubmitted=Boolean(myVote());
       state.votes=snap.docs.filter(d=>!d.metadata?.hasPendingWrites).map(d=>d.data());
-      state.voteSyncFromCache=Boolean(snap.metadata?.fromCache);
-      if(Boolean(myVote())!==wasSubmitted || !document.getElementById('vote-count'))render();
+      state.voteSyncFromCache=false;
+      if(myVote())state.pendingVote?.confirm();
+      if(Boolean(myVote())!==wasSubmitted||!document.getElementById('vote-count'))render();
       else updateVoteStatusUI();
-    },err=>{votesFirst('error');state.error='讀取票數失敗：'+friendlyError(err);render();});
+    });
   }
   // HOST_VOTE_SYNC_START
   // Independent server aggregation bypasses the local watch/cache path.
@@ -1195,6 +1270,7 @@
   }
   function voteSyncMessage(){
     if(state.mode==='demo')return '🎭 示範模式';
+    if(state.recovery&&!state.recovery.ready(['votes']))return '📡 票數同步中，請等待伺服器確認';
     const sync=state.hostVoteSync;
     if(sync&&hostVoteSyncCurrent(sync)){
       if(sync.failed)return '📡 票數同步稍有延遲，將持續確認';
@@ -1247,6 +1323,7 @@
   }
   async function beginRound(){
     if(!isHost())return;
+    if(!onlineReady(false))throw new Error('房間尚在同步，請稍候再開始或切題。');
     if(state.room.phase==='lobby'){
       if(state.players.length<2)throw new Error('最少需要 2 人才可開始（正式活動建議 10–20 人）。');
       const scores=Object.fromEntries(state.players.map(p=>[p.uid,0]));
@@ -1269,26 +1346,31 @@
     else await L.updateDoc(roomRef(state.roomCode),patch);
   }
   async function submitVote(){
-    if(state.room.phase!=='voting'||myVote()||state.voteSubmitState==='sent')return;
+    if(state.room.phase!=='voting'||voteInputLocked())return;
+    if(!onlineReady(true))throw new Error('目前正在同步，請等待連線恢復後再作答。');
     if(state.choice===null||state.guess===null)throw new Error('請完成自己的答案，以及猜全場最多人選的答案。');
     if(state.mode==='online'&&Date.now()>state.room.deadline+3000)throw new Error('作答時間已到，等主持人公布答案吧！');
     const payload={uid:state.uid,roundIndex:state.room.roundIndex,choice:state.choice,guess:state.guess,double:state.double&&hasDouble(),at:Date.now()};
     if(state.mode==='demo'){state.votes.push(payload);state.voteSubmitState='sent';state.error='';render();}
     else{
       const L=state.firebase.dbLib;
-      state.voteSubmitState='sending';
-      render();
-      try{
-        await L.setDoc(L.doc(state.firebase.db,'rooms',state.roomCode,'votes',`${state.uid}_${state.room.roundIndex}`),payload);
-        state.voteSubmitState='sent';
-      }catch(err){
-        state.voteSubmitState='error';
-        throw err;
-      }
+      const code=state.roomCode,round=state.room.roundIndex,uid=state.uid,generation=state.sessionGeneration;
+      const ref=L.doc(state.firebase.db,'rooms',code,'votes',uid+'_'+round);
+      const active=()=>state.mode==='online'&&state.roomCode===code&&state.uid===uid&&state.room?.roundIndex===round&&state.sessionGeneration===generation;
+      disposePendingVote();
+      const delivery=makeVoteDelivery({write:()=>L.setDoc(ref,payload),active,report:status=>{
+        if(!active())return;
+        state.voteSubmitState=status;
+        if(state.room.phase==='voting')render();
+      }});
+      state.pendingVote=delivery;
+      delivery.start();
+      // Return immediately: the global UI busy lock is not held by network ACK.
     }
   }
   async function revealRound(){
     if(!isHost()||state.room.phase!=='voting')return;
+    if(!onlineReady(false))throw new Error('尚未同步房間與玩家名單，請稍候再開獎。');
     state.autoRevealing=true;
     try{
       let votes=state.votes;
@@ -1303,12 +1385,14 @@
   }
   function currentTimeTick(){
     if(state.createProgress)updateCreateProgress();
+    // Give the SDK its own recovery window; only stale/failed streams are rebuilt.
+    resumeOnline();
     if(state.room?.phase!=='voting')return;
     // Host-only count aggregation is throttled independently from the timer.
-    void refreshHostVoteCount();
+    if(onlineReady(true))void refreshHostVoteCount();
     const remaining=Math.max(0,Math.ceil(((state.room.deadline||Date.now())-Date.now())/1000));
     const t=document.getElementById('timer');if(t){const digits=t.querySelector('.timer-digits');if(digits)digits.textContent=`⏱ ${remaining} 秒`;else t.textContent=`⏱ ${remaining} 秒`;t.classList.toggle('urgent',remaining<=10);t.setAttribute('aria-label',`倒數計時，剩餘 ${remaining} 秒`);decorateVisibleEmoji(digits||t);}
-    if(remaining===0 && Date.now()>=Number(state.room.deadline||0)+3500 && isHost() && !state.busy && !state.autoRevealing){
+    if(remaining===0 && Date.now()>=Number(state.room.deadline||0)+3500 && isHost() && !state.busy && !state.autoRevealing && onlineReady(false)){
       state.autoRevealing=true;
       revealRound().catch(err=>{state.error='自動結算失敗：'+friendlyError(err);render();}).finally(()=>{state.autoRevealing=false;});
     }
@@ -1360,8 +1444,8 @@
   });
   document.addEventListener('click',async e=>{
     const c=e.target.closest('[data-choice]'),g=e.target.closest('[data-guess]');
-    if(c && !state.busy && state.voteSubmitState!=='sending' && !myVote()){state.choice=Number(c.dataset.choice);state.voteStep='guess';render();window.scrollTo(0,0);return;}
-    if(g && !state.busy && state.voteSubmitState!=='sending' && !myVote()){state.guess=Number(g.dataset.guess);render();return;}
+    if(c && !state.busy && !voteInputLocked()){state.choice=Number(c.dataset.choice);state.voteStep='guess';render();window.scrollTo(0,0);return;}
+    if(g && !state.busy && !voteInputLocked()){state.guess=Number(g.dataset.guess);render();return;}
     const b=e.target.closest('[data-action]');if(!b||state.busy)return;
     const action=b.dataset.action;
     if(action==='brand-home'){goHomeFromBrand();return;}
@@ -1387,7 +1471,7 @@
       render();return;
     }
     if(action==='open-join'){state.page='join';state.error='';render();window.scrollTo(0,0);return;}
-    if(action==='edit-choice'&&!myVote()){state.voteStep='choice';render();window.scrollTo(0,0);return;}
+    if(action==='edit-choice'&&!voteInputLocked()){state.voteStep='choice';render();window.scrollTo(0,0);return;}
     if(action==='reset-hero'){
       try{await setHero('');state.toast='已還原預設 🤪 吐舌表情。';state.error='';}
       catch(err){state.error=friendlyError(err);}render();return;
@@ -1423,6 +1507,9 @@
     }catch(err){if(state.page==='manager'){state.managerError=err.message||friendlyError(err);state.managerNotice='';}else state.error=friendlyError(err);}
     finally{state.createProgress=null;state.busy=false;render();}
   });
+  window.addEventListener('online',resumeOnline);
+  window.addEventListener('offline',()=>{state.recovery?.offline();updateConnectionStatus();});
+  document.addEventListener('visibilitychange',resumeOnline);
   window.addEventListener('unhandledrejection',e=>{console.error('Unhandled game error:',e.reason);});
   window.setInterval(currentTimeTick,1000);
   window.__GAME_TEST__={QUESTIONS,evaluateRound,sampleQuestions,questionClean,parseAiQuestions,buildRoomQuestions,makeQuickQuestions,quickQuestionMeta,QUICK_SCENES,QUICK_CATEGORIES,safeHero,compressHero,getBank:()=>bank,getRoom:()=>state.room,getHero:()=>state.heroImage};

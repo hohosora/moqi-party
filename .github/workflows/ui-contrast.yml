@@ -18,6 +18,8 @@ on:
       - 'tests/quick-host.cjs'
       - 'tests/client-security.cjs'
       - 'tests/host-vote-sync.cjs'
+      - 'tests/connection-recovery.cjs'
+      - 'tests/connection-recovery-browser.cjs'
       - 'tests/room-retention.cjs'
       - 'admin/room-retention.cjs'
       - 'app-check-config.js'
@@ -60,6 +62,12 @@ jobs:
         run: node tests/client-security.cjs
       - name: Verify host vote synchronization fallback
         run: node --test tests/host-vote-sync.cjs
+      - name: Verify bounded reconnect and vote acknowledgement
+        run: node --test tests/connection-recovery.cjs
+      - name: Fault-inject rendered online recovery (mock SDK)
+        env:
+          NODE_PATH: ${{ runner.temp }}/moqi-contrast/node_modules
+        run: node tests/connection-recovery-browser.cjs
       - name: Verify room retention policy
         run: node --test tests/room-retention.cjs
       - name: Check hot and cold prediction scoring
