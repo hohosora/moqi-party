@@ -23,8 +23,27 @@ async function main(){
    try{for(const theme of ['party','panel','minimal']){
     const ctx=await browser.newContext(opts);const page=await ctx.newPage();const errors=[];
     page.on('pageerror',e=>errors.push(String(e)));
-    await ctx.route('**/*',route=>new URL(route.request().url()).origin===url?route.continue():route.abort());
+    let firebaseRequests=0;
+    await ctx.route('**/*',route=>{const u=new URL(route.request().url());if(u.origin===url)return route.continue();if(u.hostname==='www.gstatic.com'&&u.pathname.includes('/firebasejs/'))firebaseRequests++;return route.abort();});
     await page.goto(url,{waitUntil:'domcontentloaded'});
+    // Fresh visitor: never visit the host form before learning.
+    const entry=page.locator('[data-action="demo"]');
+    assert.match(await entry.innerText(),/新手教學模式/);
+    await entry.focus();await entry.press('Enter');
+    assert.equal(await page.locator('[data-tutorial-step="welcome"]').count(),1);
+    assert.equal(await page.locator('.avatar-pill .host-badge').count(),1,'Only self tag, not host badge');
+    assert.equal(await page.evaluate(()=>window.__GAME_TEST__.getRoom().hostUid),'demo-system');
+    const fits=await page.locator('.tutorial-guide').evaluate(el=>{const r=el.getBoundingClientRect();return r.left>=-1&&r.right<=innerWidth+1&&el.scrollWidth<=el.clientWidth+1;});
+    assert.ok(fits,'Tutorial guide fits the viewport');
+    await page.locator('[data-action="tutorial-skip-all"]').press('Enter');
+    assert.equal(await page.locator('.tutorial-guide').count(),0);
+    assert.match(await page.locator('#timer').getAttribute('aria-label'),/倒數計時/);
+    await page.locator('[data-action="tutorial-help"]').click();
+    assert.equal(await page.locator('[data-tutorial-step="choice"]').count(),1);
+    assert.equal(await page.locator('#timer').getAttribute('aria-label'),'教學暫停');
+    assert.equal(firebaseRequests,0,'Fresh tutorial cannot load Firebase SDK');
+    page.once('dialog',d=>d.accept());
+    await page.locator('[data-action="tutorial-exit"]').click();
     await page.locator('[data-action="open-host"]').click();
     await page.locator('[data-action="choose-host-custom"]').click();
     await page.locator('[data-action="choose-theme"][data-theme-id="'+theme+'"]').click();
