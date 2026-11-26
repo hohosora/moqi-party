@@ -56,6 +56,6 @@ test('Windows preflight uses codex.cmd instead of npm PowerShell shim and propag
   const id='00000000-0000-4000-8000-000000000000';
   assert.match(queue(id,'',true),/MOCK-CODEX-CMD-OK/);
   fs.writeFileSync(path.join(dir,'codex.cmd'),'@echo off\r\nexit /b 7\r\n');
-  assert.throws(()=>queue(id,'',true),/command failed: powershell.exe \\(7\\)/);
+  assert.throws(()=>queue(id,'',true),{message:'command failed: powershell.exe (7)'});
  }finally{process.env.PATH=oldPath;fs.rmSync(dir,{recursive:true,force:true});}
 });
