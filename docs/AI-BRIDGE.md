@@ -70,3 +70,19 @@ node admin/ai-bridge/bridge.cjs --once --exec-probe --dispatch
 ```
 
 若 Issue #48 已被 claim，不盲目重送；需由管理者查明後建立新的 probe。後續需另驗證新 session 的唯讀 GitHub／Firebase staging 工具能力，以及受控執行策略；不能從簡單回覆推論雲端寫入權限。CLI 官方文件：https://learn.chatgpt.com/docs/non-interactive-mode
+
+## Level 2 起步：固定 GitHub 狀態輪詢（2026-11-26）
+
+獨立服務帳戶 moqi-ai-worker 已以短效 impersonation 實機通過 staging Firestore metadata 查詢；正式 metadata 查詢 PERMISSION_DENIED。只驗證該 API，未驗證完整權限或執行程序隔離。原管理者憑證與 Firebase MCP 仍存在，因此不開啟無人值守 AI/cloud 工作。
+
+新增 `--status-only`，只接收 owner 的精確 [AI-QUEUE:STATUS]，完全不呼叫 Codex、gcloud、Firebase 或專案程式。固定 GitHub API 查詢 main commit 與相同 SHA 的 CI 結果；只輸出已知工作流程名稱、狀態、結論及可信數字 ID 連結，不執行 issue 或 workflow 文字。不觸發新測試、不部署、不修改程式，DONE 只表示報告查核與回寫完成。延續單機鎖、任務去重、未知交付不重送；保留其他模式不變，不允許搭配 staging 或 exec。
+
+```powershell
+node --test admin/ai-bridge/bridge.test.cjs
+node admin/ai-bridge/bridge.cjs --check --status-only
+node admin/ai-bridge/bridge.cjs --once --status-only
+# 確認待執行為 status 後，單一 Windows 視窗啟用：
+node admin/ai-bridge/bridge.cjs --watch --dispatch --status-only
+```
+
+每 60 秒輪詢，Ctrl+C 停止。此模式只提供固定查核自動化，不是任意 AI 工程執行器。Mac 不得同時輪詢。完成實機 status 回寫後再規劃固定 CI 測試任務與無高權限憑證的執行環境。

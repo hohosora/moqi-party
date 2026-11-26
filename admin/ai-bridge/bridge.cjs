@@ -82,13 +82,39 @@ function execProbe(job,runner=runExec){
   return true;
  }finally{fs.rmSync(dir,{recursive:true,force:true});}
 }
+// Fixed read-only GitHub report. No model, shell, cloud tool, repository
+// script or issue body is involved. Only sanitized allowlisted fields leave.
+const STATUS_WORKFLOWS=['AI bridge safety tests','UI and scoring regression','Firestore rules security regression','P3 automated game matrix','Deploy static site to Pages','pages-build-deployment','Dependency security audit'];
+const RUN_STATES=new Set(['queued','in_progress','completed','requested','waiting','pending']);
+const RUN_RESULTS=new Set(['success','failure','cancelled','skipped','neutral','timed_out','action_required','stale','startup_failure']);
+function statusReport(ref,runs){
+ const sha=ref?.object?.sha;
+ if(typeof sha!=='string'||!/^[a-f0-9]{40}$/.test(sha)||!Array.isArray(runs))throw Error('invalid status metadata');
+ const lines=['Fixed GitHub-only check: main '+sha+'. No AI, Firebase, or local repository script invoked.','CI evidence for this exact commit (not a new test run):'];
+ for(const name of STATUS_WORKFLOWS){
+  const candidates=runs.filter(r=>r?.name===name&&r.head_sha===sha&&Number.isSafeInteger(r.id)&&r.id>0&&RUN_STATES.has(r.status)).sort((a,b)=>b.id-a.id);
+  const r=candidates[0];
+  if(!r){lines.push('- '+name+': no matching run in returned results');continue;}
+  const conclusion=r.status==='completed'?(RUN_RESULTS.has(r.conclusion)?r.conclusion:'unknown'):'not completed';
+  lines.push('- '+name+': '+r.status+' / '+conclusion+' https://github.com/'+REPO+'/actions/runs/'+r.id);
+ }
+ return lines.join('\n');
+}
+function fetchStatus(){
+ const ref=JSON.parse(gh(['api','repos/'+REPO+'/git/ref/heads/main']));
+ const sha=ref?.object?.sha;
+ if(typeof sha!=='string'||!/^[a-f0-9]{40}$/.test(sha))throw Error('invalid main revision');
+ const result=JSON.parse(gh(['api','repos/'+REPO+'/actions/runs?branch=main&head_sha='+sha+'&per_page=100']));
+ return statusReport(ref,result.workflow_runs);
+}
 function makeApi(thread){
  return {
   issues:()=>pages('repos/'+REPO+'/issues?state=open&per_page=100'),
   comments:n=>pages('repos/'+REPO+'/issues/'+n+'/comments?per_page=100'),
   comment:(n,body)=>gh(['api','--method','POST','repos/'+REPO+'/issues/'+n+'/comments','--input','-'],{body}),
   queue:message=>queue(thread,message),
-  execProbe:job=>execProbe(job)
+  execProbe:job=>execProbe(job),
+  statusReport:()=>fetchStatus()
  };
 }
 function readJobs(dir){
@@ -105,8 +131,9 @@ function makeStore(dir){
  };
 }
 function tick(api,store,allowStaging,dispatch,transport='queue'){
- if(!['queue','exec'].includes(transport))throw Error('invalid transport');
+ if(!['queue','exec','status-only'].includes(transport))throw Error('invalid transport');
  if(transport==='exec'&&allowStaging)throw Error('exec pilot cannot authorize staging');
+ if(transport==='status-only'&&allowStaging)throw Error('status-only cannot authorize staging');
  const jobs=store.jobs(),active=jobs.filter(j=>!['DONE','BLOCKED'].includes(j.status));
  if(active.length>1)throw Error('multiple local active jobs; manual review required');
  if(active.length){
@@ -119,7 +146,7 @@ function tick(api,store,allowStaging,dispatch,transport='queue'){
  // A staging opt-in alone is not sufficient: the selected local dispatcher
  // must have recorded a real acknowledgement for its initial probe.
  const stagingReady=transport==='queue'&&allowStaging&&jobs.some(j=>j.type==='probe'&&j.status==='DONE'&&j.transport!=='exec');
- const choices=api.issues().map(x=>taskFor(x,stagingReady)).filter(x=>x&&!seen.has(x.issue)&&(transport==='queue'||x.type==='probe')).sort((a,b)=>(a.type==='probe'?0:1)-(b.type==='probe'?0:1)||a.issue-b.issue);
+ const choices=api.issues().map(x=>taskFor(x,stagingReady)).filter(x=>x&&!seen.has(x.issue)&&(transport==='queue'||(transport==='exec'&&x.type==='probe')||(transport==='status-only'&&x.type==='status'))).sort((a,b)=>(a.type==='probe'?0:1)-(b.type==='probe'?0:1)||a.issue-b.issue);
  for(const t of choices){
   if(hasRemoteClaim(api.comments(t.issue)))continue;
   if(!dispatch)return {status:'dry-run',...t};
@@ -127,6 +154,14 @@ function tick(api,store,allowStaging,dispatch,transport='queue'){
   store.create(j); // persist before any external side effect; crash fails closed
   try{
    api.comment(j.issue,claimMarker(j.id)+'\nLocal dispatcher reserved this task. This does not establish execution or completion.');
+   if(transport==='status-only'){
+    const report=api.statusReport();
+    if(typeof report!=='string'||report.length>12000)throw Error('invalid status report');
+    api.comment(j.issue,ackMarker(j.id,'DONE')+'\n'+report);
+    if(getAck(api.comments(j.issue),j)!=='DONE')throw Error('status acknowledgement readback not confirmed');
+    store.update({...j,status:'DONE'});
+    return {status:'DONE',issue:j.issue,transport:'status-only'};
+   }
    if(transport==='exec'){
     if(api.execProbe(j)!==true)throw Error('exec probe not confirmed');
     api.comment(j.issue,ackMarker(j.id,'DONE')+'\nFresh Codex Exec no-tools response matched this task ID; local bridge posted this acknowledgement after successful process exit. Existing session delivery and Firebase permissions were NOT tested.');
@@ -143,16 +178,18 @@ function tick(api,store,allowStaging,dispatch,transport='queue'){
  }
  return {status:'idle'};
 }
-const usage='node admin/ai-bridge/bridge.cjs --configure --thread UUID | --check [--exec-probe] | --once [--dispatch] [--allow-staging] [--exec-probe] | --watch --dispatch [--allow-staging]';
+const usage='node admin/ai-bridge/bridge.cjs --configure --thread UUID | --check [--exec-probe] | --once [--dispatch] [--allow-staging] [--exec-probe] | --watch --dispatch [--allow-staging] | --check --status-only | --once [--dispatch] --status-only | --watch --dispatch --status-only';
 function main(){
- const args=process.argv.slice(2),allowed=new Set(['--configure','--thread','--check','--once','--watch','--dispatch','--allow-staging','--exec-probe','--help']);
+ const args=process.argv.slice(2),allowed=new Set(['--configure','--thread','--check','--once','--watch','--dispatch','--allow-staging','--exec-probe','--status-only','--help']);
  for(let i=0;i<args.length;i++){if(args[i]==='--thread'){if(!UUID.test(args[++i]||''))throw Error('thread must be a UUID');}else if(!allowed.has(args[i]))throw Error('unknown argument');}
  if(args.includes('--help')){console.log(usage);return;}
  const modes=['--configure','--check','--once','--watch'].filter(x=>args.includes(x));
  if(modes.length!==1)throw Error(usage);
  if(args.includes('--thread')&&!args.includes('--configure'))throw Error('thread only accepted during local configuration');
  if(args.includes('--watch')&&!args.includes('--dispatch'))throw Error('watch requires explicit --dispatch');
- const execMode=args.includes('--exec-probe');
+ const execMode=args.includes('--exec-probe'),statusMode=args.includes('--status-only');
+ if(statusMode&&(execMode||args.includes('--configure')||args.includes('--allow-staging')))throw Error('status-only is exclusive and cannot authorize staging');
+ const transport=statusMode?'status-only':execMode?'exec':'queue';
  if(execMode&&(args.includes('--configure')||args.includes('--watch')||args.includes('--allow-staging')))throw Error('exec pilot supports only check or single probe; no staging or watch');
  const dir=path.join(process.env.LOCALAPPDATA||os.homedir(),'moqi-ai-bridge-v1');
  fs.mkdirSync(dir,{recursive:true,mode:0o700});
@@ -163,17 +200,17 @@ function main(){
  }
  const {thread}=JSON.parse(fs.readFileSync(config,'utf8'));if(!UUID.test(thread||''))throw Error('invalid local configuration');
  const me=JSON.parse(gh(['api','user']));if(!owner(me))throw Error('GitHub CLI must authenticate as the repository owner');
- if(execMode)runExec('','',true);else queue(thread,'',true);
- if(args.includes('--check')){console.log(execMode?'GitHub owner and Codex exec command available; fresh probe still required.':'GitHub owner and Codex queue command available; target thread still needs a real probe.');return;}
+ if(execMode)runExec('','',true);else if(!statusMode)queue(thread,'',true);
+ if(args.includes('--check')){console.log(statusMode?'GitHub owner verified; status-only mode never invokes Codex or Firebase.':execMode?'GitHub owner and Codex exec command available; fresh probe still required.':'GitHub owner and Codex queue command available; target thread still needs a real probe.');return;}
  const dispatch=args.includes('--dispatch'),allowStaging=args.includes('--allow-staging'),api=makeApi(thread),store=makeStore(dir);
- if(!dispatch){console.log(JSON.stringify(tick(api,store,allowStaging,false,execMode?'exec':'queue')));return;}
+ if(!dispatch){console.log(JSON.stringify(tick(api,store,allowStaging,false,transport)));return;}
  const lock=path.join(dir,'dispatcher.lock');let fd;
  try{fd=fs.openSync(lock,'wx',0o600);fs.writeFileSync(fd,String(process.pid));}
  catch{throw Error('dispatcher lock exists or cannot be acquired; do not remove while a worker may be active');}
  let timer;function stop(){if(timer)clearInterval(timer);try{fs.closeSync(fd);fs.unlinkSync(lock);}catch{}}
  process.once('SIGINT',()=>{stop();process.exit(0);});process.once('SIGTERM',()=>{stop();process.exit(0);});
- const run=()=>{try{console.log(JSON.stringify(tick(api,store,allowStaging,true,execMode?'exec':'queue')));}catch(e){console.error('Bridge stopped: '+e.message);stop();process.exitCode=1;return false;}return true;};
+ const run=()=>{try{console.log(JSON.stringify(tick(api,store,allowStaging,true,transport)));}catch(e){console.error('Bridge stopped: '+e.message);stop();process.exitCode=1;return false;}return true;};
  if(args.includes('--watch')){if(run())timer=setInterval(run,60000);}else{try{run();}finally{stop();}}
 }
 if(require.main===module){try{main();}catch(e){console.error('Bridge stopped: '+e.message);process.exitCode=1;}}
-module.exports={taskFor,claimMarker,ackMarker,getAck,hasRemoteClaim,prompt,tick,makeStore,queue,execProbe,runExec};
+module.exports={taskFor,claimMarker,ackMarker,getAck,hasRemoteClaim,prompt,tick,makeStore,queue,execProbe,runExec,statusReport};
