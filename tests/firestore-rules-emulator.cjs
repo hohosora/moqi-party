@@ -39,6 +39,13 @@ async function main(){
     await deny(getDoc(doc(nobody,path)),'Anonymous cannot read room');
     await deny(setDoc(doc(nobody,'rooms/BCDEFG'),room()),'Anonymous cannot create room');
     await allow(setDoc(ref,room()),'Host creates valid quick-mode room');
+    for(const [roomCode,seconds] of [['ZABCDE',15],['ZBCDEF',45],['ZCDEFG',60]]){
+      await allow(setDoc(doc(host,'rooms/'+roomCode),{...room(),seconds}),'Compatible room duration '+seconds);
+      assert.equal((await getDoc(doc(host,'rooms/'+roomCode))).data().seconds,seconds);checks++;
+    }
+    for(const [roomCode,seconds] of [['ZDEFGH',20],['ZEFGHJ',61],['ZFGHJK',0],['ZGHJKL','60']]){
+      await deny(setDoc(doc(host,'rooms/'+roomCode),{...room(),seconds}),'Invalid room duration '+String(seconds));
+    }
     await allow(getDoc(doc(guest,path)),'Signed-in guest may look up invited room');
     await deny(getDocs(collection(host,'rooms')),'Room codes cannot be enumerated');
     // Explicitly cover every supported custom-host round count, not only quick start.

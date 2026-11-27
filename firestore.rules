@@ -135,7 +135,7 @@ service cloud.firestore {
         && data.phase == 'lobby'
         && data.roundIndex == -1
         && data.totalRounds in [6, 8, 10, 12]
-        && data.seconds in [15, 30, 45]
+        && data.seconds in [15, 30, 45, 60]
         && data.createdAt is int && data.createdAt > 0
         && (isV3(data) ? validV3QuestionsFirst(data.questions,data.totalRounds)
           : validQuestions(data.questions,data.totalRounds))

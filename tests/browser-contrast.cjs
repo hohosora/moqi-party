@@ -45,10 +45,10 @@ async function main(){
         // text when its containing background is CSS-gradient or transparent.
         const selectors=theme==='party'
           ?{reveal:['.score-highlight .eyebrow','.score-highlight .score-detail'],
-             voting:['.host-vote-tools summary'],
+             voting:['.tutorial-guide h2'],
              'reveal-expanded':['.quick-ranking .full-rank-toggle summary','.podium .fineprint']}
           :{home:['.landing-note'],
-             voting:['.vote-tip','.host-vote-tools summary'],
+             voting:['.vote-tip','.tutorial-guide h2'],
              'reveal-expanded':['.quick-ranking .full-rank-toggle summary','.podium .fineprint'],
              reveal:['.score-highlight .eyebrow','.score-highlight .score-detail']};
         for(const selector of selectors[screen]||[]){
@@ -95,25 +95,31 @@ async function main(){
       await home();
       await page.locator('[data-action="demo"]').click();
       await audit('lobby');
-      await page.locator('[data-action="start"]').click();
+      await page.locator('[data-action="tutorial-continue"]').click();
       await audit('voting');
       await page.locator('[data-choice="0"]').click();
       await audit('guess');
       await page.locator('[data-guess="1"]').click();
+      await audit('tutorial-double');
+      await page.locator('[data-action="tutorial-continue"]').click();
+      await audit('tutorial-submit');
       await page.locator('[data-action="submit"]').click();
       await audit('submitted');
+      await page.locator('[data-action="tutorial-continue"]').click();
+      await page.locator('.quick-ranking').waitFor({timeout:25000});
+      await audit('reveal');
+      await page.locator('.full-rank-toggle summary').click();
+      await audit('reveal-expanded');
+      if(theme==='minimal')await audit('reveal-expanded-blue',240);
+      await page.locator('[data-action="tutorial-continue"]').click();
       const room=await page.evaluate(()=>window.__GAME_TEST__?.getRoom());
-      if(!room||!room.totalRounds)throw new Error('Demo room missing in '+theme);
-      for(let round=0;round<room.totalRounds;round++){
-        await page.locator('.host-vote-tools summary').click();
-        await page.locator('[data-action="reveal"]').click();
-        if(round===0){
-          await audit('reveal');
-          await page.locator('.full-rank-toggle summary').click();
-          await audit('reveal-expanded');
-          if(theme==='minimal')await audit('reveal-expanded-blue',240);
-        }
-        await page.locator('[data-action="next"]').click();
+      if(!room||room.totalRounds!==3)throw new Error('Tutorial room missing in '+theme);
+      for(let round=1;round<room.totalRounds;round++){
+        await page.locator('[data-choice="0"]').click();
+        await page.locator('[data-guess="1"]').click();
+        await page.locator('[data-action="submit"]').click();
+        await page.locator('[data-action="tutorial-next"]').waitFor({timeout:25000});
+        await page.locator('[data-action="tutorial-next"]').click();
       }
       await audit('finished');
       await context.close();
