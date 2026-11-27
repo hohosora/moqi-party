@@ -29,11 +29,11 @@ function waitFor(ref,accept,ms=15000){
 
 async function legacyRecovery(env){
  const n=20,code='ABCDE7',ids=Array.from({length:n},(_,i)=>'legacy-recovery-'+i),dbs=ids.map(uid=>env.authenticatedContext(uid).firestore()),host=dbs[0];
- const rr=L.doc(host,'rooms',code),data={hostUid:ids[0],phase:'lobby',roundIndex:-1,totalRounds:6,seconds:45,questions:Array.from({length:6},(_,i)=>({q:'測試題 '+i,a:['A','B','C','D'],talk:'分享'})),scores:{},streaks:{},usedDoubles:{},lastResult:null,deadline:null,createdAt:Date.now(),theme:'party'};
+ const rr=L.doc(host,'rooms',code),data={hostUid:ids[0],phase:'lobby',roundIndex:-1,totalRounds:6,seconds:60,questions:Array.from({length:6},(_,i)=>({q:'測試題 '+i,a:['A','B','C','D'],talk:'分享'})),scores:{},streaks:{},usedDoubles:{},lastResult:null,deadline:null,createdAt:Date.now(),theme:'party'};
  await L.setDoc(rr,data);
  await Promise.all(dbs.map((db,i)=>L.setDoc(L.doc(db,'rooms',code,'players',ids[i]),{uid:ids[i],name:'測試',emoji:'😎',joinedAt:Date.now()})));
  const initialScores=Object.fromEntries(ids.map(uid=>[uid,0]));
- await L.updateDoc(rr,{phase:'voting',roundIndex:0,deadline:Date.now()+45000,scores:initialScores,streaks:{},usedDoubles:{},lastResult:null});
+ await L.updateDoc(rr,{phase:'voting',roundIndex:0,deadline:Date.now()+data.seconds*1000,scores:initialScores,streaks:{},usedDoubles:{},lastResult:null});
  const q=L.query(L.collection(host,'rooms',code,'votes'),L.where('roundIndex','==',0)),offline=dbs.slice(1,6);
  const recoverySrc=src.split('// RECOVERY_HELPERS_START')[1].split('// RECOVERY_HELPERS_END')[0];
  const makeVoteDelivery=new Function(recoverySrc+';return makeVoteDelivery;')();
@@ -63,7 +63,7 @@ async function legacyRecovery(env){
   await L.updateDoc(rr,result);
   const all=await Promise.all(dbs.map(db=>L.getDocFromServer(L.doc(db,'rooms',code))));
   for(const s of all){assert.equal(s.data().phase,'reveal');assert.deepEqual(s.data().scores,result.scores);}
-  await L.updateDoc(rr,{phase:'voting',roundIndex:1,deadline:Date.now()+45000,lastResult:null});
+  await L.updateDoc(rr,{phase:'voting',roundIndex:1,deadline:Date.now()+data.seconds*1000,lastResult:null});
   for(let i=1;i<6;i++){const s=await L.getDocFromServer(L.doc(dbs[i],'rooms',code,'players',ids[i]));assert.equal(s.exists(),true);}
   console.log(JSON.stringify({protocol:'legacy',players:n,offlinePlayers:5,votes:snap.size,reconnectAndAckLocalMs:elapsed,status:'PASS'}));
  }finally{deliveries.forEach(d=>d.dispose());if(!resumed)await bounded('restore offline clients',()=>Promise.all(offline.map(db=>L.enableNetwork(db))));}
@@ -79,7 +79,7 @@ async function main(){
   for(let k=0;k<counts.length;k++){
    const n=counts[k],code=codes[k],ids=Array.from({length:n},(_,i)=>'matrix-'+k+'-'+i), dbs=ids.map(uid=>env.authenticatedContext(uid).firestore()), host=dbs[0],hr=p3Refs(L,host,code,ids[0]);
    const player=uid=>({uid,name:'測試',emoji:'😎',joinedAt:Date.now()});
-   const data={hostUid:ids[0],phase:'lobby',roundIndex:-1,totalRounds:6,seconds:45,questions:Array.from({length:6},(_,i)=>({q:'測試題 '+i,a:['A','B','C','D'],talk:'分享'})),scores:{},streaks:{},usedDoubles:{},lastResult:null,deadline:null,createdAt:Date.now(),theme:['party','panel','minimal'][k%3]};
+   const data={hostUid:ids[0],phase:'lobby',roundIndex:-1,totalRounds:6,seconds:[30,45,60][k%3],questions:Array.from({length:6},(_,i)=>({q:'測試題 '+i,a:['A','B','C','D'],talk:'分享'})),scores:{},streaks:{},usedDoubles:{},lastResult:null,deadline:null,createdAt:Date.now(),theme:['party','panel','minimal'][k%3]};
    await p3CreateRoom(L,host,code,data,player(ids[0]));
    // Deterministic small waves limit contention while exercising concurrent joins.
    for(let i=1;i<n;i+=3)await Promise.all(dbs.slice(i,i+3).map((db,j)=>p3JoinRoom(L,db,code,player(ids[i+j]))));
@@ -89,7 +89,7 @@ async function main(){
     await assert.rejects(p3JoinRoom(L,extra,code,player('matrix-overflow')),/20 人/);
    }
    const initialScores=Object.fromEntries(ids.map(uid=>[uid,0]));
-   await p3StartRoom(L,host,code,ids[0],{phase:'voting',roundIndex:0,deadline:Date.now()+45000,scores:initialScores,streaks:{},usedDoubles:{},lastResult:null});
+   await p3StartRoom(L,host,code,ids[0],{phase:'voting',roundIndex:0,deadline:Date.now()+data.seconds*1000,scores:initialScores,streaks:{},usedDoubles:{},lastResult:null});
    let prior={scores:initialScores,streaks:{},usedDoubles:{}};
    const times=[];
    for(let round=0;round<6;round++){
@@ -121,7 +121,7 @@ async function main(){
     const remote=await Promise.all(dbs.map((db,i)=>L.getDocFromServer(p3Refs(L,db,code,ids[i]).room)));
     for(const s of remote){assert.equal(s.data().phase,'reveal');assert.deepEqual(s.data().scores,result.scores);}
     prior=result;voteTotal+=n;roundTotal++;
-    if(round<5)await L.updateDoc(hr.room,{phase:'voting',roundIndex:round+1,deadline:Date.now()+45000,lastResult:null});
+    if(round<5)await L.updateDoc(hr.room,{phase:'voting',roundIndex:round+1,deadline:Date.now()+data.seconds*1000,lastResult:null});
     else await L.updateDoc(hr.room,{phase:'finished',deadline:null});
    }
    const finished=await L.getDocFromServer(hr.room);assert.equal(finished.data().phase,'finished');assert.equal(Object.keys(finished.data().scores).length,n);

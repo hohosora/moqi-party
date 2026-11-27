@@ -158,7 +158,7 @@
     mode:null, room:null, roomCode:'', player:null, players:[], votes:[], uid:null,
     choice:null, guess:null, double:false, nickname:localStorage.getItem('mqs_name') || '',
     codeInput:new URLSearchParams(location.search).get('room')?.toUpperCase() || '',
-    rounds:8, seconds:30, busy:false, error:'', toast:'', createProgress:null,
+    rounds:8, seconds:45, busy:false, error:'', toast:'', createProgress:null,
     unsubs:[], voteUnsub:null, watchedRound:null, firebase:null, autoRevealing:false,
     page:new URLSearchParams(location.search).has('room')?'join':'home', hostMode:'custom', quickScene:'general', quickQuestions:[], voteStep:'choice', bankMode:localStorage.getItem('mqs_bank_mode')||'mixed', managerTab:'custom',
     customEditId:null, customDraft:null, geminiDirection:'trends', geminiScenePreset:'friends', geminiContext:'', geminiCount:8, aiText:'',
@@ -715,7 +715,8 @@
         <label class="field"><span>① 主持人暱稱</span><input name="nickname" maxlength="14" autocomplete="nickname" placeholder="例如：微笑隊長" value="${esc(state.nickname)}"></label>
         <label class="field space-top"><span>② 這次是什麼場合？</span><select name="quickScene">${Object.entries(QUICK_SCENES).map(([id,item])=>`<option value="${id}" ${id===state.quickScene?'selected':''}>${esc(item.name)}</option>`).join('')}</select></label>
         <p class="quick-scene-note">✓ ${esc(scene.desc)}</p>
-        <div class="quick-host-summary" aria-label="系統預設遊戲設定"><span>🎲 <strong>8 題</strong> 混合類型</span><span>⏱ <strong>每題 30 秒</strong></span><span>📚 <strong>內建 100 題</strong> 自動配題</span></div>
+        <label class="field space-top"><span>每題作答時間</span><select name="seconds"><option value="30" ${state.seconds===30?'selected':''}>30 秒｜快速挑戰</option><option value="45" ${state.seconds===45?'selected':''}>45 秒（推薦）</option><option value="60" ${state.seconds===60?'selected':''}>60 秒｜輕鬆作答</option></select></label>
+        <div class="quick-host-summary" aria-label="系統預設遊戲設定"><span>🎲 <strong>8 題</strong> 混合類型</span><span>⏱ <strong>每題 ${state.seconds} 秒</strong></span><span>📚 <strong>內建 100 題</strong> 自動配題</span></div>
         <details class="quick-preview"><summary>👀 想先確認題目？展開預覽（${qs.length} 題）</summary><ol>${qs.map(q=>`<li>${esc(q.q)}</li>`).join('')}</ol></details>
         <button class="btn tertiary full space-top" data-action="quick-reshuffle">🔀 換一組題目</button>
         <div class="divider"></div>
@@ -726,7 +727,7 @@
   function renderHost(){
     return surface(`<div class="entry-heading"><button class="btn tertiary small-btn" data-action="open-home">← 回到首頁</button><div class="eyebrow">主持人入口・設定好就能開始</div><h1 class="page-title">🎤 建立一場默契局</h1><p class="subhead">選好題數與時間，分享房號，就能讓大家加入。</p></div>
       <section class="card entry-card"><label class="field"><span>主持人暱稱</span><input name="nickname" maxlength="14" autocomplete="nickname" placeholder="例如：火鍋教主" value="${esc(state.nickname)}"></label>
-        <div class="form-grid space-top"><label class="field"><span>遊戲題數</span><select name="rounds"><option value="6" ${state.rounds===6?'selected':''}>6 題｜快速暖場</option><option value="8" ${state.rounds===8?'selected':''}>8 題｜推薦</option><option value="10" ${state.rounds===10?'selected':''}>10 題｜歡樂加倍</option><option value="12" ${state.rounds===12?'selected':''}>12 題｜完整挑戰</option></select></label><label class="field"><span>每題作答時間</span><select name="seconds"><option value="15" ${state.seconds===15?'selected':''}>15 秒｜快速挑戰</option><option value="30" ${state.seconds===30?'selected':''}>30 秒（推薦）</option><option value="45" ${state.seconds===45?'selected':''}>45 秒｜輕鬆作答</option></select></label></div>
+        <div class="form-grid space-top"><label class="field"><span>遊戲題數</span><select name="rounds"><option value="6" ${state.rounds===6?'selected':''}>6 題｜快速暖場</option><option value="8" ${state.rounds===8?'selected':''}>8 題｜推薦</option><option value="10" ${state.rounds===10?'selected':''}>10 題｜歡樂加倍</option><option value="12" ${state.rounds===12?'selected':''}>12 題｜完整挑戰</option></select></label><label class="field"><span>每題作答時間</span><select name="seconds"><option value="30" ${state.seconds===30?'selected':''}>30 秒｜快速挑戰</option><option value="45" ${state.seconds===45?'selected':''}>45 秒（推薦）</option><option value="60" ${state.seconds===60?'selected':''}>60 秒｜輕鬆作答</option></select></label></div>
         <label class="field space-top"><span>本場題庫</span><select name="bankMode"><option value="mixed" ${state.bankMode==='mixed'?'selected':''}>🎲 三種混合｜笑點不重複</option><option value="classic" ${state.bankMode==='classic'?'selected':''}>📚 內建精選｜${QUESTIONS.length} 題</option><option value="custom" ${state.bankMode==='custom'?'selected':''}>✏️ 主持人自訂｜${bank.custom.length} 題</option><option value="ai" ${state.bankMode==='ai'?'selected':''}>✨ Gemini 生成｜${bank.ai.length} 題</option></select></label>
         <div class="host-bank-help"><span>這套題庫目前可用 ${selectedQuestions().length} 題</span><button class="btn dark small-btn" data-action="manage">⚙️ 管理題庫</button></div>
         ${themePicker()}
@@ -1531,7 +1532,7 @@
       return;
     }
     if(e.target.name==='rounds'){state.rounds=Number(e.target.value);state.geminiCount=state.rounds;state.aiPreview=[];render();}
-    if(e.target.name==='seconds')state.seconds=Number(e.target.value);
+    if(e.target.name==='seconds'){const value=Number(e.target.value);if([30,45,60].includes(value)){state.seconds=value;if(state.page==='quick-host')render();}}
     if(e.target.id==='double')state.double=e.target.checked;
     if(e.target.name==='bankMode'){state.bankMode=e.target.value;localStorage.setItem('mqs_bank_mode',state.bankMode);render();}
     if(e.target.name==='quickScene'&&Object.hasOwn(QUICK_SCENES,e.target.value)){state.quickScene=e.target.value;state.quickQuestions=[];render();}
@@ -1571,7 +1572,7 @@
     if(action==='host-choice-back'){state.page='host-choice';state.error='';render();window.scrollTo(0,0);return;}
     if(action==='choose-host-custom'){state.hostMode='custom';state.page='host';state.error='';render();window.scrollTo(0,0);return;}
     if(action==='choose-host-quick'){
-      state.hostMode='quick';state.page='quick-host';state.error='';state.rounds=QUICK_SIZE;state.seconds=30;state.quickQuestions=[];
+      state.hostMode='quick';state.page='quick-host';state.error='';state.rounds=QUICK_SIZE;state.seconds=45;state.quickQuestions=[];
       render();window.scrollTo(0,0);return;
     }
     if(action==='quick-reshuffle'&&state.hostMode==='quick'){

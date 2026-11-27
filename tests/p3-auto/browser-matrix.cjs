@@ -49,7 +49,9 @@ async function main(){
     await page.locator('[data-action="choose-theme"][data-theme-id="'+theme+'"]').click();
     assert.equal(await page.locator('[data-action="demo"]').count(),0);
     await page.locator('[name="rounds"]').selectOption('6');
-    await page.locator('[name="seconds"]').selectOption('15');
+    assert.deepEqual(await page.locator('[name="seconds"] option').evaluateAll(es=>es.map(e=>e.value)),['30','45','60']);
+    assert.equal(await page.locator('[name="seconds"]').inputValue(),'45');
+    for(const seconds of ['30','45','60']){await page.locator('[name="seconds"]').selectOption(seconds);assert.equal(await page.locator('[name="seconds"]').inputValue(),seconds);}
     await page.locator('[name="bankMode"]').selectOption('custom');
     await page.locator('[data-action="open-home"]').click();
     await page.locator('[data-action="demo"]').click();
@@ -63,8 +65,17 @@ async function main(){
     await page.locator('[data-action="open-host"]').click();
     await page.locator('[data-action="choose-host-custom"]').click();
     assert.equal(await page.locator('[name="rounds"]').inputValue(),'6');
-    assert.equal(await page.locator('[name="seconds"]').inputValue(),'15');
+    assert.equal(await page.locator('[name="seconds"]').inputValue(),'60');
     assert.equal(await page.locator('[name="bankMode"]').inputValue(),'custom');
+    await page.locator('[data-action="open-home"]').click();
+    await page.locator('[data-action="open-host"]').click();
+    await page.locator('[data-action="choose-host-quick"]').click();
+    assert.deepEqual(await page.locator('[name="seconds"] option').evaluateAll(es=>es.map(e=>e.value)),['30','45','60']);
+    assert.equal(await page.locator('[name="seconds"]').inputValue(),'45');
+    await page.locator('[name="seconds"]').selectOption('60');
+    assert.match(await page.locator('.quick-host-summary').innerText(),/每題 60 秒/);
+    await page.locator('[data-action="host-choice-back"]').click();
+    await page.locator('[data-action="choose-host-custom"]').click();
     await page.locator('[data-action="open-home"]').click();
     await page.locator('[data-action="demo"]').click();
     await page.locator('[data-action="tutorial-continue"]').click();
